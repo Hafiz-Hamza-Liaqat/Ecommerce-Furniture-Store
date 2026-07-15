@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @afh/shared-kernel && npm run build -w @afh/persistence && npm run build -w @afh/identity",
-    "typecheck": "npm run typecheck -w @afh/shared-kernel && npm run typecheck -w @afh/persistence && npm run typecheck -w @afh/identity",
-    "lint": "npm run lint -w @afh/shared-kernel && npm run lint -w @afh/persistence && npm run lint -w @afh/identity"
+    "build": "npm run build -w @afh/shared-kernel && npm run build -w @afh/persistence && npm run build -w @afh/identity && npm run build -w @afh/platform",
+    "typecheck": "npm run typecheck -w @afh/shared-kernel && npm run typecheck -w @afh/persistence && npm run typecheck -w @afh/identity && npm run typecheck -w @afh/platform",
+    "lint": "npm run lint -w @afh/shared-kernel && npm run lint -w @afh/persistence && npm run lint -w @afh/identity && npm run lint -w @afh/platform"
   },
   "engines": {
     "node": ">=20"
