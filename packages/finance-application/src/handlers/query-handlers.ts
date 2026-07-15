@@ -1,0 +1,296 @@
+import type { QueryHandler } from "@afh/application";
+import type { PageRequest } from "@afh/shared-kernel";
+import { NotFoundError, fail, ok } from "@afh/shared-kernel";
+import type {
+  CreditAccount,
+  CreditAdjustment,
+  FinancialAccount,
+  FinancialLedger,
+  FinancialLedgerEntry,
+  Invoice,
+  InvoiceLine,
+  Payment,
+} from "@afh/finance";
+import { FinancePolicyActions, FinanceQueryTypes } from "../constants.js";
+import type {
+  FinancialSummary,
+  GetCreditAccountPayload,
+  GetFinancialAccountPayload,
+  GetFinancialSummaryPayload,
+  GetInvoicePayload,
+  GetLedgerPayload,
+  GetPaymentPayload,
+} from "../queries/queries.js";
+import {
+  getCreditAccountQueryValidator,
+  getFinancialAccountQueryValidator,
+  getFinancialSummaryQueryValidator,
+  getInvoiceQueryValidator,
+  getLedgerQueryValidator,
+  getPaymentQueryValidator,
+} from "../validators/validators.js";
+import type { FinanceHandlerDeps } from "./deps.js";
+import { companyResource, requireCompanyId } from "../support/support.js";
+
+export function createGetFinancialAccountHandler(
+  deps: FinanceHandlerDeps,
+): QueryHandler<GetFinancialAccountPayload, FinancialAccount> {
+  return {
+    queryType: FinanceQueryTypes.GetFinancialAccount,
+    authorize(query) {
+      return companyResource(
+        "financial_account",
+        FinancePolicyActions.AccountRead,
+        query.payload.companyId,
+        query.payload.accountId,
+      );
+    },
+    validate() {
+      return getFinancialAccountQueryValidator;
+    },
+    async handle(query, ctx) {
+      const scope = requireCompanyId(ctx, query.payload.companyId);
+      if (!scope.ok) return scope;
+      const found = await deps.accounts.findById({
+        companyId: scope.value,
+        id: query.payload.accountId,
+      });
+      if (!found.ok) return found;
+      if (!found.value) {
+        return fail(
+          new NotFoundError("Financial account not found", {
+            code: "financial_account_not_found",
+          }),
+        );
+      }
+      return ok(found.value);
+    },
+  };
+}
+
+export function createGetInvoiceHandler(
+  deps: FinanceHandlerDeps,
+): QueryHandler<
+  GetInvoicePayload,
+  { invoice: Invoice; lines: readonly InvoiceLine[] }
+> {
+  return {
+    queryType: FinanceQueryTypes.GetInvoice,
+    authorize(query) {
+      return companyResource(
+        "invoice",
+        FinancePolicyActions.InvoiceRead,
+        query.payload.companyId,
+        query.payload.invoiceId,
+      );
+    },
+    validate() {
+      return getInvoiceQueryValidator;
+    },
+    async handle(query, ctx) {
+      const scope = requireCompanyId(ctx, query.payload.companyId);
+      if (!scope.ok) return scope;
+      const found = await deps.invoices.findById({
+        companyId: scope.value,
+        id: query.payload.invoiceId,
+      });
+      if (!found.ok) return found;
+      if (!found.value) {
+        return fail(
+          new NotFoundError("Invoice not found", { code: "invoice_not_found" }),
+        );
+      }
+
+      let lines: readonly InvoiceLine[] = [];
+      if (query.payload.includeLines !== false) {
+        const listed = await deps.invoices.listLines(
+          scope.value,
+          found.value.id,
+        );
+        if (!listed.ok) return listed;
+        lines = listed.value;
+      }
+
+      return ok({ invoice: found.value, lines });
+    },
+  };
+}
+
+export function createGetPaymentHandler(
+  deps: FinanceHandlerDeps,
+): QueryHandler<GetPaymentPayload, Payment> {
+  return {
+    queryType: FinanceQueryTypes.GetPayment,
+    authorize(query) {
+      return companyResource(
+        "payment",
+        FinancePolicyActions.PaymentRead,
+        query.payload.companyId,
+        query.payload.paymentId,
+      );
+    },
+    validate() {
+      return getPaymentQueryValidator;
+    },
+    async handle(query, ctx) {
+      const scope = requireCompanyId(ctx, query.payload.companyId);
+      if (!scope.ok) return scope;
+      const found = await deps.payments.findById({
+        companyId: scope.value,
+        id: query.payload.paymentId,
+      });
+      if (!found.ok) return found;
+      if (!found.value) {
+        return fail(
+          new NotFoundError("Payment not found", { code: "payment_not_found" }),
+        );
+      }
+      return ok(found.value);
+    },
+  };
+}
+
+export function createGetLedgerHandler(
+  deps: FinanceHandlerDeps,
+): QueryHandler<
+  GetLedgerPayload,
+  { ledger: FinancialLedger; entries: readonly FinancialLedgerEntry[] }
+> {
+  return {
+    queryType: FinanceQueryTypes.GetLedger,
+    authorize(query) {
+      return companyResource(
+        "ledger",
+        FinancePolicyActions.LedgerRead,
+        query.payload.companyId,
+        query.payload.ledgerId,
+      );
+    },
+    validate() {
+      return getLedgerQueryValidator;
+    },
+    async handle(query, ctx) {
+      const scope = requireCompanyId(ctx, query.payload.companyId);
+      if (!scope.ok) return scope;
+      const found = await deps.ledgers.findById({
+        companyId: scope.value,
+        id: query.payload.ledgerId,
+      });
+      if (!found.ok) return found;
+      if (!found.value) {
+        return fail(
+          new NotFoundError("Financial ledger not found", {
+            code: "ledger_not_found",
+          }),
+        );
+      }
+
+      let entries: readonly FinancialLedgerEntry[] = [];
+      if (query.payload.includeEntries !== false) {
+        const page: PageRequest | undefined = query.payload.page;
+        const listed = await deps.ledgers.listEntries(
+          scope.value,
+          found.value.id,
+          page,
+        );
+        if (!listed.ok) return listed;
+        entries = listed.value.items;
+      }
+
+      return ok({ ledger: found.value, entries });
+    },
+  };
+}
+
+export function createGetCreditAccountHandler(
+  deps: FinanceHandlerDeps,
+): QueryHandler<
+  GetCreditAccountPayload,
+  { account: CreditAccount; adjustments: readonly CreditAdjustment[] }
+> {
+  return {
+    queryType: FinanceQueryTypes.GetCreditAccount,
+    authorize(query) {
+      return companyResource(
+        "credit_account",
+        FinancePolicyActions.CreditRead,
+        query.payload.companyId,
+        query.payload.creditAccountId,
+      );
+    },
+    validate() {
+      return getCreditAccountQueryValidator;
+    },
+    async handle(query, ctx) {
+      const scope = requireCompanyId(ctx, query.payload.companyId);
+      if (!scope.ok) return scope;
+      const found = await deps.credits.findAccountById({
+        companyId: scope.value,
+        id: query.payload.creditAccountId,
+      });
+      if (!found.ok) return found;
+      if (!found.value) {
+        return fail(
+          new NotFoundError("Credit account not found", {
+            code: "credit_account_not_found",
+          }),
+        );
+      }
+
+      let adjustments: readonly CreditAdjustment[] = [];
+      if (query.payload.includeAdjustments !== false) {
+        const page: PageRequest | undefined = query.payload.page;
+        const listed = await deps.credits.listAdjustments(
+          scope.value,
+          found.value.id,
+          page,
+        );
+        if (!listed.ok) return listed;
+        adjustments = listed.value.items;
+      }
+
+      return ok({ account: found.value, adjustments });
+    },
+  };
+}
+
+export function createGetFinancialSummaryHandler(
+  deps: FinanceHandlerDeps,
+): QueryHandler<GetFinancialSummaryPayload, FinancialSummary> {
+  return {
+    queryType: FinanceQueryTypes.GetFinancialSummary,
+    authorize(query) {
+      return companyResource(
+        "finance",
+        FinancePolicyActions.SummaryRead,
+        query.payload.companyId,
+      );
+    },
+    validate() {
+      return getFinancialSummaryQueryValidator;
+    },
+    async handle(query, ctx) {
+      const scope = requireCompanyId(ctx, query.payload.companyId);
+      if (!scope.ok) return scope;
+
+      const page = { page: 1, pageSize: 500 };
+      const accounts = await deps.accounts.listByCompany(scope.value, page);
+      if (!accounts.ok) return accounts;
+      const invoices = await deps.invoices.listByCompany(scope.value, page);
+      if (!invoices.ok) return invoices;
+
+      return ok({
+        companyId: scope.value,
+        accountCount: accounts.value.items.length,
+        invoiceCount: invoices.value.items.length,
+        draftInvoiceIds: invoices.value.items
+          .filter((i) => i.status === "draft")
+          .map((i) => i.id),
+        issuedInvoiceIds: invoices.value.items
+          .filter((i) => i.status === "issued")
+          .map((i) => i.id),
+        activeCreditAccountIds: [],
+      });
+    },
+  };
+}
