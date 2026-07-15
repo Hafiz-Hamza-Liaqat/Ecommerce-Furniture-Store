@@ -1,0 +1,18 @@
+export type {
+  SearchFieldType,
+  SearchField,
+  SearchIndexDefinition,
+  SearchDocument,
+  SearchFilterOp,
+  SearchFilter,
+  SearchFilters,
+  SearchSortDirection,
+  SearchSort,
+  SearchHighlight,
+  SearchFacetBucket,
+  SearchFacet,
+  SearchHit,
+  SearchResult,
+  SearchIndexRequest,
+  SearchIndexBatchResult,
+} from "./models.js";
