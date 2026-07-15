@@ -1,0 +1,59 @@
+# Continuous Integration — Production Readiness Foundation
+# Runs build, typecheck, lint, package build, migration/release verification,
+# and artifact generation. Does not deploy to cloud providers.
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify:
+    name: Build & verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build (all packages)
+        run: npm run build
+
+      - name: Migration / release verification
+        run: npm run verify -w @afh/runtime-host
+        env:
+          AFH_PROFILE: testing
+
+      - name: Package artifact (runtime-host)
+        run: |
+          mkdir -p artifacts
+          tar -czf artifacts/afh-runtime-host.tgz -C packages/runtime-host dist package.json README.md
+          tar -czf artifacts/afh-api.tgz -C packages/api dist package.json
+          tar -czf artifacts/afh-web.tgz -C packages/web dist package.json 2>/dev/null || true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: afh-production-artifacts
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14

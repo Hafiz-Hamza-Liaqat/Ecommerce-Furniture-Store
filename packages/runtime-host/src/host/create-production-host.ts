@@ -1,0 +1,233 @@
+/**
+ * Production composition root — wires SQL, broker, identity providers, API host.
+ * No business logic.
+ */
+
+import {
+  createApiHost,
+  type ApiHost,
+  type EnterpriseModuleRepositories,
+} from "@afh/api";
+import { InboxRuntime } from "@afh/infrastructure";
+import { createMessagingRuntime, type MessagingRuntime } from "@afh/messaging-broker";
+import {
+  createMigrationHealthProbe,
+  createSqlPersistenceFoundation,
+  createTransactionHealthProbe,
+  type SqlPersistenceFoundation,
+} from "@afh/persistence-sql";
+import { SystemUtcClock, isFail, type Logger } from "@afh/shared-kernel";
+import {
+  assertProductionRuntimeConfig,
+  loadProductionRuntimeConfig,
+  type ProductionRuntimeConfig,
+} from "../config/runtime-config.js";
+import {
+  createInboxHealthProbe,
+  createOutboxDispatcherHealthProbe,
+  createOutboxHealthProbe,
+  createSecretsHealthProbe,
+} from "../health/production-health.js";
+import {
+  createDeploymentLifecycle,
+  installGracefulShutdown,
+  type DeploymentLifecycle,
+} from "../lifecycle/deployment.js";
+import { createProductionObservability } from "../observability/observability.js";
+import {
+  loadProductionSecrets,
+  validateProductionSecrets,
+} from "../secrets/load-secrets.js";
+import { validateStartup } from "../validation/startup-validation.js";
+
+export const RUNTIME_HOST_VERSION = "0.1.0";
+
+export type ProductionHost = {
+  readonly config: ProductionRuntimeConfig;
+  readonly sql: SqlPersistenceFoundation;
+  readonly messaging: MessagingRuntime;
+  readonly api: ApiHost;
+  readonly lifecycle: DeploymentLifecycle;
+  readonly logger: Logger;
+  dispose(): Promise<void>;
+};
+
+export type CreateProductionHostOptions = {
+  readonly config?: Partial<ProductionRuntimeConfig>;
+  readonly env?: NodeJS.ProcessEnv;
+  /** When false, skips listen — useful for validation-only composition. */
+  readonly autoStart?: boolean;
+};
+
+function toEnterpriseRepositories(
+  sql: SqlPersistenceFoundation,
+): EnterpriseModuleRepositories {
+  const repos = sql.repositories;
+  return {
+    sales: repos.sales,
+    procurement: repos.procurement,
+    inventory: repos.inventory,
+    finance: repos.finance,
+    projects: repos.projects,
+    service: repos.service,
+    crm: repos.crm,
+    damAssets: repos.damAssets,
+  };
+}
+
+/**
+ * Creates the full production runtime: SQL + broker + security + API.
+ * Registers Phase 0F-aligned health probes and validates startup.
+ */
+export async function createProductionHost(
+  options: CreateProductionHostOptions = {},
+): Promise<ProductionHost> {
+  const config = loadProductionRuntimeConfig(options.config ?? {});
+  assertProductionRuntimeConfig(config);
+
+  const observability = createProductionObservability(config);
+  const { logger, metrics, tracer } = observability;
+
+  const rawSecrets = loadProductionSecrets(options.env ?? process.env);
+  const secretsResult = await validateProductionSecrets(rawSecrets, {
+    requireAll: config.requireSecrets,
+    allowEphemeralJwt: config.profile === "development" || !config.requireSecrets,
+  });
+  if (isFail(secretsResult)) {
+    throw secretsResult.error;
+  }
+  const secrets = secretsResult.value.provider;
+  if (secretsResult.value.ephemeralJwt) {
+    logger.warn("Using ephemeral JWT signing key (development only)");
+  }
+
+  const clock = new SystemUtcClock();
+  const sql = createSqlPersistenceFoundation({
+    config: { databasePath: config.databasePath },
+    clock,
+  });
+
+  // Shared inbox store for consumer dedupe; infrastructure creates its own
+  // InboxRuntime wrapper over the same store when the API host composes.
+  const messagingInbox = new InboxRuntime(sql.inboxStore, clock);
+  const messaging = createMessagingRuntime({
+    logger,
+    metrics,
+    tracer,
+    inbox: messagingInbox,
+    config: {
+      brokerDatabasePath: config.brokerDatabasePath,
+      brokerEndpoint: config.brokerEndpoint,
+    },
+  });
+
+  const api = createApiHost({
+    repositories: toEnterpriseRepositories(sql),
+    infrastructure: {
+      config: {
+        serviceName: config.serviceName,
+        environment: config.profile,
+        logLevel: config.logLevel,
+        outboxBatchSize: config.outboxBatchSize,
+        outboxMaxAttempts: config.outboxMaxAttempts,
+        eventBusEnabled: config.eventBusEnabled,
+      },
+      secrets,
+      logger,
+      metrics,
+      tracer,
+      persistence: sql,
+      persistenceAdapter: "sql",
+      eventBus: messaging.eventBus,
+      messagingAdapter: "broker",
+    },
+    identity: {
+      store: sql.identityStore,
+      auditStore: sql.securityAuditStore,
+    },
+    security: { enabled: true },
+    host: config.host,
+    port: config.port,
+    corsOrigin: config.corsOrigin,
+  });
+
+  const health = api.composition.infrastructure.health;
+  health.register(createMigrationHealthProbe(sql));
+  health.register(createTransactionHealthProbe(sql));
+  for (const probe of messaging.healthProbes) {
+    health.register(probe);
+  }
+  health.register(createOutboxHealthProbe(sql.outboxStore));
+  health.register(createInboxHealthProbe(sql.inboxStore));
+  health.register(createSecretsHealthProbe(secrets));
+  health.register(
+    createOutboxDispatcherHealthProbe(
+      api.composition.infrastructure.outboxDispatcher,
+    ),
+  );
+
+  // Identity / signing / session probes already registered via security.enabled
+
+  const startup = await validateStartup(
+    {
+      config,
+      sql,
+      messaging,
+      host: api,
+      packageVersion: RUNTIME_HOST_VERSION,
+    },
+    logger,
+  );
+  if (isFail(startup)) {
+    messaging.dispose();
+    sql.dispose();
+    throw startup.error;
+  }
+
+  const lifecycle = createDeploymentLifecycle({
+    host: api,
+    messaging,
+    logger,
+    onBeforeStop: async () => {
+      metrics.counter("runtime.shutdown").add(1);
+      try {
+        await api.composition.infrastructure.outboxDispatcher.dispatchOnce();
+      } catch (error) {
+        logger.warn("Outbox drain during shutdown failed", {
+          error: String(error),
+        });
+      }
+    },
+  });
+
+  const dispose = async () => {
+    metrics.gauge("runtime.ready").set(0);
+    await lifecycle.stop();
+    sql.dispose();
+  };
+
+  installGracefulShutdown(logger, dispose);
+
+  metrics.counter("runtime.startup").add(1);
+  logger.info("Production host composed", {
+    profile: config.profile,
+    persistence: "sql",
+    messaging: "broker",
+    security: "enabled",
+  });
+
+  if (options.autoStart !== false) {
+    await lifecycle.start();
+    metrics.gauge("runtime.ready").set(1);
+  }
+
+  return {
+    config,
+    sql,
+    messaging,
+    api,
+    lifecycle,
+    logger,
+    dispose,
+  };
+}
