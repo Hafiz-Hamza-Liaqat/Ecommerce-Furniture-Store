@@ -17,6 +17,14 @@ export const ApiPaths = {
   Queries: "/api/v1/queries",
   Uploads: "/api/v1/uploads",
   OpenApi: "/api/v1/openapi.json",
+  AuthSignIn: "/api/v1/auth/sign-in",
+  AuthSignOut: "/api/v1/auth/sign-out",
+  AuthSession: "/api/v1/auth/session",
+  AuthPasswordResetRequest: "/api/v1/auth/password-reset/request",
+  AuthPasswordResetConfirm: "/api/v1/auth/password-reset/confirm",
+  AuthEmailVerifyRequest: "/api/v1/auth/email-verification/request",
+  AuthEmailVerifyConfirm: "/api/v1/auth/email-verification/confirm",
+  AuthMfaEnable: "/api/v1/auth/mfa/enable",
 } as const;
 
 export const CorrelationHeader = "x-correlation-id";

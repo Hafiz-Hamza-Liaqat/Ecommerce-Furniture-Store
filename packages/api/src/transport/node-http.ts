@@ -91,6 +91,8 @@ export type NodeHttpServerOptions = {
   readonly routes: readonly RouteDefinition[];
   readonly host?: string;
   readonly port?: number;
+  /** Comma-separated origins or "*" for SPA local development. */
+  readonly corsOrigin?: string;
   readonly onUnhandled?: (
     request: TransportRequest,
   ) => Promise<TransportResponse> | TransportResponse;
@@ -104,15 +106,45 @@ export type NodeHttpServerHandle = {
   stop(): Promise<void>;
 };
 
+function corsHeaders(origin: string | undefined, configured: string): Record<string, string> {
+  const allow =
+    configured === "*"
+      ? (origin ?? "*")
+      : configured.split(",").map((s) => s.trim()).includes(origin ?? "")
+        ? (origin ?? configured)
+        : configured.split(",")[0]?.trim() ?? "*";
+  return {
+    "access-control-allow-origin": allow,
+    "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    "access-control-allow-headers":
+      "content-type,authorization,x-correlation-id,x-company-id,x-branch-id,idempotency-key",
+    "access-control-expose-headers": "x-correlation-id",
+    "access-control-allow-credentials": "true",
+  };
+}
+
 export function createNodeHttpServer(
   options: NodeHttpServerOptions,
 ): NodeHttpServerHandle {
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 0;
+  const corsOrigin = options.corsOrigin ?? "*";
 
   const server = createServer(async (req, res) => {
     try {
       const transportReq = await toTransportRequest(req);
+      const origin = transportReq.headers.origin;
+      const cors = corsHeaders(origin, corsOrigin);
+
+      if (transportReq.method === "OPTIONS") {
+        writeTransportResponse(res, {
+          status: 204,
+          headers: cors,
+          body: null,
+        });
+        return;
+      }
+
       const route = matchRoute(
         options.routes,
         transportReq.method,
@@ -137,7 +169,10 @@ export function createNodeHttpServer(
         });
       }
 
-      writeTransportResponse(res, response);
+      writeTransportResponse(res, {
+        ...response,
+        headers: { ...cors, ...response.headers },
+      });
     } catch {
       writeTransportResponse(
         res,
@@ -160,7 +195,7 @@ export function createNodeHttpServer(
     host,
     port,
     start() {
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         server.once("error", reject);
         server.listen(port, host, () => {
           server.off("error", reject);
@@ -169,7 +204,7 @@ export function createNodeHttpServer(
       });
     },
     stop() {
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         server.close((err) => {
           if (err) reject(err);
           else resolve();

@@ -29,6 +29,7 @@ await host.stop();
 | `POST /api/v1/commands` | Dispatch command |
 | `POST /api/v1/queries` | Dispatch query |
 | `POST /api/v1/uploads` | Route upload metadata to DAM |
+| `POST /api/v1/auth/*` | Thin Identity session auth (sign-in/out, reset, verify, MFA) |
 | `GET /api/v1/openapi.json` | OpenAPI metadata |
 
 ## Ownership

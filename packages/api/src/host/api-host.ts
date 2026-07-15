@@ -29,6 +29,7 @@ import { API_SERVICE_NAME } from "../constants.js";
 export type CreateApiHostOptions = CreateEnterpriseCompositionOptions & {
   readonly host?: string;
   readonly port?: number;
+  readonly corsOrigin?: string;
   readonly rateLimit?: RateLimitHook;
   readonly versionCatalog?: ApiVersionCatalog;
   readonly streaming?: StreamingHook;
@@ -80,12 +81,16 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
     routes: readonly RouteDefinition[];
     host?: string;
     port?: number;
+    corsOrigin?: string;
   } = { routes };
   if (options.host !== undefined) {
     httpOptions.host = options.host;
   }
   if (options.port !== undefined) {
     httpOptions.port = options.port;
+  }
+  if (options.corsOrigin !== undefined) {
+    httpOptions.corsOrigin = options.corsOrigin;
   }
   const http = createNodeHttpServer(httpOptions);
 

@@ -460,9 +460,12 @@ export function createOpenApiRoute(
   };
 }
 
+import { createAuthRoutes } from "./auth-routes.js";
+
 export function createAllRoutes(deps: RouteDeps): RouteDefinition[] {
   const routes: RouteDefinition[] = [
     ...createHealthRoutes(deps),
+    ...createAuthRoutes(deps.identity),
     ...createDispatchRoutes(deps),
     ...createUploadRoutes(deps),
   ];
