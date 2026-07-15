@@ -28,11 +28,26 @@ export type LockoutPolicy = {
   readonly lockoutDurationSeconds: number;
 };
 
+/** Token lifetimes for JWT / access credential providers (values only — no business rules). */
+export type TokenPolicy = {
+  readonly accessTtlSeconds: number;
+  readonly refreshTtlSeconds: number;
+  readonly issuer: string;
+  readonly audience: string;
+};
+
+/** Service-account credential lifetime (values only). */
+export type ServiceAccountCredentialPolicy = {
+  readonly ttlSeconds: number;
+};
+
 export type SecurityConfig = {
   readonly password: PasswordPolicy;
   readonly session: SessionPolicy;
   readonly mfa: MfaPolicy;
   readonly lockout: LockoutPolicy;
+  readonly token: TokenPolicy;
+  readonly serviceAccountCredential: ServiceAccountCredentialPolicy;
 };
 
 export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
@@ -57,6 +72,15 @@ export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   lockout: {
     maxFailedAttempts: 5,
     lockoutDurationSeconds: 15 * 60,
+  },
+  token: {
+    accessTtlSeconds: 15 * 60,
+    refreshTtlSeconds: 7 * 24 * 60 * 60,
+    issuer: "afh-identity",
+    audience: "afh-api",
+  },
+  serviceAccountCredential: {
+    ttlSeconds: 90 * 24 * 60 * 60,
   },
 };
 

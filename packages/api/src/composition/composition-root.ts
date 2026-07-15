@@ -20,6 +20,11 @@ import {
   type IdentityFoundation,
 } from "@afh/identity";
 import {
+  createIdentitySecurityProviders,
+  type CreateIdentitySecurityProvidersOptions,
+  type IdentitySecurityProviders,
+} from "@afh/identity-providers";
+import {
   createPlatformEngines,
   type CreatePlatformEnginesOptions,
   type PlatformEngines,
@@ -91,6 +96,16 @@ export type CreateEnterpriseCompositionOptions = {
   readonly infrastructure?: CreateInfrastructureRuntimeOptions;
   readonly identity?: CreateIdentityFoundationOptions;
   readonly platform?: Omit<CreatePlatformEnginesOptions, "identity" | "persistence" | "clock">;
+  /**
+   * When set, wires Phase 7C production security providers (password/JWT/MFA/…).
+   * Authentication flows and Policy authorization remain unchanged.
+   */
+  readonly security?: Omit<
+    CreateIdentitySecurityProvidersOptions,
+    "secrets" | "metrics" | "clock" | "identity"
+  > & {
+    readonly enabled: true;
+  };
 };
 
 export type EnterpriseComposition = {
@@ -99,6 +114,8 @@ export type EnterpriseComposition = {
   readonly platform: PlatformEngines;
   readonly runtime: ApplicationRuntime;
   readonly repositories: EnterpriseModuleRepositories;
+  /** Present when `security.enabled` was requested. */
+  readonly security: IdentitySecurityProviders | null;
   dispose(): void;
 };
 
@@ -112,11 +129,35 @@ export function createEnterpriseComposition(
   const infrastructure = createInfrastructureRuntime(
     options.infrastructure ?? {},
   );
-  const identity = createIdentityFoundation({
-    ...(options.identity ?? {}),
-    clock: options.identity?.clock ?? infrastructure.clock,
-    persistence: infrastructure.persistence,
-  });
+
+  let identity: IdentityFoundation;
+  let security: IdentitySecurityProviders | null = null;
+
+  if (options.security?.enabled) {
+    const { enabled: _enabled, ...securityOpts } = options.security;
+    void _enabled;
+    security = createIdentitySecurityProviders({
+      ...securityOpts,
+      secrets: infrastructure.secrets,
+      metrics: infrastructure.metrics,
+      clock: options.identity?.clock ?? infrastructure.clock,
+      identity: {
+        ...(options.identity ?? {}),
+        persistence: infrastructure.persistence,
+      },
+    });
+    identity = security.identity;
+    for (const probe of security.healthProbes) {
+      infrastructure.health.register(probe);
+    }
+  } else {
+    identity = createIdentityFoundation({
+      ...(options.identity ?? {}),
+      clock: options.identity?.clock ?? infrastructure.clock,
+      persistence: infrastructure.persistence,
+    });
+  }
+
   const platform = createPlatformEngines({
     identity,
     persistence: infrastructure.persistence,
@@ -189,6 +230,7 @@ export function createEnterpriseComposition(
     platform,
     runtime,
     repositories: repos,
+    security,
     dispose() {
       runtime.dispose();
       infrastructure.dispose();

@@ -7,6 +7,8 @@ export type {
   SessionPolicy,
   MfaPolicy,
   LockoutPolicy,
+  TokenPolicy,
+  ServiceAccountCredentialPolicy,
   SecurityConfig,
   SecurityConfigProvider,
 } from "./security-config.js";

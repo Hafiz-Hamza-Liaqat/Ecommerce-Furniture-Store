@@ -16,6 +16,7 @@ import {
 import {
   InMemorySecurityAuditStore,
   SecurityAuditService,
+  type SecurityAuditStore,
 } from "../audit/security-audit.js";
 import {
   Sha256PasswordHasher,
@@ -53,6 +54,8 @@ export type CreateIdentityFoundationOptions = {
   readonly clock?: Clock;
   readonly passwordHasher?: PasswordHasher;
   readonly store?: IdentityStore;
+  /** Inject durable audit store (e.g. Phase 7B SQL). Defaults to in-memory. */
+  readonly auditStore?: SecurityAuditStore;
   /** Optional persistence handle reserved for future transactional identity writes */
   readonly persistence?: PersistenceFoundation;
 };
@@ -66,7 +69,7 @@ export function createIdentityFoundation(
   const clock = options.clock ?? new SystemUtcClock();
   const store = options.store ?? new InMemoryIdentityStore();
   const passwordHasher = options.passwordHasher ?? new Sha256PasswordHasher();
-  const auditStore = new InMemorySecurityAuditStore();
+  const auditStore = options.auditStore ?? new InMemorySecurityAuditStore();
   const audit = new SecurityAuditService(auditStore, clock);
   const sessions = new SessionService(store, configProvider, clock, audit);
   const authentication = new AuthenticationService(

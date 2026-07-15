@@ -24,6 +24,7 @@
     "@afh/dam": "0.1.0",
     "@afh/finance-application": "0.1.0",
     "@afh/identity": "0.1.0",
+    "@afh/identity-providers": "0.1.0",
     "@afh/infrastructure": "0.1.0",
     "@afh/inventory-application": "0.1.0",
     "@afh/persistence": "0.1.0",

@@ -11,6 +11,8 @@ Authentication, session lifecycle, RBAC data, **Policy Engine as sole runtime au
 
 **No business domains. No HTTP controllers. No external IdP/OAuth/SMS/email providers.**
 
+Production password hashing, JWT, MFA adapters, and related providers live in `@afh/identity-providers` (Phase 7C) and inject into this foundation without changing authentication workflows or Policy authorization.
+
 ## Key rule
 
 Services must call `PolicyEngine.evaluate(...)` for authorization. Do not embed allow/deny logic in application services.
