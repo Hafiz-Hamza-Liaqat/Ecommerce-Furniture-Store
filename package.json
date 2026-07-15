@@ -1,0 +1,17 @@
+{
+  "name": "artisan-furnish-hub",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Artisan Furnish Hub — furniture business operating system",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @afh/shared-kernel",
+    "typecheck": "npm run typecheck -w @afh/shared-kernel",
+    "lint": "npm run lint -w @afh/shared-kernel"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
