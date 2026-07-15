@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @afh/shared-kernel && npm run build -w @afh/persistence && npm run build -w @afh/identity && npm run build -w @afh/platform && npm run build -w @afh/commerce && npm run build -w @afh/inventory",
-    "typecheck": "npm run typecheck -w @afh/shared-kernel && npm run typecheck -w @afh/persistence && npm run typecheck -w @afh/identity && npm run typecheck -w @afh/platform && npm run typecheck -w @afh/commerce && npm run typecheck -w @afh/inventory",
-    "lint": "npm run lint -w @afh/shared-kernel && npm run lint -w @afh/persistence && npm run lint -w @afh/identity && npm run lint -w @afh/platform && npm run lint -w @afh/commerce && npm run lint -w @afh/inventory"
+    "build": "npm run build -w @afh/shared-kernel && npm run build -w @afh/persistence && npm run build -w @afh/identity && npm run build -w @afh/platform && npm run build -w @afh/commerce && npm run build -w @afh/inventory && npm run build -w @afh/finance",
+    "typecheck": "npm run typecheck -w @afh/shared-kernel && npm run typecheck -w @afh/persistence && npm run typecheck -w @afh/identity && npm run typecheck -w @afh/platform && npm run typecheck -w @afh/commerce && npm run typecheck -w @afh/inventory && npm run typecheck -w @afh/finance",
+    "lint": "npm run lint -w @afh/shared-kernel && npm run lint -w @afh/persistence && npm run lint -w @afh/identity && npm run lint -w @afh/platform && npm run lint -w @afh/commerce && npm run lint -w @afh/inventory && npm run lint -w @afh/finance"
   },
   "engines": {
     "node": ">=20"
