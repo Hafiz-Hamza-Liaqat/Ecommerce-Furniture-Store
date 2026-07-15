@@ -18,6 +18,10 @@ export type EventEnvelope = {
   readonly eventId: string | null;
   readonly companyId: string | null;
   readonly correlationId: string | null;
+  /** Existing causation identifier when present in domain payload metadata. */
+  readonly causationId: string | null;
+  /** Existing trace/correlation context string when available (no new ID scheme). */
+  readonly traceContext: string | null;
   readonly payloadJson: string;
   readonly publishedAt: string;
 };

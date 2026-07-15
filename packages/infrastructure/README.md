@@ -33,7 +33,15 @@ runtime.dispose();
 
 ## Default adapters
 
-In-memory database, Event Bus, metrics, and tracer. SQL/broker adapters can replace `DatabaseProvider` and `EventBus` later without changing domain packages.
+In-memory database, Event Bus, metrics, and tracer. Inject SQL via `@afh/persistence-sql` and production messaging via `@afh/messaging-broker`:
+
+```ts
+createInfrastructureRuntime({
+  persistence: sql,
+  eventBus: messaging.eventBus,
+  messagingAdapter: "broker",
+});
+```
 
 ## Out of scope
 

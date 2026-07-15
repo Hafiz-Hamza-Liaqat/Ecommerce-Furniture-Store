@@ -78,6 +78,13 @@ export type CreateInfrastructureRuntimeOptions = {
   readonly persistence?: PersistenceFoundation;
   /** Explicit adapter selection hint for logging/ops (does not load SQL itself). */
   readonly persistenceAdapter?: "memory" | "sql";
+  /**
+   * Event Bus implementation. Defaults to in-memory.
+   * Inject production broker via `@afh/messaging-broker` createMessagingRuntime().eventBus.
+   */
+  readonly eventBus?: EventBus;
+  /** Explicit messaging adapter hint for logging/ops. */
+  readonly messagingAdapter?: "memory" | "broker";
 };
 
 /**
@@ -122,12 +129,17 @@ export function createInfrastructureRuntime(
     (persistence.config.adapterName === "sqlite" ? "sql" : "memory");
 
   const database = createDatabaseProviderFromPersistence(persistence);
-  const eventBus = new InMemoryEventBus(serialization.event);
+  const messagingAdapterHint =
+    options.messagingAdapter ?? (options.eventBus ? "broker" : "memory");
+  const eventBus =
+    options.eventBus ?? new InMemoryEventBus(serialization.event);
   const outboxDispatcher = new OutboxDispatcher({
     store: persistence.outboxStore,
     bus: eventBus,
     clock,
     logger,
+    metrics,
+    tracer,
     policy: {
       ...DEFAULT_OUTBOX_RETRY_POLICY,
       maxAttempts: config.outboxMaxAttempts,
@@ -146,6 +158,7 @@ export function createInfrastructureRuntime(
     environment: config.environment,
     eventBusEnabled: config.eventBusEnabled,
     persistenceAdapter: adapterHint,
+    messagingAdapter: messagingAdapterHint,
   });
 
   return {
