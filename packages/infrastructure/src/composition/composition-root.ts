@@ -71,7 +71,13 @@ export type CreateInfrastructureRuntimeOptions = {
   readonly logger?: Logger;
   readonly metrics?: Metrics;
   readonly tracer?: Tracer;
+  /**
+   * Persistence foundation. Defaults to in-memory.
+   * Inject SQL via `@afh/persistence-sql` createSqlPersistenceFoundation().
+   */
   readonly persistence?: PersistenceFoundation;
+  /** Explicit adapter selection hint for logging/ops (does not load SQL itself). */
+  readonly persistenceAdapter?: "memory" | "sql";
 };
 
 /**
@@ -111,6 +117,10 @@ export function createInfrastructureRuntime(
   const persistence =
     options.persistence ?? createInMemoryPersistenceFoundation({ clock });
 
+  const adapterHint =
+    options.persistenceAdapter ??
+    (persistence.config.adapterName === "sqlite" ? "sql" : "memory");
+
   const database = createDatabaseProviderFromPersistence(persistence);
   const eventBus = new InMemoryEventBus(serialization.event);
   const outboxDispatcher = new OutboxDispatcher({
@@ -135,6 +145,7 @@ export function createInfrastructureRuntime(
     service: config.serviceName,
     environment: config.environment,
     eventBusEnabled: config.eventBusEnabled,
+    persistenceAdapter: adapterHint,
   });
 
   return {

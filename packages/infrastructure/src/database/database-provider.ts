@@ -1,6 +1,6 @@
 /**
  * Database provider layer — connection/health abstraction over Persistence.
- * No business logic. SQL adapters can replace later.
+ * No business logic. SQL adapters inject PersistenceFoundation.
  */
 
 import type {
@@ -22,25 +22,41 @@ export interface DatabaseProvider {
   healthCheck(): Promise<Result<DatabaseHealth, PlatformError>>;
 }
 
-export class InMemoryDatabaseProvider implements DatabaseProvider {
-  readonly name = "in-memory";
+export class PersistenceDatabaseProvider implements DatabaseProvider {
+  readonly name: string;
   readonly client: DatabaseClient;
 
   constructor(client: DatabaseClient) {
     this.client = client;
+    this.name = client.name;
   }
 
   async healthCheck(): Promise<Result<DatabaseHealth, PlatformError>> {
+    const check = await this.client.healthCheck();
+    if (!check.ok) {
+      return ok({
+        healthy: false,
+        provider: this.name,
+        detail: check.error.message,
+      });
+    }
     return ok({
       healthy: true,
       provider: this.name,
-      detail: "in-memory database ready",
+      detail: `${this.name} database ready`,
     });
+  }
+}
+
+/** @deprecated Prefer PersistenceDatabaseProvider — kept for compatibility */
+export class InMemoryDatabaseProvider extends PersistenceDatabaseProvider {
+  constructor(client: DatabaseClient) {
+    super(client);
   }
 }
 
 export function createDatabaseProviderFromPersistence(
   persistence: PersistenceFoundation,
 ): DatabaseProvider {
-  return new InMemoryDatabaseProvider(persistence.database);
+  return new PersistenceDatabaseProvider(persistence.database);
 }
