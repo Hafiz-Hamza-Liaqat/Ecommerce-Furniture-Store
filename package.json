@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @afh/shared-kernel",
-    "typecheck": "npm run typecheck -w @afh/shared-kernel",
-    "lint": "npm run lint -w @afh/shared-kernel"
+    "build": "npm run build -w @afh/shared-kernel && npm run build -w @afh/persistence",
+    "typecheck": "npm run typecheck -w @afh/shared-kernel && npm run typecheck -w @afh/persistence",
+    "lint": "npm run lint -w @afh/shared-kernel && npm run lint -w @afh/persistence"
   },
   "engines": {
     "node": ">=20"
