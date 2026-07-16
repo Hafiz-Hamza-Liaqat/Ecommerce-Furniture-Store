@@ -55,9 +55,14 @@ export function LoginPage() {
           submitting={submitting}
           onSubmit={() => onSubmit()}
           footer={
-            <Link to="/password-reset" className="nav-link" style={{ color: "var(--afh-copper)" }}>
-              Reset password
-            </Link>
+            <span className="row" style={{ gap: "0.75rem", flexWrap: "wrap" }}>
+              <Link to="/password-reset" className="nav-link" style={{ color: "var(--afh-copper)" }}>
+                Reset password
+              </Link>
+              <Link to="/register" className="nav-link" style={{ color: "var(--afh-copper)" }}>
+                Create account
+              </Link>
+            </span>
           }
         >
           <TextField

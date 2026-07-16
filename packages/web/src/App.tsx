@@ -1,9 +1,12 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
 import { AppShell } from "./shell/AppShell";
 import { LoginPage } from "./auth/LoginPage";
+import { RegisterPage } from "./auth/RegisterPage";
 import { PasswordResetPage } from "./auth/PasswordResetPage";
 import { EmailVerificationPage } from "./auth/EmailVerificationPage";
 import { MfaPage } from "./auth/MfaPage";
+import { SecurityCenterPage } from "./auth/SecurityCenterPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
 import { PersonalWorkspacePage } from "./dashboard/PersonalWorkspace";
 import {
@@ -75,14 +78,37 @@ function RequireAuth() {
   return <Outlet />;
 }
 
+function RequireAuthElement({ children }: { readonly children: ReactNode }) {
+  const { tokens } = useSession();
+  if (!tokens?.sessionId) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/password-reset" element={<PasswordResetPage />} />
       <Route path="/onboarding/*" element={<OnboardingRoutes />} />
-      <Route path="/admin/platform/*" element={<AdminRoutes />} />
-      <Route path="/portal/*" element={<PortalRoutes />} />
+      <Route
+        path="/admin/platform/*"
+        element={
+          <RequireAuthElement>
+            <AdminRoutes />
+          </RequireAuthElement>
+        }
+      />
+      <Route
+        path="/portal/*"
+        element={
+          <RequireAuthElement>
+            <PortalRoutes />
+          </RequireAuthElement>
+        }
+      />
 
       <Route path="/app" element={<RequireAuth />}>
         <Route element={<AppShell />}>
@@ -115,6 +141,7 @@ export function AppRoutes() {
           <Route path="approvals" element={<ApprovalsPage />} />
           <Route path="account/email-verification" element={<EmailVerificationPage />} />
           <Route path="account/mfa" element={<MfaPage />} />
+          <Route path="account/security" element={<SecurityCenterPage />} />
         </Route>
       </Route>
 

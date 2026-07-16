@@ -38,8 +38,14 @@ function breadcrumbTrail(pathname: string): { label: string; to?: string }[] {
   if (pathname === "/app") return [{ label: "Executive dashboard" }];
   if (pathname.startsWith("/app/account/")) {
     return [
-      { label: "Account", to: "/app/account/mfa" },
-      { label: pathname.includes("mfa") ? "MFA" : "Email verification" },
+      { label: "Account", to: "/app/account/security" },
+      {
+        label: pathname.includes("mfa")
+          ? "MFA"
+          : pathname.includes("security")
+            ? "Security"
+            : "Email verification",
+      },
     ];
   }
   const parts = pathname.split("/").filter(Boolean);
@@ -220,6 +226,9 @@ export function TopBar() {
             </Link>
             <Link to="/app/settings/ai" role="menuitem">
               AI Settings
+            </Link>
+            <Link to="/app/account/security" role="menuitem">
+              Security & devices
             </Link>
             <Link to="/app/preferences" role="menuitem">
               Preferences

@@ -50,6 +50,19 @@ export class ApiClient {
     });
   }
 
+  async register(input: {
+    readonly email: string;
+    readonly password: string;
+    readonly fullName: string;
+    readonly companyId?: string | null;
+    readonly phone?: string | null;
+  }): Promise<ApiSuccess<{ user: AuthUser }>> {
+    return this.#request("POST", "/api/v1/auth/register", {
+      body: input,
+      auth: false,
+    });
+  }
+
   async signOut(): Promise<ApiSuccess<{ signedOut: boolean }>> {
     return this.#request("POST", "/api/v1/auth/sign-out", { body: {} });
   }

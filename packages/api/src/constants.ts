@@ -25,6 +25,7 @@ export const ApiPaths = {
   AuthEmailVerifyRequest: "/api/v1/auth/email-verification/request",
   AuthEmailVerifyConfirm: "/api/v1/auth/email-verification/confirm",
   AuthMfaEnable: "/api/v1/auth/mfa/enable",
+  AuthRegister: "/api/v1/auth/register",
 } as const;
 
 export const CorrelationHeader = "x-correlation-id";

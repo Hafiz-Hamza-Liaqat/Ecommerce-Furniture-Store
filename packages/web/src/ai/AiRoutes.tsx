@@ -296,7 +296,13 @@ function PromptLibraryPage() {
               <button
                 type="button"
                 className="btn btn--ghost"
-                onClick={() => toast({ tone: "ok", title: "Share link copied (local)", body: p.title })}
+                onClick={() => {
+                  const shareUrl = `${window.location.origin}/app/ai?prompt=${encodeURIComponent(p.body)}`;
+                  void navigator.clipboard.writeText(shareUrl).then(
+                    () => toast({ tone: "ok", title: "Share link copied", body: p.title }),
+                    () => toast({ tone: "warn", title: "Copy failed", body: shareUrl }),
+                  );
+                }}
               >
                 Share
               </button>

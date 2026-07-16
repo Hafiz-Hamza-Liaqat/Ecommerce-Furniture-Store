@@ -43,6 +43,7 @@ export function LuxuryBooklet() {
   const [finish, setFinish] = useState<(typeof FINISHES)[number]>("Natural oil");
   const [color, setColor] = useState<(typeof COLORS)[number]>("Sand");
   const [fav, setFav] = useState(false);
+  const [spotlight, setSpotlight] = useState<string | null>(null);
   const startX = useRef(0);
   const current = PAGES[page] ?? PAGES[0]!;
   const product = PRODUCTS.find((p) => p.id === current.productId);
@@ -97,10 +98,28 @@ export function LuxuryBooklet() {
         >
           <article className={`booklet__page booklet__page--left page-${page}`}>
             <img src={current.image} alt="" loading="lazy" />
-            <button type="button" className="booklet__hotspot" style={{ top: "28%", left: "62%" }} aria-label="Spotlight frame">
+            <button
+              type="button"
+              className="booklet__hotspot"
+              style={{ top: "28%", left: "62%" }}
+              aria-label="Spotlight frame details"
+              onClick={() => {
+                setSpotlight("Frame joinery · solid hardwood profile");
+                setFinish("Matte lacquer");
+              }}
+            >
               Frame
             </button>
-            <button type="button" className="booklet__hotspot" style={{ top: "58%", left: "34%" }} aria-label="Spotlight textile">
+            <button
+              type="button"
+              className="booklet__hotspot"
+              style={{ top: "58%", left: "34%" }}
+              aria-label="Spotlight textile details"
+              onClick={() => {
+                setSpotlight("Textile · performance weave options");
+                setFabric("Performance weave");
+              }}
+            >
               Textile
             </button>
           </article>
@@ -108,9 +127,19 @@ export function LuxuryBooklet() {
             <p className="booklet__kicker">Plate {String(page + 1).padStart(2, "0")}</p>
             <h3>{current.title}</h3>
             <p>{current.body}</p>
-            <div className="booklet__video" aria-label="Embedded video placeholder">
-              <span>Film · 360° viewer</span>
+            <div className="booklet__video" aria-label="Material study preview">
+              <span>Film · 360° material study</span>
+              {product ? (
+                <Link className="site-btn site-btn--ghost" to={`/products/${product.id}`}>
+                  Open product
+                </Link>
+              ) : null}
             </div>
+            {spotlight ? (
+              <p className="booklet__spotlight" role="status">
+                {spotlight}
+              </p>
+            ) : null}
             <dl className="booklet__price">
               <dt>From</dt>
               <dd>{product?.priceFrom ?? "On request"}</dd>

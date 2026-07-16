@@ -488,3 +488,15 @@
     min-height: 44px;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .plt-page,
+  .plt-shell__main,
+  .plt-tile,
+  .plt-plan,
+  .plt-limit__fill,
+  .plt-progress__fill {
+    animation: none !important;
+    transition: none !important;
+  }
+}

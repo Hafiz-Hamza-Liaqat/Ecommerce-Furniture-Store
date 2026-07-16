@@ -770,10 +770,17 @@
   margin: 1rem 0;
   min-height: 120px;
   display: grid;
+  gap: 0.5rem;
   place-items: center;
   border: 1px dashed var(--site-line);
   background: linear-gradient(135deg, rgba(47, 79, 63, 0.12), transparent);
   color: var(--site-ink-soft);
+  padding: 0.75rem;
+}
+.booklet__spotlight {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--site-accent, #1f6f6a);
 }
 .booklet__price {
   display: flex;

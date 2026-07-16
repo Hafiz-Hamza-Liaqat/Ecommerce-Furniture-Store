@@ -4,7 +4,7 @@ import { BRAND, CATEGORIES, COLLECTIONS, NEWS, PRODUCTS, PROJECTS } from "./data
 import { useSession } from "../state/session";
 
 export function MarketingShell() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const { theme, setTheme } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
@@ -21,11 +21,17 @@ export function MarketingShell() {
     setMenuOpen(false);
     setMegaOpen(false);
     setSearchOpen(false);
-    window.scrollTo(0, 0);
     setPageReady(false);
     const t = window.setTimeout(() => setPageReady(true), 280);
+    if (pathname === "/" && hash === "#booklet") {
+      window.setTimeout(() => {
+        document.getElementById("booklet")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    } else {
+      window.scrollTo(0, 0);
+    }
     return () => window.clearTimeout(t);
-  }, [pathname]);
+  }, [pathname, hash]);
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 480);
@@ -174,7 +180,14 @@ export function MarketingShell() {
               className="site-newsletter"
               onSubmit={(e) => {
                 e.preventDefault();
-                alert("Thanks — we will be in touch.");
+                const form = e.currentTarget;
+                const input = form.elements.namedItem("email") as HTMLInputElement | null;
+                const value = input?.value?.trim() ?? "";
+                if (!value) return;
+                localStorage.setItem("afh.site.newsletter", value);
+                input!.value = "";
+                const status = form.querySelector("[data-nl-status]");
+                if (status) status.textContent = "Subscribed — thank you.";
               }}
             >
               <label htmlFor="nl-email" className="site-sr">
@@ -184,6 +197,7 @@ export function MarketingShell() {
               <button type="submit" className="site-btn site-btn--primary">
                 Subscribe
               </button>
+              <p data-nl-status className="site-footer__tag" aria-live="polite" />
             </form>
           </div>
           <FooterCol

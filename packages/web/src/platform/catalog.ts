@@ -86,10 +86,10 @@ export const MODULE_ACCESS = [
 ] as const;
 
 export const SUCCESS_LINKS = [
-  { id: "docs", label: "Documentation", href: "https://docs.afh.local", kind: "docs" },
-  { id: "videos", label: "Video tutorials", href: "https://docs.afh.local/videos", kind: "video" },
-  { id: "community", label: "Community", href: "https://community.afh.local", kind: "community" },
-  { id: "changelog", label: "Changelog", href: "https://docs.afh.local/changelog", kind: "release" },
+  { id: "docs", label: "Documentation", href: "/app/platform/success", kind: "docs" },
+  { id: "videos", label: "Video tutorials", href: "/app/platform/success", kind: "video" },
+  { id: "community", label: "Community & FAQ", href: "/faq", kind: "community" },
+  { id: "changelog", label: "Changelog", href: "/app/platform/releases", kind: "release" },
 ] as const;
 
 export const PRODUCT_TOURS = [

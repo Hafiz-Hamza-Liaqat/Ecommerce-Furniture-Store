@@ -38,6 +38,80 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
   return [
     {
       method: "POST",
+      path: ApiPaths.AuthRegister,
+      authRequired: false,
+      summary: "Register user (Identity AuthenticationService)",
+      tags: ["auth"],
+      async handler(request) {
+        const correlationId = resolveCorrelationId(request);
+        let body: Record<string, unknown>;
+        try {
+          body = parseJsonBody(request.bodyText) as Record<string, unknown>;
+        } catch {
+          return validationIssuesResponse(
+            [
+              {
+                field: "body",
+                code: "invalid_json",
+                message: "Body must be valid JSON",
+              },
+            ],
+            correlationId,
+          );
+        }
+
+        const email = readString(body, "email");
+        const password = readString(body, "password");
+        const fullName = readString(body, "fullName");
+        if (!email || !password || !fullName) {
+          return validationIssuesResponse(
+            [
+              {
+                field: "email",
+                code: "required",
+                message: "email, password, and fullName are required",
+              },
+            ],
+            correlationId,
+          );
+        }
+
+        const companyId = readString(body, "companyId");
+        const phone = readString(body, "phone");
+        const result = await identity.authentication.register({
+          email,
+          password,
+          fullName,
+          companyId,
+          phone,
+        });
+        if (isFail(result)) {
+          return platformErrorResponse(result.error, correlationId);
+        }
+        const user = result.value;
+        return jsonResponse(
+          201,
+          {
+            ok: true,
+            data: {
+              user: {
+                id: user.id,
+                email: user.email,
+                fullName,
+                companyId: user.companyId,
+                status: user.status,
+                mfaEnabled: user.mfaEnabled,
+                emailVerified: Boolean(user.emailVerifiedAt),
+              },
+            },
+            correlationId,
+          },
+          { [CorrelationHeader]: correlationId },
+        );
+      },
+    },
+    {
+      method: "POST",
       path: ApiPaths.AuthSignIn,
       authRequired: false,
       summary: "Sign in (Identity session)",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { Alert, Button, TextField, PageHeader } from "../components/ui";
 import { EmptyState, ErrorState, Skeleton, StatusBadge, Tabs } from "../workspace/widgets";
 import { useSession } from "../state/session";
@@ -357,9 +357,17 @@ function LicensesPage() {
 
 function SuccessPage() {
   const { toast } = useWorkspaceUi();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState(loadTickets);
   const [subject, setSubject] = useState("");
   const features = loadFeatureRequests();
+
+  const tourRoutes: Record<string, string> = {
+    exec: "/app",
+    sales: "/app/sales",
+    ai: "/app/ai",
+    integrations: "/app/integrations",
+  };
 
   return (
     <div className="stack plt-page">
@@ -378,7 +386,11 @@ function SuccessPage() {
               </div>
               <Button
                 variant="ghost"
-                onClick={() => toast({ tone: "ok", title: "Tour started", body: t.title })}
+                onClick={() => {
+                  const href = tourRoutes[t.id] ?? "/app";
+                  toast({ tone: "ok", title: "Tour started", body: t.title });
+                  void navigate(href);
+                }}
               >
                 Start
               </Button>
@@ -388,11 +400,17 @@ function SuccessPage() {
       </SectionCard>
       <SectionCard title="Documentation & community">
         <div className="row" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
-          {SUCCESS_LINKS.map((l) => (
-            <a key={l.id} className="btn btn--ghost" href={l.href} target="_blank" rel="noreferrer">
-              {l.label}
-            </a>
-          ))}
+          {SUCCESS_LINKS.map((l) =>
+            l.href.startsWith("http") ? (
+              <a key={l.id} className="btn btn--ghost" href={l.href} target="_blank" rel="noreferrer">
+                {l.label}
+              </a>
+            ) : (
+              <Link key={l.id} className="btn btn--ghost" to={l.href}>
+                {l.label}
+              </Link>
+            ),
+          )}
         </div>
       </SectionCard>
       <SectionCard title="Support tickets">
