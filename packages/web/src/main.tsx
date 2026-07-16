@@ -11,7 +11,9 @@ import "./styles/productivity.css";
 import "./styles/analytics.css";
 import "./styles/ai.css";
 import "./styles/integrations.css";
+import "./styles/platform.css";
 import "./styles/marketing.css";
+import { registerPlatformServiceWorker } from "./platform/MobileReadiness";
 
 const root = document.getElementById("root");
 if (!root) {
@@ -21,6 +23,8 @@ if (!root) {
 const storedTheme = localStorage.getItem("afh.web.theme");
 document.documentElement.dataset.theme =
   storedTheme === "dark" ? "dark" : "light";
+
+registerPlatformServiceWorker();
 
 createRoot(root).render(
   <StrictMode>

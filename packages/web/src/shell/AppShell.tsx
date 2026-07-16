@@ -41,6 +41,7 @@ const MODULE_LABELS: Record<string, string> = {
   ai: "AI Assistant",
   settings: "Settings",
   integrations: "Integrations",
+  platform: "Platform",
 };
 
 function pageLabel(pathname: string): string {

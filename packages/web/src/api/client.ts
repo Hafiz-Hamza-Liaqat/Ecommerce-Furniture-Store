@@ -142,6 +142,21 @@ export class ApiClient {
     return res.json();
   }
 
+  async healthLive(): Promise<unknown> {
+    const res = await fetch(`${this.#baseUrl}/health/live`);
+    return res.json();
+  }
+
+  async healthStartup(): Promise<unknown> {
+    const res = await fetch(`${this.#baseUrl}/health/startup`);
+    return res.json();
+  }
+
+  async healthVersion(): Promise<unknown> {
+    const res = await fetch(`${this.#baseUrl}/health/version`);
+    return res.json();
+  }
+
   async #request<T>(
     method: string,
     path: string,

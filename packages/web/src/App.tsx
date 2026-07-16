@@ -33,6 +33,10 @@ import { ReportsCenterPage } from "./analytics/ReportsCenter";
 import { InsightsCenterPage } from "./analytics/InsightsCenter";
 import { AiRoutes, AiSettingsPage } from "./ai/AiRoutes";
 import { IntegrationsRoutes } from "./integrations/IntegrationsRoutes";
+import { PlatformRoutes } from "./platform/PlatformRoutes";
+import { OnboardingRoutes } from "./platform/OnboardingRoutes";
+import { AdminRoutes } from "./platform/AdminRoutes";
+import { PortalRoutes } from "./platform/PortalRoutes";
 import { useSession } from "./state/session";
 import { MarketingShell } from "./marketing/MarketingShell";
 import { HomePage } from "./marketing/pages/HomePage";
@@ -76,6 +80,9 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/password-reset" element={<PasswordResetPage />} />
+      <Route path="/onboarding/*" element={<OnboardingRoutes />} />
+      <Route path="/admin/platform/*" element={<AdminRoutes />} />
+      <Route path="/portal/*" element={<PortalRoutes />} />
 
       <Route path="/app" element={<RequireAuth />}>
         <Route element={<AppShell />}>
@@ -89,6 +96,7 @@ export function AppRoutes() {
           <Route path="ai/*" element={<AiRoutes />} />
           <Route path="settings/ai" element={<AiSettingsPage />} />
           <Route path="integrations/*" element={<IntegrationsRoutes />} />
+          <Route path="platform/*" element={<PlatformRoutes />} />
           <Route path="sales/*" element={<SalesPage />} />
           <Route path="procurement/*" element={<ProcurementPage />} />
           <Route path="inventory/*" element={<InventoryPage />} />
