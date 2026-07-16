@@ -40,6 +40,8 @@ export function ModuleApp({ module }: { readonly module: ModuleDefinition }) {
       <Routes>
         <Route index element={<ModuleDashboard module={module} />} />
         <Route path="pipeline" element={<KanbanPage module={module} />} />
+        <Route path="gantt" element={<GanttPage module={module} />} />
+        <Route path="calendar" element={<CalendarPage module={module} />} />
         <Route path=":entityKey" element={<EntityListPage module={module} />} />
         <Route path=":entityKey/new" element={<EntityFormPage module={module} mode="create" />} />
         <Route path=":entityKey/:recordId" element={<EntityDetailPage module={module} />} />
@@ -214,6 +216,61 @@ function KanbanPage({ module }: { readonly module: ModuleDefinition }) {
     <div className="stack">
       <PageHeader title="Kanban pipeline" lead={`${entity.plural} by status — presentation board.`} />
       <KanbanPreview columns={columns} />
+      <Link className="btn btn--ghost" to={`${module.basePath}/${entity.key}`}>
+        Open list
+      </Link>
+    </div>
+  );
+}
+
+function GanttPage({ module }: { readonly module: ModuleDefinition }) {
+  const entity =
+    module.entities.find((e) => e.key === "tasks" || e.key === "milestones" || e.key === "production-orders") ??
+    module.entities[0]!;
+  const records = mergeRecords(module, entity).slice(0, 8);
+  return (
+    <div className="stack">
+      <PageHeader title="Gantt timeline" lead={`${entity.plural} timeline presentation — scheduling math stays server-side.`} />
+      <section className="ws-card">
+        <div className="ws-card__body erp-gantt" role="img" aria-label="Gantt timeline">
+          {records.map((r, i) => (
+            <div key={r.id} className="erp-gantt__row">
+              <span>{r.title}</span>
+              <div className="erp-gantt__track">
+                <div style={{ marginLeft: `${8 + i * 6}%`, width: `${28 + (i % 4) * 10}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <Link className="btn btn--ghost" to={`${module.basePath}/${entity.key}`}>
+        Open list
+      </Link>
+    </div>
+  );
+}
+
+function CalendarPage({ module }: { readonly module: ModuleDefinition }) {
+  const entity =
+    module.entities.find((e) =>
+      ["appointments", "meetings", "calendar", "milestones", "shifts"].includes(e.key),
+    ) ?? module.entities[0]!;
+  const records = mergeRecords(module, entity).slice(0, 6);
+  return (
+    <div className="stack">
+      <PageHeader title="Calendar" lead={`${module.title} calendar presentation.`} />
+      <section className="ws-card">
+        <div className="ws-card__body">
+          <Timeline
+            items={records.map((r, i) => ({
+              id: r.id,
+              time: `${9 + i}:00`,
+              title: r.title,
+              place: r.status,
+            }))}
+          />
+        </div>
+      </section>
       <Link className="btn btn--ghost" to={`${module.basePath}/${entity.key}`}>
         Open list
       </Link>
@@ -783,6 +840,36 @@ function EntityFormPage({
     setSubmitting(true);
     setError(null);
     try {
+      if (entity!.api?.uploadAsset && mode === "create") {
+        if (!user?.companyId) {
+          setError("Signed-in user is missing companyId — required for DAM upload.");
+          return;
+        }
+        const res = await api.upload({
+          companyId: user.companyId,
+          name: values.name || values.title || "asset",
+          mimeType: values.mimeType || "application/octet-stream",
+          assetType: values.assetType || "document",
+        });
+        setLastCorrelationId(res.correlationId);
+        const id =
+          entity!.api.extractCreateId?.(res.data) ??
+          `asset-${Date.now()}`;
+        const mapped =
+          entity!.api.mapEntity?.(res.data) ??
+          ({
+            id,
+            title: values.name || values.title || id,
+            status: "Draft",
+            meta: { ...values, Type: values.assetType || "document" },
+            source: "api" as const,
+          } satisfies RecordRow);
+        saveLocalRecord(module.id, entity!.key, mapped);
+        toast({ tone: "ok", title: "Asset uploaded", body: id });
+        navigate(`${module.basePath}/${entity!.key}/${mapped.id}`);
+        return;
+      }
+
       if (entity!.api?.createCommandType && entity!.api.buildCreatePayload && mode === "create") {
         if (!user?.companyId) {
           setError("Signed-in user is missing companyId — required for API commands.");

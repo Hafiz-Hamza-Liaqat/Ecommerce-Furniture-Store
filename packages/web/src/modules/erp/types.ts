@@ -54,6 +54,8 @@ export type ApiBinding = {
   readonly extractCreateId?: (data: unknown) => string | null;
   /** Map API entity to a list/detail row */
   readonly mapEntity?: (data: unknown) => RecordRow | null;
+  /** When set, create uses POST /api/v1/uploads instead of dispatchCommand */
+  readonly uploadAsset?: boolean;
 };
 
 export type EntityDef = {
@@ -84,7 +86,21 @@ export type ModuleKpi = {
 };
 
 export type ModuleDefinition = {
-  readonly id: "sales" | "procurement" | "inventory" | "finance";
+  readonly id:
+    | "sales"
+    | "procurement"
+    | "inventory"
+    | "finance"
+    | "projects"
+    | "crm"
+    | "service"
+    | "hr"
+    | "manufacturing"
+    | "cms"
+    | "dam"
+    | "notifications"
+    | "search"
+    | "reporting";
   readonly title: string;
   readonly lead: string;
   readonly basePath: string;

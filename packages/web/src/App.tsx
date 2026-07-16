@@ -13,16 +13,16 @@ import {
   HrPage,
   InventoryPage,
   ManufacturingPage as ErpManufacturingPage,
+  NotificationsModulePage,
   ProcurementPage,
   ProjectsPage as ErpProjectsPage,
+  ReportingModulePage,
   SalesPage,
+  SearchModulePage,
   ServicePage,
 } from "./modules/pages";
 import {
   ApprovalsPage,
-  NotificationsPage,
-  ReportingPage,
-  SearchPage,
   WorkflowPage,
 } from "./pages/platform";
 import { DamPage } from "./pages/DamPage";
@@ -78,16 +78,16 @@ export function AppRoutes() {
           <Route path="procurement/*" element={<ProcurementPage />} />
           <Route path="inventory/*" element={<InventoryPage />} />
           <Route path="finance/*" element={<FinancePage />} />
-          <Route path="projects" element={<ErpProjectsPage />} />
-          <Route path="crm" element={<CrmPage />} />
-          <Route path="service" element={<ServicePage />} />
-          <Route path="hr" element={<HrPage />} />
-          <Route path="manufacturing" element={<ErpManufacturingPage />} />
-          <Route path="cms" element={<CmsPage />} />
-          <Route path="dam" element={<DamPage />} />
-          <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="search" element={<SearchPage />} />
-          <Route path="reporting" element={<ReportingPage />} />
+          <Route path="projects/*" element={<ErpProjectsPage />} />
+          <Route path="crm/*" element={<CrmPage />} />
+          <Route path="service/*" element={<ServicePage />} />
+          <Route path="hr/*" element={<HrPage />} />
+          <Route path="manufacturing/*" element={<ErpManufacturingPage />} />
+          <Route path="cms/*" element={<CmsPage />} />
+          <Route path="dam/*" element={<DamPage />} />
+          <Route path="notifications/*" element={<NotificationsModulePage />} />
+          <Route path="search/*" element={<SearchModulePage />} />
+          <Route path="reporting/*" element={<ReportingModulePage />} />
           <Route path="workflow" element={<WorkflowPage />} />
           <Route path="approvals" element={<ApprovalsPage />} />
           <Route path="account/email-verification" element={<EmailVerificationPage />} />
