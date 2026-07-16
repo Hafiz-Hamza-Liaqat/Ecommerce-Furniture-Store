@@ -10,6 +10,7 @@ import "./styles/modules.css";
 import "./styles/productivity.css";
 import "./styles/analytics.css";
 import "./styles/ai.css";
+import "./styles/integrations.css";
 import "./styles/marketing.css";
 
 const root = document.getElementById("root");

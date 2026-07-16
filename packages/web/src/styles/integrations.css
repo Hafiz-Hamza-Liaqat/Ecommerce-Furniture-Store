@@ -1,0 +1,107 @@
+/* Phase P8 — Enterprise Integrations */
+
+.int-page {
+  gap: 1rem;
+}
+
+.int-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.int-subnav a {
+  text-decoration: none;
+  color: var(--afh-ink-soft);
+  border: 1px solid var(--afh-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  background: var(--afh-paper);
+}
+
+.int-subnav a:hover {
+  color: var(--afh-ink);
+  border-color: var(--afh-teal);
+}
+
+.int-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.int-card {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid var(--afh-border);
+  border-radius: var(--afh-radius);
+  background:
+    linear-gradient(160deg, rgba(31, 111, 106, 0.06), transparent 50%),
+    var(--afh-paper);
+}
+
+.int-card header {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.int-card p {
+  margin: 0;
+  color: var(--afh-ink-soft);
+  font-size: 0.9rem;
+}
+
+.int-caps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.int-caps li {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--afh-border);
+  background: var(--afh-mist);
+  color: var(--afh-ink-soft);
+}
+
+.int-caps--wrap {
+  padding: 0.5rem 0;
+}
+
+.int-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.int-list > li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--afh-border);
+  border-radius: 12px;
+  background: var(--afh-paper);
+}
+
+.int-list > li span {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--afh-ink-soft);
+}
+
+@media (max-width: 720px) {
+  .int-list > li {
+    flex-direction: column;
+  }
+}

@@ -40,6 +40,7 @@ const MODULE_LABELS: Record<string, string> = {
   insights: "Insights",
   ai: "AI Assistant",
   settings: "Settings",
+  integrations: "Integrations",
 };
 
 function pageLabel(pathname: string): string {

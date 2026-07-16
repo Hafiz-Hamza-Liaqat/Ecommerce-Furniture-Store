@@ -30,6 +30,7 @@ const MODULE_LABELS: Record<string, string> = {
   insights: "Insights",
   ai: "AI",
   settings: "Settings",
+  integrations: "Integrations",
 };
 
 function breadcrumbTrail(pathname: string): { label: string; to?: string }[] {
@@ -204,6 +205,9 @@ export function TopBar() {
             <button type="button" role="menuitem" onClick={() => setHelpOpen(true)}>
               Help
             </button>
+            <Link to="/app/integrations" role="menuitem">
+              Integrations
+            </Link>
             <Link to="/app/ai" role="menuitem">
               AI Assistant
             </Link>
