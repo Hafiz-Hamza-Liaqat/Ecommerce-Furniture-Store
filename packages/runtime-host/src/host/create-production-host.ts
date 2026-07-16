@@ -6,6 +6,7 @@
 
 import {
   createApiHost,
+  createInMemoryRateLimitHook,
   type ApiHost,
   type EnterpriseModuleRepositories,
 } from "@afh/api";
@@ -172,6 +173,7 @@ export async function createProductionHost(
     host: config.host,
     port: config.port,
     corsOrigin: config.corsOrigin,
+    rateLimit: createInMemoryRateLimitHook(),
   });
 
   const health = api.composition.infrastructure.health;
@@ -223,7 +225,35 @@ export async function createProductionHost(
     },
   });
 
+  const consumerIntervalMs = 2_000;
+  const outboxIntervalMs = 5_000;
+  let consumerTimer: ReturnType<typeof setInterval> | null = null;
+  let outboxTimer: ReturnType<typeof setInterval> | null = null;
+
+  const stopBackgroundWorkers = () => {
+    if (consumerTimer) clearInterval(consumerTimer);
+    if (outboxTimer) clearInterval(outboxTimer);
+    consumerTimer = null;
+    outboxTimer = null;
+  };
+
+  const startBackgroundWorkers = () => {
+    consumerTimer = setInterval(() => {
+      void messaging.consumer.pollOnce().catch((error: unknown) => {
+        logger.warn("Consumer poll failed", { error: String(error) });
+      });
+    }, consumerIntervalMs);
+    outboxTimer = setInterval(() => {
+      void api.composition.infrastructure.outboxDispatcher
+        .dispatchOnce()
+        .catch((error: unknown) => {
+          logger.warn("Outbox dispatch failed", { error: String(error) });
+        });
+    }, outboxIntervalMs);
+  };
+
   const dispose = async () => {
+    stopBackgroundWorkers();
     metrics.gauge("runtime.ready").set(0);
     await lifecycle.stop();
     sql.dispose();
@@ -242,6 +272,7 @@ export async function createProductionHost(
 
   if (options.autoStart !== false) {
     await lifecycle.start();
+    startBackgroundWorkers();
     metrics.gauge("runtime.ready").set(1);
   }
 

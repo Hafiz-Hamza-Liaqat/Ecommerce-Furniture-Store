@@ -25,6 +25,8 @@ import {
   type TransportRequest,
   type TransportResponse,
 } from "../transport/contracts.js";
+import type { RateLimitHook } from "../rate-limit/rate-limit.js";
+import { rateLimitExceededResponse as buildRateLimitResponse } from "../rate-limit/rate-limit.js";
 
 function readString(
   body: Record<string, unknown>,
@@ -34,7 +36,35 @@ function readString(
   return typeof value === "string" ? value : null;
 }
 
-export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[] {
+async function gateAuthRateLimit(
+  rateLimit: RateLimitHook,
+  request: TransportRequest,
+): Promise<TransportResponse | null> {
+  const correlationId = resolveCorrelationId(request);
+  const decision = await rateLimit.evaluate({
+    request,
+    auth: {
+      correlationId,
+      companyId: null,
+      branchId: null,
+      caller: null,
+    },
+  });
+  if (!decision.allowed) {
+    const limited = buildRateLimitResponse(
+      correlationId,
+      decision.retryAfterSeconds,
+      decision.reason,
+    );
+    return jsonResponse(limited.status, limited.body, limited.headers);
+  }
+  return null;
+}
+
+export function createAuthRoutes(
+  identity: IdentityFoundation,
+  rateLimit: RateLimitHook,
+): RouteDefinition[] {
   return [
     {
       method: "POST",
@@ -43,6 +73,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Register user (Identity AuthenticationService)",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
         let body: Record<string, unknown>;
         try {
@@ -117,6 +149,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Sign in (Identity session)",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
         let body: Record<string, unknown>;
         try {
@@ -189,6 +223,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Refresh session tokens (Identity SessionService)",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
         let body: Record<string, unknown>;
         try {
@@ -244,6 +280,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Sign out current session",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const auth = await authenticateRequest(identity, request, {
           required: true,
         });
@@ -278,6 +316,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Current session",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const auth = await authenticateRequest(identity, request, {
           required: true,
         });
@@ -324,6 +364,7 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       tags: ["auth"],
       async handler(request) {
         return handleTokenChallenge(
+          rateLimit,
           request,
           "email",
           async (email) => identity.authentication.requestPasswordReset(email),
@@ -337,6 +378,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Confirm password reset",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
         let body: Record<string, unknown>;
         try {
@@ -388,6 +431,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Request email verification",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const auth = await authenticateRequest(identity, request, {
           required: true,
         });
@@ -424,6 +469,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Confirm email verification",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
         let body: Record<string, unknown>;
         try {
@@ -471,6 +518,8 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
       summary: "Enable MFA hook (challenge issuance)",
       tags: ["auth"],
       async handler(request) {
+        const limited = await gateAuthRateLimit(rateLimit, request);
+        if (limited) return limited;
         const auth = await authenticateRequest(identity, request, {
           required: true,
         });
@@ -503,10 +552,13 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
 }
 
 async function handleTokenChallenge(
+  rateLimit: RateLimitHook,
   request: TransportRequest,
   field: string,
   action: (value: string) => Promise<Result<unknown, PlatformError>>,
 ): Promise<TransportResponse> {
+  const limited = await gateAuthRateLimit(rateLimit, request);
+  if (limited) return limited;
   const correlationId = resolveCorrelationId(request);
   let body: Record<string, unknown>;
   try {

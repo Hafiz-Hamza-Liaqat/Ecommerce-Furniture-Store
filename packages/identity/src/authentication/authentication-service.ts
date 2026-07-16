@@ -195,9 +195,21 @@ export class AuthenticationService {
       );
     }
 
-    // MFA hook: token presence accepted as satisfied challenge for foundation;
-    // provider verification deferred.
+    // MFA: verify issued challenge token (fail closed).
     if (user.mfaEnabled && input.mfaToken) {
+      const verified = await this.#consumeChallenge("mfa_challenge", input.mfaToken);
+      if (isFail(verified)) {
+        await this.audit.record({
+          companyId: user.companyId,
+          actorUserId: user.id,
+          action: "auth.mfa_challenge",
+          entityType: "user",
+          entityId: user.id,
+          outcome: "failure",
+          details: { code: verified.error.code },
+        });
+        return verified;
+      }
       await this.audit.record({
         companyId: user.companyId,
         actorUserId: user.id,
@@ -205,7 +217,7 @@ export class AuthenticationService {
         entityType: "user",
         entityId: user.id,
         outcome: "success",
-        details: { hook: true },
+        details: {},
       });
     }
 

@@ -101,9 +101,22 @@ export async function authenticateRequest(
 
   await identity.sessions.touchSession(session.id);
 
+  if (
+    companyHeader &&
+    session.companyId &&
+    companyHeader !== session.companyId
+  ) {
+    return fail(
+      new AuthorizationError("Company header does not match session", {
+        code: "company_mismatch",
+        correlationId,
+      }),
+    );
+  }
+
   return ok({
     correlationId,
-    companyId: companyHeader ?? session.companyId,
+    companyId: session.companyId,
     branchId,
     caller: {
       userId: session.userId,

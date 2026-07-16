@@ -32,6 +32,7 @@ export async function runResilienceScenarios(): Promise<
       autoStart: false,
       config: {
         profile: "production",
+        corsOrigin: "https://app.example.com",
         databasePath: ":memory:",
         brokerDatabasePath: ":memory:",
         requireSecrets: true,

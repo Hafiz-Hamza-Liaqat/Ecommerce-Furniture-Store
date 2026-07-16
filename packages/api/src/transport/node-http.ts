@@ -13,13 +13,32 @@ import {
   type TransportRequest,
   type TransportResponse,
 } from "./contracts.js";
+import { CorrelationHeader } from "../constants.js";
+import { resolveCorrelationId } from "../auth/authentication.js";
+
+export const DEFAULT_MAX_BODY_BYTES = 1_048_576;
+
+class BodyTooLargeError extends Error {
+  constructor() {
+    super("Request body too large");
+    this.name = "BodyTooLargeError";
+  }
+}
 
 async function readBody(
   req: IncomingMessage,
+  maxBytes: number,
 ): Promise<{ text: string | null; raw: Uint8Array | null }> {
   const chunks: Buffer[] = [];
+  let total = 0;
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    total += buf.length;
+    if (total > maxBytes) {
+      req.destroy();
+      throw new BodyTooLargeError();
+    }
+    chunks.push(buf);
   }
   if (chunks.length === 0) {
     return { text: null, raw: null };
@@ -52,10 +71,11 @@ function normalizeHeaders(
 
 export async function toTransportRequest(
   req: IncomingMessage,
+  maxBodyBytes: number = DEFAULT_MAX_BODY_BYTES,
 ): Promise<TransportRequest> {
   const host = req.headers.host ?? "localhost";
   const url = new URL(req.url ?? "/", `http://${host}`);
-  const body = await readBody(req);
+  const body = await readBody(req, maxBodyBytes);
   const method = (req.method ?? "GET").toUpperCase() as TransportMethod;
 
   return {
@@ -93,6 +113,7 @@ export type NodeHttpServerOptions = {
   readonly port?: number;
   /** Comma-separated origins or "*" for SPA local development. */
   readonly corsOrigin?: string;
+  readonly maxBodyBytes?: number;
   readonly onUnhandled?: (
     request: TransportRequest,
   ) => Promise<TransportResponse> | TransportResponse;
@@ -107,8 +128,9 @@ export type NodeHttpServerHandle = {
 };
 
 function corsHeaders(origin: string | undefined, configured: string): Record<string, string> {
+  const allowWildcard = configured === "*";
   const allow =
-    configured === "*"
+    allowWildcard
       ? (origin ?? "*")
       : configured.split(",").map((s) => s.trim()).includes(origin ?? "")
         ? (origin ?? configured)
@@ -119,7 +141,18 @@ function corsHeaders(origin: string | undefined, configured: string): Record<str
     "access-control-allow-headers":
       "content-type,authorization,x-correlation-id,x-company-id,x-branch-id,idempotency-key",
     "access-control-expose-headers": "x-correlation-id",
-    "access-control-allow-credentials": "true",
+    "access-control-allow-credentials": allowWildcard ? "false" : "true",
+  };
+}
+
+function securityHeaders(): Record<string, string> {
+  return {
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "camera=(), microphone=(), geolocation=()",
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-resource-policy": "same-site",
   };
 }
 
@@ -129,17 +162,27 @@ export function createNodeHttpServer(
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 0;
   const corsOrigin = options.corsOrigin ?? "*";
+  const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
 
   const server = createServer(async (req, res) => {
+    let correlationId = CorrelationHeader in (req.headers ?? {})
+      ? String(req.headers[CorrelationHeader] ?? "")
+      : "";
+    if (!correlationId) {
+      correlationId = crypto.randomUUID();
+    }
+
     try {
-      const transportReq = await toTransportRequest(req);
+      const transportReq = await toTransportRequest(req, maxBodyBytes);
+      correlationId = resolveCorrelationId(transportReq);
       const origin = transportReq.headers.origin;
       const cors = corsHeaders(origin, corsOrigin);
+      const secure = securityHeaders();
 
       if (transportReq.method === "OPTIONS") {
         writeTransportResponse(res, {
           status: 204,
-          headers: cors,
+          headers: { ...secure, ...cors },
           body: null,
         });
         return;
@@ -164,31 +207,59 @@ export function createNodeHttpServer(
             message: `No route for ${transportReq.method} ${transportReq.path}`,
             details: {},
             retryable: false,
-            correlationId: null,
+            correlationId,
           },
         });
       }
 
       writeTransportResponse(res, {
         ...response,
-        headers: { ...cors, ...response.headers },
+        headers: { ...secure, ...cors, ...response.headers },
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof BodyTooLargeError) {
+        writeTransportResponse(
+          res,
+          jsonResponse(
+            413,
+            {
+              error: {
+                code: "payload_too_large",
+                category: "validation",
+                message: "Request body exceeds maximum size",
+                details: { maxBytes: maxBodyBytes },
+                retryable: false,
+                correlationId,
+              },
+            },
+            { [CorrelationHeader]: correlationId },
+          ),
+        );
+        return;
+      }
+
       writeTransportResponse(
         res,
-        jsonResponse(500, {
-          error: {
-            code: "transport_failure",
-            category: "infrastructure",
-            message: "Unhandled transport error",
-            details: {},
-            retryable: true,
-            correlationId: null,
+        jsonResponse(
+          500,
+          {
+            error: {
+              code: "transport_failure",
+              category: "infrastructure",
+              message: "Unhandled transport error",
+              details: {},
+              retryable: true,
+              correlationId,
+            },
           },
-        }),
+          { [CorrelationHeader]: correlationId },
+        ),
       );
     }
   });
+
+  server.requestTimeout = 120_000;
+  server.headersTimeout = 65_000;
 
   return {
     server,

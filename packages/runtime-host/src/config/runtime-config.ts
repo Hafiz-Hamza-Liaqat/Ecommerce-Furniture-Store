@@ -307,4 +307,9 @@ export function assertProductionRuntimeConfig(
   ) {
     throw new Error("Messaging hardening configuration invalid");
   }
+  if (config.profile === "production" && config.corsOrigin === "*") {
+    throw new Error(
+      "Production requires AFH_CORS_ORIGIN to be an explicit origin list (not '*')",
+    );
+  }
 }

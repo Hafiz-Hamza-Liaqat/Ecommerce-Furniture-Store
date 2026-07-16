@@ -1,0 +1,25 @@
+# Local/staging stack — RC4 deployment template (do not use for production without hardening)
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      AFH_PROFILE: staging
+      AFH_CORS_ORIGIN: "http://localhost:5173"
+      AFH_SECRET_JWT_SIGNING_KEY: "dev-docker-jwt-signing-key-32chars!!"
+      AFH_SECRET_DATABASE_URL: "sqlite:/app/data/afh.sqlite"
+      AFH_SECRET_BROKER_CREDENTIAL: "local"
+      AFH_SECRET_API_SECRET: "dev-docker-api-secret"
+    volumes:
+      - afh-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  afh-data:

@@ -5,6 +5,7 @@
 import type { ApplicationRuntime } from "@afh/application";
 import type { IdentityFoundation } from "@afh/identity";
 import type { HealthRegistry } from "@afh/infrastructure";
+import { AuthorizationError } from "@afh/shared-kernel";
 import {
   API_PACKAGE_VERSION,
   API_SERVICE_NAME,
@@ -423,6 +424,19 @@ export function createUploadRoutes(deps: RouteDeps): RouteDefinition[] {
         }
 
         const dto = body as UploadRequestDto;
+        if (
+          auth.caller?.companyId &&
+          dto.companyId !== auth.caller.companyId
+        ) {
+          return platformErrorResponse(
+            new AuthorizationError("Upload companyId must match session company", {
+              code: "company_mismatch",
+              correlationId: auth.correlationId,
+            }),
+            auth.correlationId,
+          );
+        }
+
         const routed = await deps.uploadRouter.routeUpload({
           dto,
           uploadedByUserId: auth.caller?.userId ?? null,
@@ -465,7 +479,7 @@ import { createAuthRoutes } from "./auth-routes.js";
 export function createAllRoutes(deps: RouteDeps): RouteDefinition[] {
   const routes: RouteDefinition[] = [
     ...createHealthRoutes(deps),
-    ...createAuthRoutes(deps.identity),
+    ...createAuthRoutes(deps.identity, deps.rateLimit),
     ...createDispatchRoutes(deps),
     ...createUploadRoutes(deps),
   ];
