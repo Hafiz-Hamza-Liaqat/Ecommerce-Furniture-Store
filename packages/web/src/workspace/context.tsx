@@ -46,6 +46,7 @@ type WorkspaceUiValue = {
   readonly notifOpen: boolean;
   readonly shortcutsOpen: boolean;
   readonly helpOpen: boolean;
+  readonly aiPanelOpen: boolean;
   readonly toasts: ToastItem[];
   setSidebarCollapsed(v: boolean): void;
   setMobileNavOpen(v: boolean): void;
@@ -58,6 +59,7 @@ type WorkspaceUiValue = {
   setNotifOpen(v: boolean): void;
   setShortcutsOpen(v: boolean): void;
   setHelpOpen(v: boolean): void;
+  setAiPanelOpen(v: boolean): void;
   setFavoriteCommands(ids: string[]): void;
   rememberPage(path: string, label: string): void;
   toast(item: Omit<ToastItem, "id">): void;
@@ -83,6 +85,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
   const [notifOpen, setNotifOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   useEffect(() => {
@@ -170,6 +173,10 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
         target?.tagName === "TEXTAREA" ||
         target?.isContentEditable;
 
+      if (meta && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setAiPanelOpen((v) => !v);
+      }
       if (meta && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen(true);
@@ -207,6 +214,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
         setNotifOpen(false);
         setShortcutsOpen(false);
         setHelpOpen(false);
+        setAiPanelOpen(false);
         setMobileNavOpen(false);
       }
     };
@@ -230,6 +238,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       notifOpen,
       shortcutsOpen,
       helpOpen,
+      aiPanelOpen,
       toasts,
       setSidebarCollapsed,
       setMobileNavOpen,
@@ -242,6 +251,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       setNotifOpen,
       setShortcutsOpen,
       setHelpOpen,
+      setAiPanelOpen,
       setFavoriteCommands,
       rememberPage,
       toast,
@@ -263,6 +273,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       notifOpen,
       shortcutsOpen,
       helpOpen,
+      aiPanelOpen,
       toasts,
       setSidebarCollapsed,
       setWorkspaceId,

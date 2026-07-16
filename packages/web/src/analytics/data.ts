@@ -240,7 +240,7 @@ export const INSIGHTS = [
   { id: "i2", kind: "opportunity", title: "CRM pipeline coverage strong", body: "Coverage at 2.1× — prioritize Indus HQ and Horizon Hotels closes." },
   { id: "i3", kind: "risk", title: "Slow-moving inventory rising", body: "48 SKUs aging — review replenishment and promotions." },
   { id: "i4", kind: "trend", title: "Service SLA stable at 97%", body: "First response improving; watch SR-441 escalation." },
-  { id: "i5", kind: "recommendation", title: "Recommendation placeholder", body: "AI recommendations reserved for Phase P7 — use Reporting snapshots today." },
+  { id: "i5", kind: "recommendation", title: "Ask AFH Assist", body: "Use /app/ai or Analytics → AI Copilot for briefings and explanations over existing snapshots." },
   { id: "i6", kind: "summary", title: "Executive summary", body: "Company health solid; manufacturing yield high; finance cash positive." },
 ] as const;
 

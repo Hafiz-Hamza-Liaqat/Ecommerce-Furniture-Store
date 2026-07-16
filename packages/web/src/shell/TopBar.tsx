@@ -28,6 +28,8 @@ const MODULE_LABELS: Record<string, string> = {
   analytics: "Analytics",
   reports: "Reports",
   insights: "Insights",
+  ai: "AI",
+  settings: "Settings",
 };
 
 function breadcrumbTrail(pathname: string): { label: string; to?: string }[] {
@@ -75,6 +77,7 @@ export function TopBar() {
     setCreateOpen,
     setShortcutsOpen,
     setHelpOpen,
+    setAiPanelOpen,
     toggleFavorite,
     favorites,
     toast,
@@ -164,6 +167,14 @@ export function TopBar() {
         </Button>
         <button
           type="button"
+          className="ws-icon-btn"
+          aria-label="Open AI assistant"
+          onClick={() => setAiPanelOpen(true)}
+        >
+          AI
+        </button>
+        <button
+          type="button"
           className="ws-icon-btn ws-notif-btn"
           aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
           onClick={() => setNotifOpen(true)}
@@ -193,6 +204,12 @@ export function TopBar() {
             <button type="button" role="menuitem" onClick={() => setHelpOpen(true)}>
               Help
             </button>
+            <Link to="/app/ai" role="menuitem">
+              AI Assistant
+            </Link>
+            <Link to="/app/settings/ai" role="menuitem">
+              AI Settings
+            </Link>
             <Link to="/app/preferences" role="menuitem">
               Preferences
             </Link>

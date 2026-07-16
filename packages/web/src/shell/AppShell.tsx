@@ -11,6 +11,7 @@ import {
   ShortcutsOverlay,
   ToastHost,
 } from "../workspace/overlays";
+import { AiAssistantPanel } from "../ai/AiPanel";
 import { Skeleton } from "../workspace/widgets";
 import { loadInbox, saveInbox, type InboxNotification } from "../workspace/prefs";
 
@@ -37,6 +38,8 @@ const MODULE_LABELS: Record<string, string> = {
   analytics: "Analytics",
   reports: "Reports",
   insights: "Insights",
+  ai: "AI Assistant",
+  settings: "Settings",
 };
 
 function pageLabel(pathname: string): string {
@@ -113,6 +116,7 @@ function ShellInner() {
       <CommandPalette />
       <QuickCreateLauncher />
       <NotificationDrawer />
+      <AiAssistantPanel />
       <ShortcutsOverlay />
       <HelpModal />
       <ToastHost />

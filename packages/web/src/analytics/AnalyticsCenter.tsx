@@ -46,6 +46,7 @@ import {
   type AnalyticsFilters,
 } from "./shared";
 import { DashboardBuilderPage } from "./DashboardBuilderPage";
+import { ExecutiveCopilotPanel } from "../ai/ExecutiveCopilot";
 
 function AnalyticsHome() {
   const [tab, setTab] = useState("overview");
@@ -76,6 +77,7 @@ function AnalyticsHome() {
           { id: "periods", label: "Period summaries" },
           { id: "compare", label: "Comparisons" },
           { id: "forecast", label: "Forecast" },
+          { id: "copilot", label: "AI Copilot" },
           { id: "viz", label: "Visualization lab" },
           { id: "kpis", label: "KPI center" },
         ]}
@@ -159,6 +161,8 @@ function AnalyticsHome() {
       {tab === "forecast" ? (
         <ForecastPanel {...FORECAST_SERIES} />
       ) : null}
+
+      {tab === "copilot" ? <ExecutiveCopilotPanel /> : null}
 
       {tab === "viz" ? (
         <div className="bi-grid">

@@ -31,6 +31,7 @@ import { CalendarHubPage } from "./productivity/CalendarHubPage";
 import { AnalyticsCenterPage } from "./analytics/AnalyticsCenter";
 import { ReportsCenterPage } from "./analytics/ReportsCenter";
 import { InsightsCenterPage } from "./analytics/InsightsCenter";
+import { AiRoutes, AiSettingsPage } from "./ai/AiRoutes";
 import { useSession } from "./state/session";
 import { MarketingShell } from "./marketing/MarketingShell";
 import { HomePage } from "./marketing/pages/HomePage";
@@ -84,6 +85,8 @@ export function AppRoutes() {
           <Route path="analytics/*" element={<AnalyticsCenterPage />} />
           <Route path="reports/*" element={<ReportsCenterPage />} />
           <Route path="insights" element={<InsightsCenterPage />} />
+          <Route path="ai/*" element={<AiRoutes />} />
+          <Route path="settings/ai" element={<AiSettingsPage />} />
           <Route path="sales/*" element={<SalesPage />} />
           <Route path="procurement/*" element={<ProcurementPage />} />
           <Route path="inventory/*" element={<InventoryPage />} />

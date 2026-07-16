@@ -1,0 +1,347 @@
+/* Phase P7 — Enterprise AI Assistant */
+
+.ai-page {
+  gap: 1rem;
+}
+
+.ai-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ai-subnav a {
+  text-decoration: none;
+  color: var(--afh-ink-soft);
+  border: 1px solid var(--afh-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.82rem;
+  background: var(--afh-paper);
+}
+
+.ai-subnav a:hover {
+  color: var(--afh-ink);
+  border-color: var(--afh-teal);
+}
+
+.ai-chat {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--afh-border);
+  border-radius: var(--afh-radius);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(31, 111, 106, 0.08), transparent 45%),
+    var(--afh-paper);
+  overflow: hidden;
+}
+
+.ai-chat__head {
+  padding: 0.75rem 1rem 0;
+}
+
+.ai-chat__head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.ai-chat__context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0 1rem;
+  font-size: 0.75rem;
+}
+
+.ai-chat__context span,
+.ai-chat__context code {
+  border: 1px solid var(--afh-border);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  background: var(--afh-mist);
+}
+
+.ai-chat__layout {
+  display: grid;
+  grid-template-columns: 1fr minmax(160px, 220px);
+  gap: 0;
+  min-height: 360px;
+}
+
+.ai-chat--compact .ai-chat__layout {
+  grid-template-columns: 1fr;
+  min-height: 280px;
+}
+
+.ai-chat--compact .ai-chat__side {
+  display: none;
+}
+
+.ai-chat__main {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
+  border-right: 1px solid var(--afh-border);
+}
+
+.ai-chat--compact .ai-chat__main {
+  border-right: 0;
+}
+
+.ai-chat__messages {
+  overflow: auto;
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  max-height: 420px;
+}
+
+.ai-chat__empty {
+  color: var(--afh-ink-soft);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ai-bubble {
+  border: 1px solid var(--afh-border);
+  border-radius: 14px;
+  padding: 0.7rem 0.85rem;
+  background: var(--afh-mist);
+  max-width: 92%;
+}
+
+.ai-bubble--user {
+  justify-self: end;
+  background: rgba(31, 111, 106, 0.12);
+}
+
+.ai-bubble--assistant {
+  justify-self: start;
+}
+
+.ai-bubble header {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--afh-ink-soft);
+  margin-bottom: 0.35rem;
+}
+
+.ai-bubble.is-streaming::after {
+  content: " |";
+  animation: ai-blink 1s steps(2, end) infinite;
+}
+
+@keyframes ai-blink {
+  50% { opacity: 0; }
+}
+
+.ai-chat__composer {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--afh-border);
+  background: var(--afh-paper);
+}
+
+.ai-chat__composer textarea {
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--afh-border);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  resize: vertical;
+  background: var(--afh-mist);
+  color: var(--afh-ink);
+}
+
+.ai-chat__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ai-chat__side {
+  padding: 0.85rem;
+  background: var(--afh-mist);
+  overflow: auto;
+}
+
+.ai-chat__side h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+}
+
+.ai-cite-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.ai-cite-list a {
+  color: var(--afh-teal);
+}
+
+.ai-cite-list span {
+  display: block;
+  color: var(--afh-ink-soft);
+  font-size: 0.72rem;
+}
+
+.ai-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ai-chips button {
+  border: 1px solid var(--afh-border);
+  background: var(--afh-paper);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: var(--afh-ink-soft);
+}
+
+.ai-chips button:hover {
+  border-color: var(--afh-teal);
+  color: var(--afh-ink);
+}
+
+.ai-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ai-list > li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--afh-border);
+  border-radius: 12px;
+  background: var(--afh-paper);
+}
+
+.ai-list > li span,
+.ai-list > li p {
+  display: block;
+  color: var(--afh-ink-soft);
+  font-size: 0.85rem;
+}
+
+.ai-prompt-grid,
+.ai-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.ai-prompt-card,
+.ai-tile {
+  border: 1px solid var(--afh-border);
+  border-radius: var(--afh-radius);
+  padding: 0.9rem;
+  background: var(--afh-paper);
+  display: grid;
+  gap: 0.55rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ai-prompt-card header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ai-md-p,
+.ai-md-h,
+.ai-quote {
+  margin: 0 0 0.45rem;
+}
+
+.ai-md-list {
+  margin: 0 0 0.55rem;
+  padding-left: 1.1rem;
+}
+
+.ai-md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 0.4rem 0 0.7rem;
+}
+
+.ai-md-table th,
+.ai-md-table td {
+  border: 1px solid var(--afh-border);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+
+.ai-code {
+  overflow: auto;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: #12171f;
+  color: #eef2f6;
+  font-size: 0.82rem;
+}
+
+.ai-inline-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--afh-mist);
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+}
+
+.ai-quote {
+  border-left: 3px solid var(--afh-copper);
+  padding-left: 0.65rem;
+  color: var(--afh-ink-soft);
+}
+
+.ai-copilot .ai-chat {
+  border: 0;
+  background: transparent;
+}
+
+.ai-panel .ai-chat {
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 960px) {
+  .ai-chat__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-chat__side {
+    border-top: 1px solid var(--afh-border);
+  }
+
+  .ai-chat__main {
+    border-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-bubble.is-streaming::after {
+    animation: none;
+  }
+}
+
+[data-motion="reduce"] .ai-bubble.is-streaming::after {
+  animation: none;
+}

@@ -13,9 +13,10 @@ export function InsightsCenterPage() {
     <div className="stack bi-page">
       <PageHeader
         title="Insight Center"
-        lead="Business highlights, opportunities, risks, and trends — presentation only. Recommendations placeholders reserved; AI belongs to Phase P7."
+        lead="Business highlights, opportunities, risks, and trends. Use AFH Assist for explanations — autonomous agents are out of scope."
         actions={
           <Toolbar>
+            <Link className="btn btn--ghost" to="/app/ai">AI Assistant</Link>
             <Link className="btn btn--ghost" to="/app/analytics">Intelligence</Link>
             <Link className="btn btn--primary" to="/app/reports">Reports</Link>
           </Toolbar>
