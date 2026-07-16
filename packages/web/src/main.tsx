@@ -5,6 +5,7 @@ import { AppRoutes } from "./App";
 import { SessionProvider } from "./state/session";
 import "./styles/global.css";
 import "./styles/components.css";
+import "./styles/workspace.css";
 import "./styles/marketing.css";
 
 const root = document.getElementById("root");

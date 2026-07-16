@@ -5,6 +5,7 @@ import { PasswordResetPage } from "./auth/PasswordResetPage";
 import { EmailVerificationPage } from "./auth/EmailVerificationPage";
 import { MfaPage } from "./auth/MfaPage";
 import { DashboardPage } from "./dashboard/DashboardPage";
+import { PersonalWorkspacePage } from "./dashboard/PersonalWorkspace";
 import {
   CmsPage,
   CrmPage,
@@ -72,6 +73,7 @@ export function AppRoutes() {
       <Route path="/app" element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
+          <Route path="me" element={<PersonalWorkspacePage />} />
           <Route path="sales" element={<SalesPage />} />
           <Route path="procurement" element={<ProcurementPage />} />
           <Route path="inventory" element={<InventoryPage />} />
