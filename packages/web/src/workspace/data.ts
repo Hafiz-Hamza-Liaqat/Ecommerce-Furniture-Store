@@ -221,11 +221,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { to: "/app", label: "Executive dashboard", end: true },
       { to: "/app/me", label: "My workspace" },
+      { to: "/app/calendar", label: "Enterprise calendar" },
       { to: "/app/approvals", label: "Approvals" },
       { to: "/app/notifications", label: "Notifications" },
       { to: "/app/search", label: "Search" },
       { to: "/app/workflow", label: "Workflow" },
       { to: "/app/reporting", label: "Reporting" },
+      { to: "/app/preferences", label: "Preferences" },
     ],
   },
   {
@@ -265,15 +267,25 @@ export const NAV_GROUPS: readonly NavGroup[] = [
 export const COMMANDS = [
   { id: "cmd-dash", label: "Go to executive dashboard", href: "/app", group: "Navigate", keywords: "home kpi" },
   { id: "cmd-me", label: "Open my workspace", href: "/app/me", group: "Navigate", keywords: "tasks personal" },
+  { id: "cmd-cal", label: "Enterprise calendar", href: "/app/calendar", group: "Navigate", keywords: "schedule leave" },
+  { id: "cmd-prefs", label: "Preferences center", href: "/app/preferences", group: "Navigate", keywords: "theme settings a11y" },
   { id: "cmd-sales", label: "Sales module", href: "/app/sales", group: "Navigate", keywords: "orders quotes" },
   { id: "cmd-proc", label: "Procurement module", href: "/app/procurement", group: "Navigate", keywords: "purchase" },
   { id: "cmd-inv", label: "Inventory module", href: "/app/inventory", group: "Navigate", keywords: "stock" },
   { id: "cmd-fin", label: "Finance module", href: "/app/finance", group: "Navigate", keywords: "ledger" },
+  { id: "cmd-proj", label: "Projects module", href: "/app/projects", group: "Navigate", keywords: "tasks gantt" },
   { id: "cmd-crm", label: "CRM module", href: "/app/crm", group: "Navigate", keywords: "customers" },
+  { id: "cmd-svc", label: "Service module", href: "/app/service", group: "Navigate", keywords: "tickets" },
+  { id: "cmd-hr", label: "HR module", href: "/app/hr", group: "Navigate", keywords: "people leave" },
+  { id: "cmd-mfg", label: "Manufacturing module", href: "/app/manufacturing", group: "Navigate", keywords: "bom shop" },
+  { id: "cmd-cms", label: "CMS module", href: "/app/cms", group: "Navigate", keywords: "pages content" },
+  { id: "cmd-dam", label: "DAM module", href: "/app/dam", group: "Navigate", keywords: "assets files" },
   { id: "cmd-appr", label: "Approvals queue", href: "/app/approvals", group: "Navigate", keywords: "decide" },
   { id: "cmd-notif", label: "Notifications", href: "/app/notifications", group: "Navigate", keywords: "inbox" },
   { id: "cmd-search", label: "Enterprise search", href: "/app/search", group: "Navigate", keywords: "find" },
+  { id: "cmd-report", label: "Reporting", href: "/app/reporting", group: "Navigate", keywords: "export" },
   { id: "cmd-help", label: "Keyboard shortcuts", href: "#shortcuts", group: "Help", keywords: "keys ?" },
+  { id: "cmd-create", label: "Quick create launcher", href: "#create", group: "Create", keywords: "new" },
   ...QUICK_ACTIONS.map((a) => ({
     id: `cmd-${a.id}`,
     label: a.label,
@@ -284,10 +296,11 @@ export const COMMANDS = [
 ] as const;
 
 export const SHORTCUTS = [
-  { keys: "⌘/Ctrl K", action: "Command palette" },
+  { keys: "⌘/Ctrl K", action: "Command center" },
   { keys: "⌘/Ctrl B", action: "Toggle sidebar" },
   { keys: "⌘/Ctrl Shift N", action: "Notifications" },
   { keys: "⌘/Ctrl Shift C", action: "Quick create" },
+  { keys: "⌘/Ctrl ,", action: "Preferences" },
   { keys: "?", action: "Shortcuts overlay" },
   { keys: "Esc", action: "Close overlays" },
 ] as const;

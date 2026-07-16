@@ -26,6 +26,8 @@ import {
   WorkflowPage,
 } from "./pages/platform";
 import { DamPage } from "./pages/DamPage";
+import { PreferencesPage } from "./productivity/PreferencesPage";
+import { CalendarHubPage } from "./productivity/CalendarHubPage";
 import { useSession } from "./state/session";
 import { MarketingShell } from "./marketing/MarketingShell";
 import { HomePage } from "./marketing/pages/HomePage";
@@ -74,6 +76,8 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="me" element={<PersonalWorkspacePage />} />
+          <Route path="calendar" element={<CalendarHubPage />} />
+          <Route path="preferences" element={<PreferencesPage />} />
           <Route path="sales/*" element={<SalesPage />} />
           <Route path="procurement/*" element={<ProcurementPage />} />
           <Route path="inventory/*" element={<InventoryPage />} />

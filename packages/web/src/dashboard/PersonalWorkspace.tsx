@@ -12,7 +12,6 @@ import {
 } from "../workspace/data";
 import {
   Accordion,
-  CalendarPreview,
   DataTable,
   EmptyState,
   FilterBar,
@@ -21,6 +20,7 @@ import {
   Tabs,
   Toolbar,
 } from "../workspace/widgets";
+import { EnterpriseCalendar } from "../productivity/EnterpriseCalendar";
 import { useWorkspaceUi } from "../workspace/context";
 
 export function PersonalWorkspacePage() {
@@ -87,14 +87,21 @@ export function PersonalWorkspacePage() {
           ) : null}
 
           {tab === "calendar" ? (
-            <section className="ws-card">
-              <header className="ws-card__head">
-                <h2>My calendar</h2>
-              </header>
-              <div className="ws-card__body">
-                <CalendarPreview items={MY_CALENDAR} />
-              </div>
-            </section>
+            <EnterpriseCalendar
+              title="My calendar"
+              lead="Personal schedule with drag-and-drop UI."
+              events={MY_CALENDAR.map((c, i) => ({
+                id: c.id,
+                title: c.title,
+                day: Math.min(28, new Date().getDate() + (i % 5) - 1),
+                lane: "personal",
+                href: "/app/me",
+                tone: "ok" as const,
+              }))}
+              onMove={(id, day) =>
+                toast({ tone: "info", title: "Rescheduled locally", body: `${id} → day ${day}` })
+              }
+            />
           ) : null}
 
           {tab === "approvals" ? (

@@ -17,7 +17,16 @@
   --afh-font-brand: "Syne", "Manrope", sans-serif;
   --afh-sidebar: 280px;
   --afh-focus: 0 0 0 3px rgba(196, 107, 58, 0.35);
+  --afh-row: 0.7rem;
   color-scheme: light;
+}
+
+[data-density="compact"] {
+  --afh-row: 0.4rem;
+}
+
+[data-density="spacious"] {
+  --afh-row: 0.95rem;
 }
 
 [data-theme="dark"] {

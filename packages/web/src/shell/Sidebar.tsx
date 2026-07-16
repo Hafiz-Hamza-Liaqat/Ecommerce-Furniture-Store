@@ -2,6 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { BRANCHES, COMPANIES, NAV_GROUPS, WORKSPACES } from "../workspace/data";
 import { useWorkspaceUi } from "../workspace/context";
+import { loadBookmarks } from "../workspace/prefs";
 
 export function Sidebar() {
   const {
@@ -15,15 +16,22 @@ export function Sidebar() {
     setCompanyId,
     setBranchId,
     favorites,
+    recentPages,
   } = useWorkspaceUi();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(NAV_GROUPS.map((g) => [g.id, true])),
   );
+  const [bookmarks] = useState(() => loadBookmarks());
   const { pathname } = useLocation();
 
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname, setMobileNavOpen]);
+
+  const frequent = recentPages
+    .slice()
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 5);
 
   return (
     <>
@@ -86,7 +94,7 @@ export function Sidebar() {
 
         {favorites.length > 0 && !sidebarCollapsed ? (
           <div className="nav-group">
-            <div className="nav-group__label">Favorites</div>
+            <div className="nav-group__label">Module favorites</div>
             {favorites.map((to) => (
               <NavLink
                 key={to}
@@ -98,6 +106,55 @@ export function Sidebar() {
                 {labelForPath(to)}
               </NavLink>
             ))}
+          </div>
+        ) : null}
+
+        {!sidebarCollapsed && frequent.length > 0 ? (
+          <div className="nav-group">
+            <div className="nav-group__label">Recently visited</div>
+            {frequent.map((p) => (
+              <NavLink
+                key={p.path}
+                to={p.path}
+                className="nav-link"
+                end={p.path === "/app"}
+                onClick={() => setMobileNavOpen(false)}
+              >
+                {p.label}
+              </NavLink>
+            ))}
+          </div>
+        ) : null}
+
+        {!sidebarCollapsed && bookmarks.length > 0 ? (
+          <div className="nav-group">
+            <div className="nav-group__label">Bookmarks</div>
+            {bookmarks.map((b) => (
+              <NavLink
+                key={b.path}
+                to={b.path}
+                className="nav-link"
+                end={b.path === "/app"}
+                onClick={() => setMobileNavOpen(false)}
+              >
+                {b.label}
+              </NavLink>
+            ))}
+          </div>
+        ) : null}
+
+        {!sidebarCollapsed ? (
+          <div className="nav-group">
+            <div className="nav-group__label">Suggestions</div>
+            <NavLink to="/app/approvals" className="nav-link" onClick={() => setMobileNavOpen(false)}>
+              Pending approvals
+            </NavLink>
+            <NavLink to="/app/calendar" className="nav-link" onClick={() => setMobileNavOpen(false)}>
+              Today&apos;s calendar
+            </NavLink>
+            <NavLink to="/app/search" className="nav-link" onClick={() => setMobileNavOpen(false)}>
+              Enterprise search
+            </NavLink>
           </div>
         ) : null}
 
@@ -144,5 +201,7 @@ function labelForPath(path: string): string {
     const found = group.items.find((i) => i.to === path);
     if (found) return found.label;
   }
+  if (path === "/app/calendar") return "Enterprise calendar";
+  if (path === "/app/preferences") return "Preferences";
   return path;
 }

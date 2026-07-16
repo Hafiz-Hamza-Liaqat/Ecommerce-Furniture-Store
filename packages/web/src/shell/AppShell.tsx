@@ -1,8 +1,8 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
-import { WorkspaceUiProvider } from "../workspace/context";
+import { WorkspaceUiProvider, useWorkspaceUi } from "../workspace/context";
 import {
   CommandPalette,
   HelpModal,
@@ -12,16 +12,85 @@ import {
   ToastHost,
 } from "../workspace/overlays";
 import { Skeleton } from "../workspace/widgets";
+import { loadInbox, saveInbox, type InboxNotification } from "../workspace/prefs";
+
+const MODULE_LABELS: Record<string, string> = {
+  sales: "Sales",
+  procurement: "Procurement",
+  inventory: "Inventory",
+  finance: "Finance",
+  projects: "Projects",
+  crm: "CRM",
+  service: "Service",
+  hr: "HR",
+  manufacturing: "Manufacturing",
+  cms: "CMS",
+  dam: "DAM",
+  me: "My workspace",
+  notifications: "Notifications",
+  search: "Search",
+  reporting: "Reporting",
+  workflow: "Workflow",
+  approvals: "Approvals",
+  calendar: "Enterprise calendar",
+  preferences: "Preferences",
+};
+
+function pageLabel(pathname: string): string {
+  if (pathname === "/app") return "Executive dashboard";
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts[0] === "app" && parts[1]) {
+    const mod = MODULE_LABELS[parts[1]] ?? parts[1];
+    if (parts.length === 2) return mod;
+    return `${mod} · ${parts.slice(2).join(" / ")}`;
+  }
+  return "Workspace";
+}
 
 function ShellInner() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { rememberPage } = useWorkspaceUi();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setReady(false);
     const t = window.setTimeout(() => setReady(true), 180);
+    rememberPage(pathname, pageLabel(pathname));
     return () => window.clearTimeout(t);
-  }, [pathname]);
+  }, [pathname, rememberPage]);
+
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const path = (e as CustomEvent<string>).detail;
+      if (path) navigate(path);
+    };
+    window.addEventListener("afh:goto", onGoto);
+    return () => window.removeEventListener("afh:goto", onGoto);
+  }, [navigate]);
+
+  // Soft realtime: occasionally surface a system tick into the inbox when empty of unread
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      const inbox = loadInbox();
+      const unread = inbox.filter((n) => n.unread && !n.archived).length;
+      if (unread === 0 && Math.random() < 0.08) {
+        const pulse: InboxNotification = {
+          id: `live-${Date.now()}`,
+          title: "Workspace sync pulse",
+          body: "Presentation refresh from local messaging interface.",
+          category: "system",
+          priority: "low",
+          time: "Just now",
+          href: "/app/notifications",
+          unread: true,
+          archived: false,
+        };
+        saveInbox([pulse, ...inbox].slice(0, 40));
+      }
+    }, 45000);
+    return () => window.clearInterval(t);
+  }, []);
 
   return (
     <div className="app-shell ws-shell">

@@ -9,12 +9,18 @@ import {
   type ReactNode,
 } from "react";
 import {
+  applyUserPrefsToDocument,
+  loadFavoriteCommands,
   loadFavorites,
   loadRecentCommands,
+  loadRecentPages,
+  loadUserPrefs,
   loadWorkspaceContext,
   pushRecentCommand,
+  pushRecentPage,
   saveFavorites,
   saveWorkspaceContext,
+  type RecentPage,
   type WorkspaceContextPrefs,
 } from "./prefs";
 
@@ -33,6 +39,8 @@ type WorkspaceUiValue = {
   readonly branchId: string;
   readonly favorites: string[];
   readonly recentCommands: string[];
+  readonly favoriteCommands: string[];
+  readonly recentPages: RecentPage[];
   readonly paletteOpen: boolean;
   readonly createOpen: boolean;
   readonly notifOpen: boolean;
@@ -50,6 +58,8 @@ type WorkspaceUiValue = {
   setNotifOpen(v: boolean): void;
   setShortcutsOpen(v: boolean): void;
   setHelpOpen(v: boolean): void;
+  setFavoriteCommands(ids: string[]): void;
+  rememberPage(path: string, label: string): void;
   toast(item: Omit<ToastItem, "id">): void;
   dismissToast(id: string): void;
   rememberCommand(id: string): void;
@@ -66,12 +76,18 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
   const [branchId, setBranchIdState] = useState(initial.branchId);
   const [favorites, setFavorites] = useState(loadFavorites);
   const [recentCommands, setRecentCommands] = useState(loadRecentCommands);
+  const [favoriteCommands, setFavoriteCommands] = useState(loadFavoriteCommands);
+  const [recentPages, setRecentPages] = useState(loadRecentPages);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  useEffect(() => {
+    applyUserPrefsToDocument(loadUserPrefs());
+  }, []);
 
   const persist = useCallback((patch: Partial<WorkspaceContextPrefs>) => {
     const next: WorkspaceContextPrefs = {
@@ -124,6 +140,10 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
     });
   }, []);
 
+  const rememberPage = useCallback((path: string, label: string) => {
+    setRecentPages(pushRecentPage(path, label));
+  }, []);
+
   const toast = useCallback((item: Omit<ToastItem, "id">) => {
     const id = `t-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     setToasts((prev) => [...prev, { ...item, id }]);
@@ -154,6 +174,11 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
         e.preventDefault();
         setPaletteOpen(true);
         setCreateOpen(false);
+      }
+      if (meta && e.key === ",") {
+        e.preventDefault();
+        window.location.hash = "";
+        window.dispatchEvent(new CustomEvent("afh:goto", { detail: "/app/preferences" }));
       }
       if (meta && e.key.toLowerCase() === "b") {
         e.preventDefault();
@@ -198,6 +223,8 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       branchId,
       favorites,
       recentCommands,
+      favoriteCommands,
+      recentPages,
       paletteOpen,
       createOpen,
       notifOpen,
@@ -215,6 +242,8 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       setNotifOpen,
       setShortcutsOpen,
       setHelpOpen,
+      setFavoriteCommands,
+      rememberPage,
       toast,
       dismissToast,
       rememberCommand,
@@ -227,6 +256,8 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       branchId,
       favorites,
       recentCommands,
+      favoriteCommands,
+      recentPages,
       paletteOpen,
       createOpen,
       notifOpen,
@@ -238,6 +269,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       setCompanyId,
       setBranchId,
       toggleFavorite,
+      rememberPage,
       toast,
       dismissToast,
       rememberCommand,

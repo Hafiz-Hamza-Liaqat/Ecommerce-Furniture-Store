@@ -7,6 +7,7 @@ import "./styles/global.css";
 import "./styles/components.css";
 import "./styles/workspace.css";
 import "./styles/modules.css";
+import "./styles/productivity.css";
 import "./styles/marketing.css";
 
 const root = document.getElementById("root");

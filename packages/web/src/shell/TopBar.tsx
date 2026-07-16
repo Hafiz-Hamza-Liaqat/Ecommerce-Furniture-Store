@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useSession } from "../state/session";
 import { useWorkspaceUi } from "../workspace/context";
 import { Button } from "../components/ui";
-import { NOTIFICATIONS } from "../workspace/data";
+import { loadInbox } from "../workspace/prefs";
 
 const MODULE_LABELS: Record<string, string> = {
   sales: "Sales",
@@ -22,20 +23,33 @@ const MODULE_LABELS: Record<string, string> = {
   reporting: "Reporting",
   workflow: "Workflow",
   approvals: "Approvals",
+  calendar: "Calendar",
+  preferences: "Preferences",
 };
 
-function breadcrumbLabel(pathname: string): string {
-  if (pathname === "/app") return "Executive dashboard";
+function breadcrumbTrail(pathname: string): { label: string; to?: string }[] {
+  if (pathname === "/app") return [{ label: "Executive dashboard" }];
   if (pathname.startsWith("/app/account/")) {
-    return pathname.includes("mfa") ? "MFA" : "Email verification";
+    return [
+      { label: "Account", to: "/app/account/mfa" },
+      { label: pathname.includes("mfa") ? "MFA" : "Email verification" },
+    ];
   }
   const parts = pathname.split("/").filter(Boolean);
-  if (parts[0] === "app" && parts[1]) {
-    const mod = MODULE_LABELS[parts[1]] ?? parts[1];
-    if (parts.length === 2) return mod;
-    return `${mod} · ${parts.slice(2).join(" / ")}`;
+  if (parts[0] !== "app" || !parts[1]) return [{ label: "Workspace" }];
+  const trail: { label: string; to?: string }[] = [
+    { label: MODULE_LABELS[parts[1]] ?? parts[1], to: `/app/${parts[1]}` },
+  ];
+  for (let i = 2; i < parts.length; i++) {
+    const crumb: { label: string; to?: string } = {
+      label: parts[i]!.replace(/-/g, " "),
+    };
+    if (i < parts.length - 1) {
+      crumb.to = `/app/${parts.slice(1, i + 1).join("/")}`;
+    }
+    trail.push(crumb);
   }
-  return "Workspace";
+  return trail;
 }
 
 export function TopBar() {
@@ -63,8 +77,18 @@ export function TopBar() {
     toast,
   } = useWorkspaceUi();
   const { pathname } = useLocation();
-  const unread = NOTIFICATIONS.filter((n) => n.unread).length;
-  const crumb = breadcrumbLabel(pathname);
+  const [unread, setUnread] = useState(
+    () => loadInbox().filter((n) => n.unread && !n.archived).length,
+  );
+
+  useEffect(() => {
+    const refresh = () =>
+      setUnread(loadInbox().filter((n) => n.unread && !n.archived).length);
+    refresh();
+    const t = window.setInterval(refresh, 8000);
+    return () => window.clearInterval(t);
+  }, [pathname]);
+  const crumbs = breadcrumbTrail(pathname);
   const isFav = favorites.includes(pathname);
 
   async function onLogout() {
@@ -97,8 +121,12 @@ export function TopBar() {
         </button>
         <nav className="ws-breadcrumbs" aria-label="Breadcrumb">
           <Link to="/app">Workspace</Link>
-          <span aria-hidden>/</span>
-          <span>{crumb}</span>
+          {crumbs.map((c, i) => (
+            <span key={`${c.label}-${i}`} className="ws-breadcrumbs__seg">
+              <span aria-hidden>/</span>
+              {c.to && i < crumbs.length - 1 ? <Link to={c.to}>{c.label}</Link> : <span>{c.label}</span>}
+            </span>
+          ))}
         </nav>
       </div>
 
@@ -108,7 +136,7 @@ export function TopBar() {
           className="ws-search-trigger"
           onClick={() => setPaletteOpen(true)}
         >
-          <span>Search or jump…</span>
+          <span>Command center…</span>
           <kbd>⌘K</kbd>
         </button>
       </div>
@@ -162,6 +190,12 @@ export function TopBar() {
             <button type="button" role="menuitem" onClick={() => setHelpOpen(true)}>
               Help
             </button>
+            <Link to="/app/preferences" role="menuitem">
+              Preferences
+            </Link>
+            <Link to="/app/calendar" role="menuitem">
+              Enterprise calendar
+            </Link>
             <Link to="/app/account/mfa" role="menuitem">
               Security / MFA
             </Link>

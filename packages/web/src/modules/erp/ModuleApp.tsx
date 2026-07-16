@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Link,
   Navigate,
@@ -30,6 +30,23 @@ import { useWorkspaceUi } from "../../workspace/context";
 import { SERIES } from "../../workspace/data";
 import type { EntityDef, ModuleDefinition, RecordRow } from "./types";
 import { addCollab, getCollab, loadLocalRecords, saveLocalRecord } from "./store";
+import { AdvancedDataTable } from "../../productivity/AdvancedTable";
+import { EnterpriseCalendar } from "../../productivity/EnterpriseCalendar";
+import {
+  CollaborationComposer,
+  CollaborationFeed,
+  SharedLinkBar,
+  parseCollabItems,
+  serializeCollabItem,
+  type CollabItem,
+} from "../../productivity/Collaboration";
+import { FileDropzone, FilePreviewPanel, type StagedFile } from "../../productivity/FileExperience";
+import {
+  loadPinnedRecords,
+  loadWatchedRecords,
+  togglePinnedRecord,
+  toggleWatchedRecord,
+} from "../../workspace/prefs";
 
 const PAGE_SIZE = 8;
 
@@ -255,22 +272,34 @@ function CalendarPage({ module }: { readonly module: ModuleDefinition }) {
     module.entities.find((e) =>
       ["appointments", "meetings", "calendar", "milestones", "shifts"].includes(e.key),
     ) ?? module.entities[0]!;
-  const records = mergeRecords(module, entity).slice(0, 6);
+  const records = mergeRecords(module, entity).slice(0, 12);
+  const events = records.map((r, i) => ({
+    id: r.id,
+    title: r.title,
+    day: Math.min(28, ((i * 3) % 27) + 1),
+    lane: module.id,
+    href: `${module.basePath}/${entity.key}/${r.id}`,
+    tone: toneForStatus(r.status) as "ok" | "warn" | "danger" | "neutral",
+  }));
+  const { toast } = useWorkspaceUi();
   return (
     <div className="stack">
-      <PageHeader title="Calendar" lead={`${module.title} calendar presentation.`} />
-      <section className="ws-card">
-        <div className="ws-card__body">
-          <Timeline
-            items={records.map((r, i) => ({
-              id: r.id,
-              time: `${9 + i}:00`,
-              title: r.title,
-              place: r.status,
-            }))}
-          />
-        </div>
-      </section>
+      <PageHeader
+        title="Calendar"
+        lead={`${module.title} calendar — unified grid with drag-and-drop UI scheduling.`}
+        actions={
+          <Link className="btn btn--ghost" to="/app/calendar">
+            Enterprise calendar
+          </Link>
+        }
+      />
+      <EnterpriseCalendar
+        title={`${module.title} schedule`}
+        events={events}
+        onMove={(id, day) =>
+          toast({ tone: "info", title: "Rescheduled locally", body: `${id} → day ${day}` })
+        }
+      />
       <Link className="btn btn--ghost" to={`${module.basePath}/${entity.key}`}>
         Open list
       </Link>
@@ -284,17 +313,25 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
   const [params, setParams] = useSearchParams();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerId, setDrawerId] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState("title");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const page = Number(params.get("page") || "1");
   const q = params.get("q") || "";
   const { toast } = useWorkspaceUi();
+  const [localPatch, setLocalPatch] = useState<Record<string, Record<string, string>>>({});
 
   if (!entity) {
     return <EmptyState title="Unknown area" body="This module section is not defined." />;
   }
 
-  const all = mergeRecords(module, entity);
+  const all = mergeRecords(module, entity).map((r) => {
+    const patch = localPatch[r.id];
+    if (!patch) return r;
+    return {
+      ...r,
+      title: patch.title ?? r.title,
+      status: patch.status ?? r.status,
+      meta: { ...r.meta, ...patch },
+    };
+  });
   const filtered = all.filter((r) => {
     if (q) {
       const hay = `${r.title} ${r.status} ${JSON.stringify(r.meta)}`.toLowerCase();
@@ -309,14 +346,8 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
     return true;
   });
 
-  const sorted = [...filtered].sort((a, b) => {
-    const av = String(sortKey === "title" ? a.title : sortKey === "status" ? a.status : a.meta[sortKey] ?? a.amount ?? "");
-    const bv = String(sortKey === "title" ? b.title : sortKey === "status" ? b.status : b.meta[sortKey] ?? b.amount ?? "");
-    return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
-  });
-
-  const pages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const slice = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const slice = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const drawerRecord = drawerId ? all.find((r) => r.id === drawerId) : null;
 
   function setFilter(key: string, value: string) {
@@ -326,6 +357,33 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
     next.set("page", "1");
     setParams(next);
   }
+
+  const advRows = slice.map((r) => {
+    const sortValues: Record<string, string | number> = {
+      title: r.title,
+      status: r.status,
+      amount: r.amount ?? "",
+      ...Object.fromEntries(Object.entries(r.meta).map(([k, v]) => [k, v])),
+    };
+    const cells: Record<string, ReactNode> = {};
+    for (const c of entity.columns) {
+      if (c.key === "title") {
+        cells[c.key] = <Link to={`${module.basePath}/${entity.key}/${r.id}`}>{r.title}</Link>;
+      } else if (c.key === "status") {
+        cells[c.key] = <StatusBadge status={r.status} tone={toneForStatus(r.status)} />;
+      } else if (c.key === "amount") {
+        cells[c.key] = r.amount ?? "—";
+      } else {
+        cells[c.key] = String(r.meta[c.key] ?? "—");
+      }
+    }
+    return {
+      id: r.id,
+      cells,
+      sortValues,
+      groupValue: r.status,
+    };
+  });
 
   return (
     <div className="stack">
@@ -426,80 +484,46 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
           }
         />
       ) : (
-        <div className="ws-table-wrap ws-card">
-          <table className="ws-table erp-table">
-            <thead>
-              <tr>
-                <th scope="col">
-                  <span className="sr-only">Select</span>
-                </th>
-                {entity.columns.map((c) => (
-                  <th key={c.key} scope="col">
-                    <button
-                      type="button"
-                      className="erp-sort"
-                      onClick={() => {
-                        if (sortKey === c.key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-                        else {
-                          setSortKey(c.key);
-                          setSortDir("asc");
-                        }
-                      }}
-                    >
-                      {c.label}
-                      {sortKey === c.key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
-                    </button>
-                  </th>
-                ))}
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {slice.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(r.id)}
-                      onChange={(e) => {
-                        setSelected((prev) => {
-                          const next = new Set(prev);
-                          if (e.target.checked) next.add(r.id);
-                          else next.delete(r.id);
-                          return next;
-                        });
-                      }}
-                      aria-label={`Select ${r.title}`}
-                    />
-                  </td>
-                  {entity.columns.map((c) => (
-                    <td key={c.key}>
-                      {c.key === "title" ? (
-                        <Link to={`${module.basePath}/${entity.key}/${r.id}`}>{r.title}</Link>
-                      ) : c.key === "status" ? (
-                        <StatusBadge status={r.status} tone={toneForStatus(r.status)} />
-                      ) : c.key === "amount" ? (
-                        r.amount ?? "—"
-                      ) : (
-                        String(r.meta[c.key] ?? "—")
-                      )}
-                    </td>
-                  ))}
-                  <td>
-                    <Toolbar>
-                      <button type="button" className="ws-icon-btn" onClick={() => setDrawerId(r.id)}>
-                        Quick
-                      </button>
-                      <Link className="ws-icon-btn" to={`${module.basePath}/${entity.key}/${r.id}/edit`}>
-                        Edit
-                      </Link>
-                    </Toolbar>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdvancedDataTable
+          scope={`${module.id}:${entity.key}`}
+          columns={entity.columns.map((c) => ({
+            key: c.key,
+            label: c.label,
+            sortable: c.sortable !== false,
+          }))}
+          rows={advRows}
+          selected={selected}
+          onSelectedChange={setSelected}
+          onInlineEdit={(id, key, value) => {
+            setLocalPatch((prev) => ({
+              ...prev,
+              [id]: { ...(prev[id] ?? {}), [key]: value },
+            }));
+            toast({ tone: "ok", title: "Inline edit saved locally", body: `${key} updated for ${id}` });
+          }}
+          exportPresets={[
+            {
+              id: "run",
+              label: "Run export preset",
+              onRun: () =>
+                toast({
+                  tone: "ok",
+                  title: "Export preset",
+                  body: "Presentation export — generation remains server-side.",
+                }),
+            },
+          ]}
+          renderActions={(id) => (
+            <Toolbar>
+              <button type="button" className="ws-icon-btn" onClick={() => setDrawerId(id)}>
+                Quick
+              </button>
+              <Link className="ws-icon-btn" to={`${module.basePath}/${entity.key}/${id}/edit`}>
+                Edit
+              </Link>
+            </Toolbar>
+          )}
+        />
       )}
 
       <div className="erp-pager row">
@@ -515,7 +539,7 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
           Previous
         </Button>
         <span>
-          Page {page} / {pages} · {sorted.length} records
+          Page {page} / {pages} · {filtered.length} records
         </span>
         <Button
           variant="ghost"
@@ -574,6 +598,13 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
   const [note, setNote] = useState("");
   const [comment, setComment] = useState("");
   const [, setTick] = useState(0);
+  const [pinned, setPinned] = useState(() => loadPinnedRecords());
+  const [watched, setWatched] = useState(() => loadWatchedRecords());
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+  const [reactionBoost, setReactionBoost] = useState<Record<string, Record<string, number>>>({});
+  const recordKey = `${module.id}:${entityKey}:${recordId}`;
+  const isPinned = pinned.includes(recordKey);
+  const isWatched = watched.includes(recordKey);
 
   const localRow = useMemo(() => {
     if (!entity || !recordId) return null;
@@ -615,30 +646,104 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
     return <EmptyState title="Not found" body="Record or entity missing." />;
   }
 
+  const entityDef = entity;
+  const id = recordId;
+
   const row = apiRow ?? localRow;
   if (!row) {
     return (
       <EmptyState
         title="Record not in local catalogue"
         body="Try Lookup via API create flow, or return to the list. If an API get succeeds, detail will populate."
-        action={<Link className="btn btn--ghost" to={`${module.basePath}/${entity.key}`}>Back to list</Link>}
+        action={<Link className="btn btn--ghost" to={`${module.basePath}/${entityDef.key}`}>Back to list</Link>}
       />
     );
   }
 
-  const collab = getCollab(module.id, entity.key, recordId);
+  const collab = getCollab(module.id, entityDef.key, id);
+  const noteItems = parseCollabItems(collab.notes).map((n) => ({
+    ...n,
+    reactions: { ...n.reactions, ...(reactionBoost[n.id] ?? {}) },
+  }));
+  const commentItems = parseCollabItems(collab.comments).map((c) => ({
+    ...c,
+    reactions: { ...c.reactions, ...(reactionBoost[c.id] ?? {}) },
+  }));
+  const activityItems = [
+    ...noteItems.map((n) => ({
+      id: `n-${n.id}`,
+      time: n.at,
+      title: `Note by ${n.author}`,
+      place: n.text.slice(0, 48),
+    })),
+    ...commentItems.map((c) => ({
+      id: `c-${c.id}`,
+      time: c.at,
+      title: `Comment by ${c.author}`,
+      place: c.text.slice(0, 48),
+    })),
+    ...collab.attachments.map((a, i) => ({
+      id: `a-${i}`,
+      time: "Earlier",
+      title: "Attachment",
+      place: a,
+    })),
+    { id: "open", time: "Session", title: "Record opened", place: module.title },
+  ];
+
+  function saveCollabItem(kind: "notes" | "comments", text: string) {
+    const item: CollabItem = {
+      id: `${kind}-${Date.now()}`,
+      author: "You",
+      text,
+      at: new Date().toLocaleString(),
+      reactions: {},
+      shared: text.includes("@"),
+    };
+    addCollab(module.id, entityDef.key, id, kind, serializeCollabItem(item));
+    setTick((x) => x + 1);
+  }
+
+  function reactTo(_kind: "notes" | "comments", id: string, emoji: string) {
+    setReactionBoost((prev) => {
+      const cur = prev[id] ?? {};
+      return { ...prev, [id]: { ...cur, [emoji]: (cur[emoji] ?? 0) + 1 } };
+    });
+  }
 
   return (
     <div className="stack">
       <PageHeader
         title={row.title}
-        lead={`${entity.label} · ${row.id}`}
+        lead={`${entityDef.label} · ${row.id}`}
         actions={
           <Toolbar>
-            <Link className="btn btn--ghost" to={`${module.basePath}/${entity.key}`}>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              aria-pressed={isPinned}
+              onClick={() => {
+                setPinned(togglePinnedRecord(recordKey));
+                toast({ tone: "ok", title: isPinned ? "Unpinned" : "Pinned record" });
+              }}
+            >
+              {isPinned ? "Pinned" : "Pin"}
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              aria-pressed={isWatched}
+              onClick={() => {
+                setWatched(toggleWatchedRecord(recordKey));
+                toast({ tone: "ok", title: isWatched ? "Unfollowed" : "Watching record" });
+              }}
+            >
+              {isWatched ? "Watching" : "Watch"}
+            </button>
+            <Link className="btn btn--ghost" to={`${module.basePath}/${entityDef.key}`}>
               Back
             </Link>
-            <Link className="btn btn--primary" to={`${module.basePath}/${entity.key}/${recordId}/edit`}>
+            <Link className="btn btn--primary" to={`${module.basePath}/${entityDef.key}/${id}/edit`}>
               Edit
             </Link>
             <button type="button" className="btn btn--ghost" onClick={() => window.print()}>
@@ -648,6 +753,15 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
         }
       />
       <StatusBadge status={row.status} tone={toneForStatus(row.status)} />
+      <SharedLinkBar
+        path={`${module.basePath}/${entityDef.key}/${id}`}
+        onCopy={() => {
+          void navigator.clipboard?.writeText(
+            `${window.location.origin}${module.basePath}/${entityDef.key}/${id}`,
+          );
+          toast({ tone: "ok", title: "Link copied" });
+        }}
+      />
       {loading ? <Skeleton rows={2} /> : null}
       {error ? <Alert tone="warn">{`${error} — showing catalogue/local data.`}</Alert> : null}
 
@@ -696,52 +810,83 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
       {tab === "activity" || tab === "timeline" ? (
         <section className="ws-card">
           <div className="ws-card__body">
-            <Timeline
-              items={[
-                { id: "1", time: "09:10", title: "Record opened", place: module.title },
-                { id: "2", time: "11:40", title: "Status reviewed", place: row.status },
-                { id: "3", time: "15:05", title: "Note added", place: "Collaboration" },
-              ]}
-            />
+            <Timeline items={activityItems} />
           </div>
         </section>
       ) : null}
 
       {tab === "notes" ? (
-        <CollabPanel
-          items={collab.notes}
-          value={note}
-          onChange={setNote}
-          onAdd={() => {
-            if (!note.trim()) return;
-            addCollab(module.id, entity.key, recordId, "notes", note.trim());
-            setNote("");
-            setTick((x) => x + 1);
-            toast({ tone: "ok", title: "Note saved" });
-          }}
-          placeholder="Add a note…"
-        />
+        <section className="ws-card">
+          <div className="ws-card__body stack">
+            <CollaborationFeed
+              items={noteItems}
+              onReact={(id, emoji) => reactTo("notes", id, emoji)}
+              emptyLabel="No shared notes yet."
+            />
+            <CollaborationComposer
+              value={note}
+              onChange={setNote}
+              placeholder="Add a shared note… use @ to mention"
+              submitLabel="Save note"
+              onSubmit={() => {
+                if (!note.trim()) return;
+                saveCollabItem("notes", note.trim());
+                setNote("");
+                toast({ tone: "ok", title: "Note saved" });
+              }}
+            />
+          </div>
+        </section>
       ) : null}
 
       {tab === "comments" ? (
-        <CollabPanel
-          items={collab.comments}
-          value={comment}
-          onChange={setComment}
-          onAdd={() => {
-            if (!comment.trim()) return;
-            addCollab(module.id, entity.key, recordId, "comments", comment.trim());
-            setComment("");
-            setTick((x) => x + 1);
-            toast({ tone: "ok", title: "Comment added" });
-          }}
-          placeholder="Add a comment…"
-        />
+        <section className="ws-card">
+          <div className="ws-card__body stack">
+            <CollaborationFeed
+              items={commentItems}
+              onReact={(id, emoji) => reactTo("comments", id, emoji)}
+              emptyLabel="No comments yet."
+            />
+            <CollaborationComposer
+              value={comment}
+              onChange={setComment}
+              placeholder="Rich comment… @mention colleagues"
+              submitLabel="Post comment"
+              onSubmit={() => {
+                if (!comment.trim()) return;
+                saveCollabItem("comments", comment.trim());
+                setComment("");
+                toast({ tone: "ok", title: "Comment added" });
+              }}
+            />
+          </div>
+        </section>
       ) : null}
 
       {tab === "attachments" ? (
         <section className="ws-card">
           <div className="ws-card__body stack">
+            <FileDropzone
+              onRegistered={(files) => {
+                setStagedFiles((prev) => [...files, ...prev]);
+                for (const f of files) {
+                  addCollab(
+                    module.id,
+                    entityDef.key,
+                    id,
+                    "attachments",
+                    `${f.name} (v${f.version})`,
+                  );
+                }
+                setTick((x) => x + 1);
+                toast({
+                  tone: "ok",
+                  title: "Files staged",
+                  body: "Preview locally; DAM upload API remains for durable assets.",
+                });
+              }}
+            />
+            <FilePreviewPanel files={stagedFiles} />
             <ul className="ws-feed">
               {collab.attachments.map((a, i) => (
                 <li key={`${a}-${i}`}>
@@ -749,56 +894,10 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
                 </li>
               ))}
             </ul>
-            <Button
-              onClick={() => {
-                addCollab(module.id, entity.key, recordId, "attachments", `Attachment-${Date.now()}.pdf`);
-                setTick((x) => x + 1);
-                toast({ tone: "ok", title: "Attachment registered", body: "Binary upload remains on DAM / upload API." });
-              }}
-            >
-              Register attachment
-            </Button>
           </div>
         </section>
       ) : null}
     </div>
-  );
-}
-
-function CollabPanel({
-  items,
-  value,
-  onChange,
-  onAdd,
-  placeholder,
-}: {
-  readonly items: string[];
-  readonly value: string;
-  readonly onChange: (v: string) => void;
-  readonly onAdd: () => void;
-  readonly placeholder: string;
-}) {
-  return (
-    <section className="ws-card">
-      <div className="ws-card__body stack">
-        <ul className="ws-feed">
-          {items.map((n, i) => (
-            <li key={`${n}-${i}`}>
-              <strong>{n}</strong>
-            </li>
-          ))}
-          {items.length === 0 ? <li><span>Nothing yet.</span></li> : null}
-        </ul>
-        <textarea
-          className="field__input"
-          rows={3}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
-        <Button onClick={onAdd}>Save</Button>
-      </div>
-    </section>
   );
 }
 
