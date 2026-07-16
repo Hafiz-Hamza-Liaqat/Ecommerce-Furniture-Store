@@ -36,13 +36,32 @@ export type RecordRow = {
   readonly source?: "fixture" | "api" | "local";
 };
 
+export type LifecycleAction = {
+  readonly id: string;
+  readonly label: string;
+  readonly commandType: string;
+  readonly tone?: "primary" | "danger" | "ghost";
+  readonly buildPayload: (
+    companyId: string,
+    recordId: string,
+    row: RecordRow,
+  ) => Record<string, unknown>;
+};
+
 export type ApiBinding = {
   readonly createCommandType?: string;
+  readonly updateCommandType?: string;
   readonly getQueryType?: string;
   readonly summaryQueryType?: string;
   /** Build create payload from form values + companyId */
   readonly buildCreatePayload?: (
     companyId: string,
+    values: Record<string, string>,
+  ) => Record<string, unknown>;
+  /** Build update payload from form values + companyId + record id */
+  readonly buildUpdatePayload?: (
+    companyId: string,
+    recordId: string,
     values: Record<string, string>,
   ) => Record<string, unknown>;
   /** Build get payload */
@@ -56,6 +75,8 @@ export type ApiBinding = {
   readonly mapEntity?: (data: unknown) => RecordRow | null;
   /** When set, create uses POST /api/v1/uploads instead of dispatchCommand */
   readonly uploadAsset?: boolean;
+  /** Detail-page lifecycle commands (Workflow/Approval remain server-side) */
+  readonly lifecycleActions?: readonly LifecycleAction[];
 };
 
 export type EntityDef = {

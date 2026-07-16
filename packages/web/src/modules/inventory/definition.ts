@@ -94,6 +94,7 @@ export const INVENTORY_MODULE: ModuleDefinition = {
       records: products,
       api: {
         createCommandType: "inventory.CreateInventoryItem",
+        updateCommandType: "inventory.UpdateInventoryItem",
         getQueryType: "inventory.GetInventoryItem",
         buildCreatePayload: (companyId, v) => ({
           companyId,
@@ -103,6 +104,15 @@ export const INVENTORY_MODULE: ModuleDefinition = {
           classification: v.classification || "finished_good",
           itemType: v.itemType || "stocked",
         }),
+        buildUpdatePayload: (companyId, inventoryItemId, v) => ({
+          companyId,
+          inventoryItemId,
+          code: v.code || null,
+          name: v.name || null,
+          sku: v.sku || null,
+          classification: v.classification || null,
+          itemType: v.itemType || null,
+        }),
         buildGetPayload: (companyId, id) => ({ companyId, inventoryItemId: id }),
         extractCreateId: (data) => (data as { inventoryItemId?: string }).inventoryItemId ?? null,
         mapEntity: (data) => {
@@ -110,6 +120,20 @@ export const INVENTORY_MODULE: ModuleDefinition = {
           if (!d.id) return null;
           return row(d.id, d.name ?? d.id, d.status ?? "Active", { SKU: d.sku ?? "—", Code: d.code ?? "—" }, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "receive",
+            label: "Receive stock",
+            commandType: "inventory.ReceiveStock",
+            buildPayload: (companyId, inventoryItemId, r) => ({
+              companyId,
+              inventoryItemId,
+              warehouseId: String(r.meta.warehouseId ?? r.meta.WarehouseId ?? ""),
+              quantity: Number(r.meta.quantity ?? 1),
+              unitCode: String(r.meta.unitCode ?? "ea"),
+            }),
+          },
+        ],
       },
     }),
     e({

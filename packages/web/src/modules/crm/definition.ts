@@ -82,10 +82,19 @@ export const CRM_MODULE: ModuleDefinition = {
       })),
       api: {
         createCommandType: "crm.CreateLead",
+        updateCommandType: "crm.UpdateLead",
         getQueryType: "crm.GetLead",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           title: v.title,
+          code: v.code || null,
+          sourceName: v.sourceName || null,
+          classification: v.classification || null,
+        }),
+        buildUpdatePayload: (companyId, leadId, v) => ({
+          companyId,
+          leadId,
+          title: v.title || null,
           code: v.code || null,
           sourceName: v.sourceName || null,
           classification: v.classification || null,
@@ -97,6 +106,29 @@ export const CRM_MODULE: ModuleDefinition = {
           if (!d.id) return null;
           return row(d.id, d.title ?? d.code ?? d.id, d.status ?? "New", {}, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "qualify",
+            label: "Qualify lead",
+            commandType: "crm.QualifyLead",
+            buildPayload: (companyId, leadId) => ({
+              companyId,
+              leadId,
+              requireApproval: false,
+            }),
+          },
+          {
+            id: "convert",
+            label: "Convert lead",
+            commandType: "crm.ConvertLead",
+            tone: "primary",
+            buildPayload: (companyId, leadId) => ({
+              companyId,
+              leadId,
+              requireApproval: true,
+            }),
+          },
+        ],
       },
     }),
     e({

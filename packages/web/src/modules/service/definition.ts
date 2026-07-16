@@ -71,12 +71,21 @@ export const SERVICE_MODULE: ModuleDefinition = {
       })),
       api: {
         createCommandType: "service.CreateServiceRequest",
+        updateCommandType: "service.UpdateServiceRequest",
         getQueryType: "service.GetServiceRequest",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,
           title: v.title,
           priority: v.priority || "normal",
+          description: v.description || null,
+          customerId: v.customerId || null,
+        }),
+        buildUpdatePayload: (companyId, serviceRequestId, v) => ({
+          companyId,
+          serviceRequestId,
+          title: v.title || null,
+          priority: v.priority || null,
           description: v.description || null,
           customerId: v.customerId || null,
         }),
@@ -87,6 +96,18 @@ export const SERVICE_MODULE: ModuleDefinition = {
           if (!d.id) return null;
           return row(d.id, d.title ?? d.number ?? d.id, d.status ?? "Open", { Priority: d.priority ?? "—" }, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "close",
+            label: "Close request",
+            commandType: "service.CloseServiceRequest",
+            tone: "danger",
+            buildPayload: (companyId, serviceRequestId) => ({
+              companyId,
+              serviceRequestId,
+            }),
+          },
+        ],
       },
     }),
     e({

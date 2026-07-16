@@ -83,6 +83,7 @@ export const PROJECTS_MODULE: ModuleDefinition = {
       records: projects,
       api: {
         createCommandType: "projects.CreateProject",
+        updateCommandType: "projects.UpdateProject",
         getQueryType: "projects.GetProject",
         buildCreatePayload: (companyId, v) => ({
           companyId,
@@ -92,6 +93,15 @@ export const PROJECTS_MODULE: ModuleDefinition = {
           classification: v.classification || "commercial",
           customerId: v.customerId || null,
         }),
+        buildUpdatePayload: (companyId, projectId, v) => ({
+          companyId,
+          projectId,
+          code: v.code || null,
+          name: v.name || null,
+          projectType: v.projectType || null,
+          classification: v.classification || null,
+          customerId: v.customerId || null,
+        }),
         buildGetPayload: (companyId, id) => ({ companyId, projectId: id }),
         extractCreateId: (data) => (data as { projectId?: string }).projectId ?? null,
         mapEntity: (data) => {
@@ -99,6 +109,15 @@ export const PROJECTS_MODULE: ModuleDefinition = {
           if (!d.id) return null;
           return row(d.id, d.name ?? d.id, d.status ?? "active", { Code: d.code ?? "—" }, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "archive",
+            label: "Archive project",
+            commandType: "projects.ArchiveProject",
+            tone: "danger",
+            buildPayload: (companyId, projectId) => ({ companyId, projectId }),
+          },
+        ],
       },
     }),
     e({
@@ -144,6 +163,14 @@ export const PROJECTS_MODULE: ModuleDefinition = {
           if (!d.id) return null;
           return row(d.id, d.title ?? d.id, d.status ?? "Open", { Priority: d.priority ?? "—" }, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "complete",
+            label: "Complete task",
+            commandType: "projects.CompleteTask",
+            buildPayload: (companyId, taskId) => ({ companyId, taskId }),
+          },
+        ],
       },
     }),
     e({

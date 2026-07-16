@@ -184,6 +184,61 @@ export function createAuthRoutes(identity: IdentityFoundation): RouteDefinition[
     },
     {
       method: "POST",
+      path: ApiPaths.AuthRefresh,
+      authRequired: false,
+      summary: "Refresh session tokens (Identity SessionService)",
+      tags: ["auth"],
+      async handler(request) {
+        const correlationId = resolveCorrelationId(request);
+        let body: Record<string, unknown>;
+        try {
+          body = parseJsonBody(request.bodyText) as Record<string, unknown>;
+        } catch {
+          return validationIssuesResponse(
+            [
+              {
+                field: "body",
+                code: "invalid_json",
+                message: "Body must be valid JSON",
+              },
+            ],
+            correlationId,
+          );
+        }
+        const sessionId = readString(body, "sessionId");
+        const refreshToken = readString(body, "refreshToken");
+        if (!sessionId || !refreshToken) {
+          return validationIssuesResponse(
+            [
+              {
+                field: "sessionId",
+                code: "required",
+                message: "sessionId and refreshToken are required",
+              },
+            ],
+            correlationId,
+          );
+        }
+        const result = await identity.sessions.refreshSession(
+          sessionId,
+          refreshToken,
+        );
+        if (isFail(result)) {
+          return platformErrorResponse(result.error, correlationId);
+        }
+        return jsonResponse(
+          200,
+          {
+            ok: true,
+            data: { tokens: result.value },
+            correlationId,
+          },
+          { [CorrelationHeader]: correlationId },
+        );
+      },
+    },
+    {
+      method: "POST",
       path: ApiPaths.AuthSignOut,
       authRequired: true,
       summary: "Sign out current session",

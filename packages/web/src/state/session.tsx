@@ -7,6 +7,7 @@ import {
   createElement,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -33,6 +34,7 @@ type SessionContextValue = {
   setDeveloperMode(value: boolean): void;
   setTheme(theme: "light" | "dark"): void;
   setLastCorrelationId(id: string | null): void;
+  refreshSession(): Promise<boolean>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -101,6 +103,48 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
     [tokens?.sessionId, user?.companyId, clearSession, developerMode],
   );
 
+  const refreshSession = useCallback(async () => {
+    if (!tokens?.sessionId || !tokens.refreshToken) return false;
+    try {
+      const res = await api.refreshSession({
+        sessionId: tokens.sessionId,
+        refreshToken: tokens.refreshToken,
+      });
+      setLastCorrelationId(res.correlationId);
+      if (user) setSession(user, res.data.tokens);
+      else {
+        setTokens(res.data.tokens);
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as StoredSession;
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ ...parsed, tokens: res.data.tokens }),
+          );
+        }
+      }
+      return true;
+    } catch {
+      clearSession();
+      return false;
+    }
+  }, [api, clearSession, setSession, tokens, user]);
+
+  useEffect(() => {
+    if (!tokens?.expiresAt) return;
+    const expires = Date.parse(tokens.expiresAt);
+    if (!Number.isFinite(expires)) return;
+    const msUntil = expires - Date.now() - 60_000;
+    if (msUntil <= 0) {
+      void refreshSession();
+      return;
+    }
+    const t = window.setTimeout(() => {
+      void refreshSession();
+    }, Math.min(msUntil, 2_147_000_000));
+    return () => window.clearTimeout(t);
+  }, [tokens?.expiresAt, tokens?.sessionId, refreshSession]);
+
   const value: SessionContextValue = {
     user,
     tokens,
@@ -113,6 +157,7 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
     setDeveloperMode,
     setTheme,
     setLastCorrelationId,
+    refreshSession,
   };
 
   return createElement(SessionContext.Provider, { value }, children);

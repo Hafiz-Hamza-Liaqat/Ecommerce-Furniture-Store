@@ -42,6 +42,7 @@ import {
 } from "../workspace/widgets";
 import { PageHeader } from "../components/ui";
 import { useWorkspaceUi } from "../workspace/context";
+import { LiveBackendSummaries } from "./LiveSummaries";
 
 const SIZE_CYCLE: WidgetSize[] = ["sm", "md", "lg"];
 
@@ -103,7 +104,7 @@ export function DashboardPage() {
     <div className="stack ws-exec">
       <PageHeader
         title="Executive dashboard"
-        lead="Operational snapshot for leadership. Figures are presentation fixtures aligned to Reporting snapshots — calculations stay server-side."
+        lead="Operational snapshot for leadership. Live Get*Summary queries load when the session is company-scoped; KPI widgets remain presentation fixtures where no company-wide query exists."
         actions={
           <Toolbar>
             <button
@@ -119,6 +120,7 @@ export function DashboardPage() {
           </Toolbar>
         }
       />
+      <LiveBackendSummaries />
 
       {customize ? (
         <section className="ws-card ws-customize">

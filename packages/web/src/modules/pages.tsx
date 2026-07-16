@@ -18,10 +18,10 @@ import { REPORTING_MODULE } from "./reporting/definition";
 export const MODULES = {
   workflow: {
     title: "Workflow",
-    lead: "Display status, history, assignments from backend Workflow.",
-    queryType: "workflow.GetInstance",
-    queryPayloadHint: "JSON payload",
-    statusNote: "Workflow engine remains server-side.",
+    lead: "Workflow engine remains server-side. No GetInstance CQRS query is registered — use /app/workflow operator view.",
+    queryType: "workflow.unavailable",
+    queryPayloadHint: "No public workflow query type — presentation inventory until CQRS wrapper exists",
+    statusNote: "RC2: Workflow/Approval engines are not exposed as CQRS handlers; UI does not invent APIs.",
   },
 } as const satisfies Record<string, ModuleSpec>;
 

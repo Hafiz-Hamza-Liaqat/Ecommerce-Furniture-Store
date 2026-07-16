@@ -153,6 +153,7 @@ export const SALES_MODULE: ModuleDefinition = {
       records: opportunities,
       api: {
         createCommandType: "sales.CreateOpportunity",
+        updateCommandType: "sales.UpdateOpportunity",
         getQueryType: "sales.GetOpportunity",
         buildCreatePayload: (companyId, v) => ({
           companyId,
@@ -160,6 +161,15 @@ export const SALES_MODULE: ModuleDefinition = {
           source: v.source || "inbound",
           customerId: v.customerId || null,
           currencyCode: v.currencyCode || "PKR",
+          estimatedValueRef: v.estimatedValueRef || null,
+        }),
+        buildUpdatePayload: (companyId, opportunityId, v) => ({
+          companyId,
+          opportunityId,
+          title: v.title || null,
+          source: v.source || null,
+          customerId: v.customerId || null,
+          currencyCode: v.currencyCode || null,
           estimatedValueRef: v.estimatedValueRef || null,
         }),
         buildGetPayload: (companyId, id) => ({ companyId, opportunityId: id }),
@@ -231,6 +241,25 @@ export const SALES_MODULE: ModuleDefinition = {
             Currency: q.currencyCode ?? "PKR",
           }, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "revise",
+            label: "Revise quote",
+            commandType: "sales.ReviseQuote",
+            tone: "primary",
+            buildPayload: (companyId, quoteId, r) => ({
+              companyId,
+              quoteId,
+              notes: "Revised from operator console",
+              lines: [
+                {
+                  description: String(r.meta.lineDescription ?? r.title),
+                  quantity: Number(r.meta.quantity ?? 1),
+                },
+              ],
+            }),
+          },
+        ],
       },
     }),
     entity({
@@ -279,6 +308,20 @@ export const SALES_MODULE: ModuleDefinition = {
           if (!o.id) return null;
           return row(o.id, o.number ?? o.id, o.status ?? "Open", {}, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "cancel",
+            label: "Cancel order",
+            commandType: "sales.CancelSalesOrder",
+            tone: "danger",
+            buildPayload: (companyId, salesOrderId) => ({
+              companyId,
+              salesOrderId,
+              reason: "Cancelled from operator console",
+              requireApproval: true,
+            }),
+          },
+        ],
       },
     }),
     entity({

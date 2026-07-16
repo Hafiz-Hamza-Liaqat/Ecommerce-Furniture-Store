@@ -76,11 +76,18 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
       records: suppliers,
       api: {
         createCommandType: "procurement.CreateSupplier",
+        updateCommandType: "procurement.UpdateSupplier",
         getQueryType: "procurement.GetSupplier",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           name: v.name,
           code: v.code || `SUP-${Date.now()}`,
+        }),
+        buildUpdatePayload: (companyId, supplierId, v) => ({
+          companyId,
+          supplierId,
+          name: v.name || null,
+          code: v.code || null,
         }),
         buildGetPayload: (companyId, id) => ({ companyId, supplierId: id }),
         extractCreateId: (data) => (data as { supplierId?: string }).supplierId ?? null,
@@ -128,6 +135,18 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
           if (!d.id) return null;
           return row(d.id, d.number ?? d.id, d.status ?? "Draft", {}, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "submit",
+            label: "Submit requisition",
+            commandType: "procurement.SubmitPurchaseRequisition",
+            buildPayload: (companyId, requisitionId) => ({
+              companyId,
+              requisitionId,
+              requireApproval: true,
+            }),
+          },
+        ],
       },
     }),
     e({
@@ -172,6 +191,30 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
           if (!po.id) return null;
           return row(po.id, po.number ?? po.id, po.status ?? "Draft", {}, { source: "api" });
         },
+        lifecycleActions: [
+          {
+            id: "issue",
+            label: "Issue PO",
+            commandType: "procurement.IssuePurchaseOrder",
+            buildPayload: (companyId, purchaseOrderId) => ({
+              companyId,
+              purchaseOrderId,
+              requireApproval: true,
+            }),
+          },
+          {
+            id: "cancel",
+            label: "Cancel PO",
+            commandType: "procurement.CancelPurchaseOrder",
+            tone: "danger",
+            buildPayload: (companyId, purchaseOrderId) => ({
+              companyId,
+              purchaseOrderId,
+              reason: "Cancelled from operator console",
+              requireApproval: true,
+            }),
+          },
+        ],
       },
     }),
     e({

@@ -39,10 +39,11 @@ function saveDevices(rows: DeviceRow[]): void {
 }
 
 export function SecurityCenterPage() {
-  const { api, tokens, user, clearSession } = useSession();
+  const { api, tokens, user, clearSession, refreshSession } = useSession();
   const { toast } = useWorkspaceUi();
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [sessionHint, setSessionHint] = useState<string>("—");
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     setDevices(loadDevices(tokens?.sessionId ?? null));
@@ -121,6 +122,25 @@ export function SecurityCenterPage() {
         )}
       </section>
       <div className="row" style={{ gap: "0.5rem", flexWrap: "wrap" }}>
+        <Button
+          variant="primary"
+          disabled={refreshing}
+          onClick={() => {
+            setRefreshing(true);
+            void refreshSession().then((ok) => {
+              setRefreshing(false);
+              toast({
+                tone: ok ? "ok" : "danger",
+                title: ok ? "Session refreshed" : "Refresh failed",
+                body: ok
+                  ? "Tokens rotated via Identity SessionService."
+                  : "Signed out — refresh rejected or expired.",
+              });
+            });
+          }}
+        >
+          {refreshing ? "Refreshing…" : "Refresh session"}
+        </Button>
         <Link className="btn btn--ghost" to="/app/account/email-verification">
           Email verification
         </Link>

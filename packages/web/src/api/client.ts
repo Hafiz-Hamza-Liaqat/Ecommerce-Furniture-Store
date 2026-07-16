@@ -63,6 +63,16 @@ export class ApiClient {
     });
   }
 
+  async refreshSession(input: {
+    readonly sessionId: string;
+    readonly refreshToken: string;
+  }): Promise<ApiSuccess<{ tokens: SessionTokens }>> {
+    return this.#request("POST", "/api/v1/auth/refresh", {
+      body: input,
+      auth: false,
+    });
+  }
+
   async signOut(): Promise<ApiSuccess<{ signedOut: boolean }>> {
     return this.#request("POST", "/api/v1/auth/sign-out", { body: {} });
   }

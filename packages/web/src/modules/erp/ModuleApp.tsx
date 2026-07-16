@@ -28,10 +28,11 @@ import {
 import { LineChart, BarChart } from "../../workspace/charts";
 import { useWorkspaceUi } from "../../workspace/context";
 import { SERIES } from "../../workspace/data";
-import type { EntityDef, ModuleDefinition, RecordRow } from "./types";
+import type { EntityDef, LifecycleAction, ModuleDefinition, RecordRow } from "./types";
 import { addCollab, getCollab, loadLocalRecords, saveLocalRecord } from "./store";
 import { AdvancedDataTable } from "../../productivity/AdvancedTable";
 import { EnterpriseCalendar } from "../../productivity/EnterpriseCalendar";
+import { dedupeAsync } from "../../api/dedupe";
 import {
   CollaborationComposer,
   CollaborationFeed,
@@ -114,10 +115,14 @@ function ModuleDashboard({ module }: { readonly module: ModuleDefinition }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.dispatchQuery({
-          queryType: module.summaryQueryType!,
-          payload: module.buildSummaryPayload!(user.companyId!),
-        });
+        const res = await dedupeAsync(
+          `summary:${module.id}:${user.companyId}`,
+          () =>
+            api.dispatchQuery({
+              queryType: module.summaryQueryType!,
+              payload: module.buildSummaryPayload!(user.companyId!),
+            }),
+        );
         if (cancelled) return;
         setLastCorrelationId(res.correlationId);
         setSummary(JSON.stringify(res.data, null, 2));
@@ -602,6 +607,7 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
   const [watched, setWatched] = useState(() => loadWatchedRecords());
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [reactionBoost, setReactionBoost] = useState<Record<string, Record<string, number>>>({});
+  const [lifecycleBusy, setLifecycleBusy] = useState<string | null>(null);
   const recordKey = `${module.id}:${entityKey}:${recordId}`;
   const isPinned = pinned.includes(recordKey);
   const isWatched = watched.includes(recordKey);
@@ -618,20 +624,34 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.dispatchQuery({
-          queryType: entity.api!.getQueryType!,
-          payload: entity.api!.buildGetPayload!(user.companyId!, recordId),
-        });
+        const res = await dedupeAsync(
+          `get:${entity.api!.getQueryType}:${user.companyId}:${recordId}`,
+          () =>
+            api.dispatchQuery({
+              queryType: entity.api!.getQueryType!,
+              payload: entity.api!.buildGetPayload!(user.companyId!, recordId),
+            }),
+        );
         if (cancelled) return;
         setLastCorrelationId(res.correlationId);
         setApiRaw(JSON.stringify(res.data, null, 2));
         const mapped = entity.api!.mapEntity?.(res.data) ?? null;
         setApiRow(mapped);
+        if (mapped) saveLocalRecord(module.id, entity.key, mapped);
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiClientError) {
           setLastCorrelationId(err.correlationId);
-          setError(`${err.message} (${err.code})`);
+          const forbidden =
+            err.status === 403 ||
+            err.category === "authorization" ||
+            err.code.includes("forbidden") ||
+            err.code.includes("denied");
+          setError(
+            forbidden
+              ? `Forbidden by Policy (${err.code}) — backend remains sole authorization authority.`
+              : `${err.message} (${err.code})`,
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -640,7 +660,7 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
     return () => {
       cancelled = true;
     };
-  }, [api, entity, recordId, setLastCorrelationId, user?.companyId]);
+  }, [api, entity, module.id, recordId, setLastCorrelationId, user?.companyId]);
 
   if (!entity || !recordId) {
     return <EmptyState title="Not found" body="Record or entity missing." />;
@@ -711,6 +731,52 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
     });
   }
 
+  async function runLifecycle(action: LifecycleAction) {
+    if (!user?.companyId || !row) {
+      toast({ tone: "danger", title: "Missing companyId", body: "Session must include company scope." });
+      return;
+    }
+    setLifecycleBusy(action.id);
+    try {
+      const res = await api.dispatchCommand({
+        commandType: action.commandType,
+        payload: action.buildPayload(user.companyId, id, row),
+        idempotencyKey: crypto.randomUUID(),
+      });
+      setLastCorrelationId(res.correlationId);
+      toast({
+        tone: "ok",
+        title: action.label,
+        body: `${action.commandType} accepted — Workflow/Approval/Policy enforced server-side.`,
+      });
+      // Re-query when get is available
+      if (entityDef.api?.getQueryType && entityDef.api.buildGetPayload) {
+        const q = await api.dispatchQuery({
+          queryType: entityDef.api.getQueryType,
+          payload: entityDef.api.buildGetPayload(user.companyId, id),
+        });
+        setLastCorrelationId(q.correlationId);
+        setApiRaw(JSON.stringify(q.data, null, 2));
+        const mapped = entityDef.api.mapEntity?.(q.data) ?? null;
+        setApiRow(mapped);
+        if (mapped) saveLocalRecord(module.id, entityDef.key, mapped);
+      }
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        setLastCorrelationId(err.correlationId);
+        toast({
+          tone: "danger",
+          title: action.label,
+          body: `${err.message} (${err.code})`,
+        });
+      } else {
+        toast({ tone: "danger", title: action.label, body: "Command failed." });
+      }
+    } finally {
+      setLifecycleBusy(null);
+    }
+  }
+
   return (
     <div className="stack">
       <PageHeader
@@ -753,6 +819,20 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
         }
       />
       <StatusBadge status={row.status} tone={toneForStatus(row.status)} />
+      {entityDef.api?.lifecycleActions?.length ? (
+        <div className="row" style={{ gap: "0.4rem", flexWrap: "wrap" }}>
+          {entityDef.api.lifecycleActions.map((action) => (
+            <Button
+              key={action.id}
+              variant={action.tone === "danger" ? "danger" : action.tone === "ghost" ? "ghost" : "primary"}
+              disabled={lifecycleBusy !== null}
+              onClick={() => void runLifecycle(action)}
+            >
+              {lifecycleBusy === action.id ? "Working…" : action.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       <SharedLinkBar
         path={`${module.basePath}/${entityDef.key}/${id}`}
         onCopy={() => {
@@ -999,6 +1079,38 @@ function EntityFormPage({
         return;
       }
 
+      if (
+        entity!.api?.updateCommandType &&
+        entity!.api.buildUpdatePayload &&
+        mode === "edit" &&
+        recordId
+      ) {
+        if (!user?.companyId) {
+          setError("Signed-in user is missing companyId — required for API commands.");
+          return;
+        }
+        const payload = entity!.api.buildUpdatePayload(user.companyId, recordId, values);
+        const res = await api.dispatchCommand({
+          commandType: entity!.api.updateCommandType,
+          payload,
+          idempotencyKey: crypto.randomUUID(),
+        });
+        setLastCorrelationId(res.correlationId);
+        const mapped =
+          entity!.api.mapEntity?.(res.data) ??
+          ({
+            id: recordId,
+            title: values.title || values.name || values.number || recordId,
+            status: "Open",
+            meta: { ...values },
+            source: "api" as const,
+          } satisfies RecordRow);
+        saveLocalRecord(module.id, entity!.key, mapped);
+        toast({ tone: "ok", title: `${entity!.label} updated`, body: recordId });
+        navigate(`${module.basePath}/${entity!.key}/${recordId}`);
+        return;
+      }
+
       const id = recordId ?? `${entity!.key.slice(0, 3).toUpperCase()}-${Date.now()}`;
       const row: RecordRow = {
         id,
@@ -1012,15 +1124,24 @@ function EntityFormPage({
       toast({
         tone: "ok",
         title: mode === "create" ? "Record saved locally" : "Record updated",
-        body: entity!.api?.createCommandType
+        body: entity!.api?.createCommandType || entity!.api?.updateCommandType
           ? "Fill required API fields to dispatch the live command."
-          : "Presentation record stored in this browser.",
+          : "Presentation record stored in this browser — no matching backend command.",
       });
       navigate(`${module.basePath}/${entity!.key}/${id}`);
     } catch (err) {
       if (err instanceof ApiClientError) {
         setLastCorrelationId(err.correlationId);
-        setError(`${err.message} (${err.code})`);
+        const forbidden =
+          err.status === 403 ||
+          err.category === "authorization" ||
+          err.code.includes("forbidden") ||
+          err.code.includes("denied");
+        setError(
+          forbidden
+            ? `Forbidden by Policy (${err.code}) — UI never authorizes.`
+            : `${err.message} (${err.code})`,
+        );
       } else {
         setError("Save failed.");
       }
@@ -1034,9 +1155,11 @@ function EntityFormPage({
       <PageHeader
         title={`${mode === "create" ? "Create" : "Edit"} ${entity.label.toLowerCase()}`}
         lead={
-          entity.api?.createCommandType
-            ? `Dispatches ${entity.api.createCommandType} when creating with a company-scoped session.`
-            : "Presentation form — persisted locally until a matching API command exists."
+          entity.api?.updateCommandType && mode === "edit"
+            ? `Dispatches ${entity.api.updateCommandType} — Policy/Workflow enforced on the server.`
+            : entity.api?.createCommandType
+              ? `Dispatches ${entity.api.createCommandType} when creating with a company-scoped session.`
+              : "Presentation form — persisted locally until a matching API command exists."
         }
       />
       {error ? <Alert tone="danger">{error}</Alert> : null}

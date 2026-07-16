@@ -81,12 +81,20 @@ export const FINANCE_MODULE: ModuleDefinition = {
       ),
       api: {
         createCommandType: "finance.CreateFinancialAccount",
+        updateCommandType: "finance.UpdateFinancialAccount",
         getQueryType: "finance.GetFinancialAccount",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           code: v.code,
           name: v.name,
           accountType: v.accountType || "asset",
+        }),
+        buildUpdatePayload: (companyId, accountId, v) => ({
+          companyId,
+          accountId,
+          code: v.code || null,
+          name: v.name || null,
+          accountType: v.accountType || null,
         }),
         buildGetPayload: (companyId, id) => ({ companyId, accountId: id }),
         extractCreateId: (data) => (data as { accountId?: string }).accountId ?? null,
