@@ -28,6 +28,9 @@ import {
 import { DamPage } from "./pages/DamPage";
 import { PreferencesPage } from "./productivity/PreferencesPage";
 import { CalendarHubPage } from "./productivity/CalendarHubPage";
+import { AnalyticsCenterPage } from "./analytics/AnalyticsCenter";
+import { ReportsCenterPage } from "./analytics/ReportsCenter";
+import { InsightsCenterPage } from "./analytics/InsightsCenter";
 import { useSession } from "./state/session";
 import { MarketingShell } from "./marketing/MarketingShell";
 import { HomePage } from "./marketing/pages/HomePage";
@@ -78,6 +81,9 @@ export function AppRoutes() {
           <Route path="me" element={<PersonalWorkspacePage />} />
           <Route path="calendar" element={<CalendarHubPage />} />
           <Route path="preferences" element={<PreferencesPage />} />
+          <Route path="analytics/*" element={<AnalyticsCenterPage />} />
+          <Route path="reports/*" element={<ReportsCenterPage />} />
+          <Route path="insights" element={<InsightsCenterPage />} />
           <Route path="sales/*" element={<SalesPage />} />
           <Route path="procurement/*" element={<ProcurementPage />} />
           <Route path="inventory/*" element={<InventoryPage />} />

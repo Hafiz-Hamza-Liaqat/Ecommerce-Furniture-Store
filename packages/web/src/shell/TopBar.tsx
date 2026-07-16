@@ -25,6 +25,9 @@ const MODULE_LABELS: Record<string, string> = {
   approvals: "Approvals",
   calendar: "Calendar",
   preferences: "Preferences",
+  analytics: "Analytics",
+  reports: "Reports",
+  insights: "Insights",
 };
 
 function breadcrumbTrail(pathname: string): { label: string; to?: string }[] {

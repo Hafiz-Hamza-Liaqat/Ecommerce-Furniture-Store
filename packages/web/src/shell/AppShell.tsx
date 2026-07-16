@@ -34,6 +34,9 @@ const MODULE_LABELS: Record<string, string> = {
   approvals: "Approvals",
   calendar: "Enterprise calendar",
   preferences: "Preferences",
+  analytics: "Analytics",
+  reports: "Reports",
+  insights: "Insights",
 };
 
 function pageLabel(pathname: string): string {

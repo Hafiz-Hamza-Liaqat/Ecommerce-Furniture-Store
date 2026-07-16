@@ -221,6 +221,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { to: "/app", label: "Executive dashboard", end: true },
       { to: "/app/me", label: "My workspace" },
+      { to: "/app/analytics", label: "Analytics" },
+      { to: "/app/reports", label: "Report center" },
+      { to: "/app/insights", label: "Insights" },
       { to: "/app/calendar", label: "Enterprise calendar" },
       { to: "/app/approvals", label: "Approvals" },
       { to: "/app/notifications", label: "Notifications" },
@@ -267,6 +270,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
 export const COMMANDS = [
   { id: "cmd-dash", label: "Go to executive dashboard", href: "/app", group: "Navigate", keywords: "home kpi" },
   { id: "cmd-me", label: "Open my workspace", href: "/app/me", group: "Navigate", keywords: "tasks personal" },
+  { id: "cmd-analytics", label: "Executive intelligence / analytics", href: "/app/analytics", group: "Navigate", keywords: "bi kpi scorecard" },
+  { id: "cmd-reports", label: "Report center", href: "/app/reports", group: "Navigate", keywords: "export schedule" },
+  { id: "cmd-insights", label: "Insight center", href: "/app/insights", group: "Navigate", keywords: "trends risks" },
+  { id: "cmd-builder", label: "Dashboard builder", href: "/app/analytics/builder", group: "Navigate", keywords: "widgets layout" },
   { id: "cmd-cal", label: "Enterprise calendar", href: "/app/calendar", group: "Navigate", keywords: "schedule leave" },
   { id: "cmd-prefs", label: "Preferences center", href: "/app/preferences", group: "Navigate", keywords: "theme settings a11y" },
   { id: "cmd-sales", label: "Sales module", href: "/app/sales", group: "Navigate", keywords: "orders quotes" },

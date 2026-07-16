@@ -146,6 +146,9 @@ export function Sidebar() {
         {!sidebarCollapsed ? (
           <div className="nav-group">
             <div className="nav-group__label">Suggestions</div>
+            <NavLink to="/app/analytics" className="nav-link" onClick={() => setMobileNavOpen(false)}>
+              Executive analytics
+            </NavLink>
             <NavLink to="/app/approvals" className="nav-link" onClick={() => setMobileNavOpen(false)}>
               Pending approvals
             </NavLink>
