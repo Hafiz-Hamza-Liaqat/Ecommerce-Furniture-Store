@@ -1,5 +1,7 @@
 /**
- * Presentation session state — tokens & user only. No authorization decisions.
+ * Presentation session state — tokens, user, and effective permission codes
+ * mirrored from the session endpoint. No authorization decisions; the backend
+ * Policy Engine remains the sole authorizer.
  */
 
 import {
@@ -9,6 +11,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -25,6 +28,12 @@ type StoredSession = {
 type SessionContextValue = {
   readonly user: AuthUser | null;
   readonly tokens: SessionTokens | null;
+  /**
+   * Effective canonical permission codes from GET /api/v1/auth/session.
+   * `null` while unresolved (no session, still loading, or fetch failed).
+   * Presentation-only signal — backend Policy remains authoritative.
+   */
+  readonly permissionCodes: readonly string[] | null;
   readonly api: ApiClient;
   readonly developerMode: boolean;
   readonly theme: "light" | "dark";
@@ -65,14 +74,31 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
   const [lastCorrelationId, setLastCorrelationId] = useState<string | null>(
     null,
   );
+  const [permissionCodes, setPermissionCodes] = useState<
+    readonly string[] | null
+  >(null);
+  // Identity (user + session) the current permissionCodes belong to. A silent
+  // token refresh keeps the same identity, so codes stay valid while they are
+  // re-resolved; a different user/session invalidates them immediately.
+  const permissionIdentityRef = useRef<string | null>(
+    stored ? `${stored.user.id}:${stored.tokens.sessionId}` : null,
+  );
 
   const clearSession = useCallback(() => {
     setUser(null);
     setTokens(null);
+    setPermissionCodes(null);
+    permissionIdentityRef.current = null;
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   const setSession = useCallback((nextUser: AuthUser, nextTokens: SessionTokens) => {
+    const nextIdentity = `${nextUser.id}:${nextTokens.sessionId}`;
+    if (permissionIdentityRef.current !== nextIdentity) {
+      // New user or new session — previous codes must not leak across.
+      setPermissionCodes(null);
+      permissionIdentityRef.current = nextIdentity;
+    }
     setUser(nextUser);
     setTokens(nextTokens);
     localStorage.setItem(
@@ -130,6 +156,38 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
     }
   }, [api, clearSession, setSession, tokens, user]);
 
+  // Resolve effective permission codes from the existing session endpoint.
+  // Read-only projection for presentation gating; no authorization decision.
+  // Keyed on the tokens object: it is replaced on login, page reload, and
+  // every silent/manual refresh (backend keeps sessionId stable but rotates
+  // refreshToken/expiresAt), so codes are re-resolved after each refresh and
+  // revocations take effect without a full page reload. Exactly one fetch
+  // runs per token rotation; stale responses are ignored via `cancelled`.
+  useEffect(() => {
+    if (!tokens?.sessionId) {
+      setPermissionCodes(null);
+      return;
+    }
+    let cancelled = false;
+    void api
+      .getSession()
+      .then((res) => {
+        if (!cancelled) {
+          setPermissionCodes(res.data.permissionCodes);
+        }
+      })
+      .catch(() => {
+        // Leave codes unresolved; a 401/403 already clears the session via
+        // onUnauthorized, and the backend Policy Engine stays authoritative.
+        if (!cancelled) {
+          setPermissionCodes(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, tokens]);
+
   useEffect(() => {
     if (!tokens?.expiresAt) return;
     const expires = Date.parse(tokens.expiresAt);
@@ -148,6 +206,7 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
   const value: SessionContextValue = {
     user,
     tokens,
+    permissionCodes,
     api,
     developerMode,
     theme,

@@ -8,6 +8,10 @@ import { useSession } from "./state/session";
 import { MarketingShell } from "./marketing/MarketingShell";
 import { RouteSuspense } from "./components/EnterpriseError";
 import {
+  RequireRoutePermission,
+  RequireRoutePermissionElement,
+} from "./auth/RequirePermission";
+import {
   LazyAdminRoutes,
   LazyAiRoutes,
   LazyAiSettingsPage,
@@ -108,9 +112,11 @@ export function AppRoutes() {
         path="/admin/platform/*"
         element={
           <RequireAuthElement>
-            <Lazy>
-              <LazyAdminRoutes />
-            </Lazy>
+            <RequireRoutePermissionElement>
+              <Lazy>
+                <LazyAdminRoutes />
+              </Lazy>
+            </RequireRoutePermissionElement>
           </RequireAuthElement>
         }
       />
@@ -118,15 +124,21 @@ export function AppRoutes() {
         path="/portal/*"
         element={
           <RequireAuthElement>
-            <Lazy>
-              <LazyPortalRoutes />
-            </Lazy>
+            <RequireRoutePermissionElement>
+              <Lazy>
+                <LazyPortalRoutes />
+              </Lazy>
+            </RequireRoutePermissionElement>
           </RequireAuthElement>
         }
       />
 
       <Route path="/app" element={<RequireAuth />}>
         <Route element={<AppShell />}>
+          {/* RC5.2 presentation guard: catalog-driven permission gating for
+              every /app surface, including direct URL deep links. Renders the
+              Forbidden experience inside the shell; nav is not filtered. */}
+          <Route element={<RequireRoutePermission />}>
           <Route
             index
             element={
@@ -367,6 +379,7 @@ export function AppRoutes() {
               </Lazy>
             }
           />
+          </Route>
         </Route>
       </Route>
 

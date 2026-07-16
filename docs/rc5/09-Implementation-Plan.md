@@ -59,6 +59,8 @@ Any pull request containing excluded work is not RC5.1 and must be split or reje
 
 **Gap note:** If session endpoint cannot return permission codes today, record as Identity session DTO extension (still Identity package; not a new auth engine). Do not invent a second `/permissions` microservice.
 
+**Implementation evidence (2026-07-17):** RC5.2 route protection is implemented in `packages/web/src/routes/route-permissions.ts`, `packages/web/src/auth/RequirePermission.tsx`, and `packages/web/src/App.tsx` (guard flag `afh.web.routeGuard` / `VITE_ROUTE_PERMISSION_GUARD`); see `docs/release/RC5.2-route-protection.md` for the evidence packet. Nav filtering and dashboard control gating were explicitly deferred (nav filtering to a later approved slice; dashboards to RC5.3).
+
 ---
 
 ## RC5.3 — Dashboard authorization
