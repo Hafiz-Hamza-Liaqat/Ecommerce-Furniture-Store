@@ -26,7 +26,7 @@ export function LoginPage() {
       });
       setLastCorrelationId(result.correlationId);
       setSession(result.data.user, result.data.tokens);
-      void navigate("/");
+      void navigate("/app");
     } catch (err) {
       if (err instanceof ApiClientError) {
         setLastCorrelationId(err.correlationId);

@@ -4,34 +4,35 @@ const GROUPS = [
   {
     label: "Workspace",
     items: [
-      { to: "/", label: "Dashboard" },
-      { to: "/approvals", label: "Approvals" },
-      { to: "/workflow", label: "Workflow" },
-      { to: "/notifications", label: "Notifications" },
-      { to: "/search", label: "Search" },
-      { to: "/account/email-verification", label: "Email verification" },
-      { to: "/account/mfa", label: "MFA" },
+      { to: "/app", label: "Dashboard" },
+      { to: "/app/approvals", label: "Approvals" },
+      { to: "/app/workflow", label: "Workflow" },
+      { to: "/app/notifications", label: "Notifications" },
+      { to: "/app/search", label: "Search" },
+      { to: "/app/account/email-verification", label: "Email verification" },
+      { to: "/app/account/mfa", label: "MFA" },
     ],
   },
   {
     label: "Operations",
     items: [
-      { to: "/sales", label: "Sales" },
-      { to: "/procurement", label: "Procurement" },
-      { to: "/inventory", label: "Inventory" },
-      { to: "/finance", label: "Finance" },
-      { to: "/projects", label: "Projects" },
-      { to: "/crm", label: "CRM" },
-      { to: "/service", label: "Service" },
+      { to: "/app/sales", label: "Sales" },
+      { to: "/app/procurement", label: "Procurement" },
+      { to: "/app/inventory", label: "Inventory" },
+      { to: "/app/finance", label: "Finance" },
+      { to: "/app/projects", label: "Projects" },
+      { to: "/app/crm", label: "CRM" },
+      { to: "/app/service", label: "Service" },
     ],
   },
   {
     label: "Platform",
     items: [
-      { to: "/hr", label: "HR" },
-      { to: "/manufacturing", label: "Manufacturing" },
-      { to: "/cms", label: "CMS" },
-      { to: "/dam", label: "DAM" },
+      { to: "/app/hr", label: "HR" },
+      { to: "/app/manufacturing", label: "Manufacturing" },
+      { to: "/app/cms", label: "CMS" },
+      { to: "/app/dam", label: "DAM" },
+      { to: "/", label: "Public website" },
     ],
   },
 ] as const;
@@ -52,7 +53,7 @@ export function Sidebar() {
                 key={item.to}
                 to={item.to}
                 className="nav-link"
-                end={item.to === "/"}
+                end={item.to === "/app"}
               >
                 {item.label}
               </NavLink>
