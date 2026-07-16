@@ -19,5 +19,15 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("react-router")) return "router";
+          if (id.includes("react-dom") || id.includes("/react/")) return "react";
+          return "vendor";
+        },
+      },
+    },
   },
 });

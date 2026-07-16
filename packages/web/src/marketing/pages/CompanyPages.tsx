@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { EnterpriseError } from "../../components/EnterpriseError";
 import { Seo } from "../Seo";
 import {
   FAQ,
@@ -190,18 +191,7 @@ export function NotFoundPage() {
   return (
     <>
       <Seo title="Page not found" description="The requested page could not be found." path="/404" />
-      <header className="site-page-hero">
-        <h1>Page not found</h1>
-        <p>Return to the homepage or browse the catalogue.</p>
-        <div className="site-hero__actions">
-          <Link to="/" className="site-btn site-btn--primary">
-            Home
-          </Link>
-          <Link to="/products" className="site-btn site-btn--ghost">
-            Products
-          </Link>
-        </div>
-      </header>
+      <EnterpriseError kind="not-found" />
     </>
   );
 }

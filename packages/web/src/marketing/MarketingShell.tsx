@@ -56,7 +56,7 @@ export function MarketingShell() {
       <a className="site-skip" href="#site-main">
         Skip to content
       </a>
-      <header className="site-header">
+      <header className={`site-header${showTop ? " is-scrolled" : ""}`}>
         <div className="site-header__inner">
           <Link to="/" className="site-logo" aria-label={`${BRAND.name} home`}>
             <span className="site-logo__mark">{BRAND.short}</span>

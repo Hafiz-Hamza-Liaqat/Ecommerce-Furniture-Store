@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { EnterpriseError, errorKindFromApi, type EnterpriseErrorKind } from "../components/EnterpriseError";
 
 function useFocusTrap(active: boolean, onClose: () => void) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -402,25 +403,27 @@ export function EmptyState({
   );
 }
 
+export { errorKindFromApi };
+
 export function ErrorState({
-  title = "Something went wrong",
+  title,
   body,
   onRetry,
+  kind,
 }: {
   readonly title?: string;
   readonly body: string;
   readonly onRetry?: () => void;
+  readonly kind?: EnterpriseErrorKind;
 }) {
   return (
-    <div className="ws-empty ws-empty--error" role="alert">
-      <h3>{title}</h3>
-      <p>{body}</p>
-      {onRetry ? (
-        <button type="button" className="btn btn--primary" onClick={onRetry}>
-          Retry
-        </button>
-      ) : null}
-    </div>
+    <EnterpriseError
+      kind={kind ?? "generic"}
+      body={body}
+      inline
+      {...(title ? { title } : {})}
+      {...(onRetry ? { onRetry } : {})}
+    />
   );
 }
 

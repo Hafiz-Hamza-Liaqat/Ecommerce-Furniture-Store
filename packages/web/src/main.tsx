@@ -3,9 +3,11 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AppRoutes } from "./App";
 import { SessionProvider } from "./state/session";
+import "./styles/enterprise-tokens.css";
 import "./styles/global.css";
 import "./styles/components.css";
 import "./styles/workspace.css";
+import "./styles/enterprise.css";
 import "./styles/modules.css";
 import "./styles/productivity.css";
 import "./styles/analytics.css";
@@ -13,7 +15,7 @@ import "./styles/ai.css";
 import "./styles/integrations.css";
 import "./styles/platform.css";
 import "./styles/marketing.css";
-import { registerPlatformServiceWorker } from "./platform/MobileReadiness";
+import { registerPlatformServiceWorker, PwaUpdatePrompt } from "./platform/MobileReadiness";
 
 const root = document.getElementById("root");
 if (!root) {
@@ -31,6 +33,7 @@ createRoot(root).render(
     <SessionProvider>
       <BrowserRouter>
         <AppRoutes />
+        <PwaUpdatePrompt />
       </BrowserRouter>
     </SessionProvider>
   </StrictMode>,

@@ -19,16 +19,24 @@ export function TextField({
   label,
   id,
   error,
+  required,
   ...rest
 }: InputHTMLAttributes<HTMLInputElement> & {
   readonly label: string;
   readonly id: string;
   readonly error?: string;
 }) {
+  const isRequired = required ?? rest["aria-required"] === true;
   return (
     <label className="field" htmlFor={id}>
-      <span className="field__label">{label}</span>
-      <input id={id} className="field__input" aria-invalid={Boolean(error)} {...rest} />
+      <span className={`field__label${isRequired ? " field__label--required" : ""}`}>{label}</span>
+      <input
+        id={id}
+        className="field__input"
+        aria-invalid={Boolean(error)}
+        required={required}
+        {...rest}
+      />
       {error ? (
         <span className="field__error" role="alert">
           {error}
@@ -48,7 +56,7 @@ export function Alert({
   readonly children: ReactNode;
 }) {
   return (
-    <div className={`alert alert--${tone}`} role="status">
+    <div className={`alert alert--${tone}`} role={tone === "danger" ? "alert" : "status"}>
       {title ? <strong>{title}</strong> : null}
       <div>{children}</div>
     </div>
