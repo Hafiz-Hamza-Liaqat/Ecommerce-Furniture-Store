@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-import { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { BRANCHES, COMPANIES, NAV_GROUPS, WORKSPACES } from "../workspace/data";
 import { useWorkspaceUi } from "../workspace/context";
 
@@ -19,6 +19,11 @@ export function Sidebar() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(NAV_GROUPS.map((g) => [g.id, true])),
   );
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname, setMobileNavOpen]);
 
   return (
     <>

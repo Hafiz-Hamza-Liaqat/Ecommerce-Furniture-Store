@@ -1,38 +1,11 @@
-import { ModuleWorkspace } from "./ModuleWorkspace";
+import { ModuleWorkspace, type ModuleSpec } from "./ModuleWorkspace";
+import { ModuleApp } from "./erp/ModuleApp";
+import { SALES_MODULE } from "./sales/definition";
+import { PROCUREMENT_MODULE } from "./procurement/definition";
+import { INVENTORY_MODULE } from "./inventory/definition";
+import { FINANCE_MODULE } from "./finance/definition";
 
 export const MODULES = {
-  sales: {
-    title: "Sales",
-    lead: "Opportunities, quotes, and orders via Sales Application commands/queries.",
-    queryType: "sales.GetOpportunity",
-    queryPayloadHint: 'JSON payload, e.g. {"opportunityId":"..."}',
-    commandType: "sales.CreateOpportunity",
-    commandPayloadHint: "CreateOpportunity JSON payload",
-  },
-  procurement: {
-    title: "Procurement",
-    lead: "Requisitions and purchase orders through Procurement Application APIs.",
-    queryType: "procurement.GetPurchaseRequisition",
-    queryPayloadHint: 'JSON payload, e.g. {"requisitionId":"..."}',
-    commandType: "procurement.CreatePurchaseRequisition",
-    commandPayloadHint: "CreatePurchaseRequisition JSON payload",
-  },
-  inventory: {
-    title: "Inventory",
-    lead: "Stock and warehouse views from Inventory Application queries.",
-    queryType: "inventory.GetStock",
-    queryPayloadHint: 'JSON payload, e.g. {"itemId":"...","warehouseId":"..."}',
-    commandType: "inventory.AdjustStock",
-    commandPayloadHint: "AdjustStock JSON payload",
-  },
-  finance: {
-    title: "Finance",
-    lead: "Accounts and invoices via Finance Application — posting stays backend.",
-    queryType: "finance.GetInvoice",
-    queryPayloadHint: 'JSON payload, e.g. {"invoiceId":"..."}',
-    commandType: "finance.CreateInvoice",
-    commandPayloadHint: "CreateInvoice JSON payload",
-  },
   projects: {
     title: "Projects",
     lead: "Interior project proposals and schedules from Projects Application.",
@@ -80,19 +53,19 @@ export const MODULES = {
     queryPayloadHint: "JSON payload",
     statusNote: "Awaiting CMS application registration on the API host.",
   },
-} as const;
+} as const satisfies Record<string, ModuleSpec>;
 
 export function SalesPage() {
-  return <ModuleWorkspace spec={MODULES.sales} />;
+  return <ModuleApp module={SALES_MODULE} />;
 }
 export function ProcurementPage() {
-  return <ModuleWorkspace spec={MODULES.procurement} />;
+  return <ModuleApp module={PROCUREMENT_MODULE} />;
 }
 export function InventoryPage() {
-  return <ModuleWorkspace spec={MODULES.inventory} />;
+  return <ModuleApp module={INVENTORY_MODULE} />;
 }
 export function FinancePage() {
-  return <ModuleWorkspace spec={MODULES.finance} />;
+  return <ModuleApp module={FINANCE_MODULE} />;
 }
 export function ProjectsPage() {
   return <ModuleWorkspace spec={MODULES.projects} />;

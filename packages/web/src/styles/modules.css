@@ -1,0 +1,165 @@
+/* Core ERP module experience — extends workspace design system */
+
+.erp-module {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.erp-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid var(--afh-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--afh-paper) 88%, white);
+  position: sticky;
+  top: 4.25rem;
+  z-index: 4;
+  max-height: 9.5rem;
+  overflow: auto;
+}
+
+[data-theme="dark"] .erp-subnav {
+  background: color-mix(in srgb, var(--afh-paper) 92%, #000);
+}
+
+.erp-subnav__link {
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  color: var(--afh-ink-soft);
+  white-space: nowrap;
+}
+
+.erp-subnav__link:hover,
+.erp-subnav__link.is-active,
+.erp-subnav__link[aria-current="page"] {
+  background: color-mix(in srgb, var(--afh-copper) 16%, transparent);
+  color: var(--afh-ink);
+  font-weight: 650;
+}
+
+.erp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.erp-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.erp-pre {
+  margin: 0;
+  padding: 0.75rem 1rem 1rem;
+  overflow: auto;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  max-height: 280px;
+}
+
+.erp-filter {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--afh-ink-soft);
+  min-width: 140px;
+}
+
+.erp-filter input,
+.erp-filter select {
+  border: 1px solid var(--afh-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  background: var(--afh-mist);
+  color: var(--afh-ink);
+  font: inherit;
+}
+
+.erp-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  border: 1px dashed var(--afh-border);
+  border-radius: 12px;
+  background: var(--afh-mist);
+}
+
+.erp-table a {
+  color: var(--afh-teal);
+  font-weight: 650;
+}
+
+.erp-sort {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+}
+
+.erp-pager {
+  justify-content: space-between;
+}
+
+.erp-dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.erp-dl dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--afh-ink-soft);
+}
+
+.erp-dl dd {
+  margin: 0.15rem 0 0;
+  font-weight: 650;
+}
+
+.erp-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+@media (max-width: 960px) {
+  .erp-dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .erp-subnav {
+    top: 0;
+    position: relative;
+    max-height: none;
+  }
+
+  .erp-table {
+    font-size: 0.85rem;
+  }
+}
+
+@media print {
+  .erp-subnav,
+  .ws-sidebar,
+  .ws-topbar,
+  .erp-bulk,
+  .ws-toasts {
+    display: none !important;
+  }
+}

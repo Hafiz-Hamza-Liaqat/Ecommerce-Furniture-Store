@@ -74,10 +74,10 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="me" element={<PersonalWorkspacePage />} />
-          <Route path="sales" element={<SalesPage />} />
-          <Route path="procurement" element={<ProcurementPage />} />
-          <Route path="inventory" element={<InventoryPage />} />
-          <Route path="finance" element={<FinancePage />} />
+          <Route path="sales/*" element={<SalesPage />} />
+          <Route path="procurement/*" element={<ProcurementPage />} />
+          <Route path="inventory/*" element={<InventoryPage />} />
+          <Route path="finance/*" element={<FinancePage />} />
           <Route path="projects" element={<ErpProjectsPage />} />
           <Route path="crm" element={<CrmPage />} />
           <Route path="service" element={<ServicePage />} />

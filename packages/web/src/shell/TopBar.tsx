@@ -4,28 +4,39 @@ import { useWorkspaceUi } from "../workspace/context";
 import { Button } from "../components/ui";
 import { NOTIFICATIONS } from "../workspace/data";
 
-const CRUMBS: Record<string, string> = {
-  "/app": "Executive dashboard",
-  "/app/me": "My workspace",
-  "/app/sales": "Sales",
-  "/app/procurement": "Procurement",
-  "/app/inventory": "Inventory",
-  "/app/finance": "Finance",
-  "/app/projects": "Projects",
-  "/app/crm": "CRM",
-  "/app/service": "Service",
-  "/app/hr": "HR",
-  "/app/manufacturing": "Manufacturing",
-  "/app/cms": "CMS",
-  "/app/dam": "DAM",
-  "/app/notifications": "Notifications",
-  "/app/search": "Search",
-  "/app/reporting": "Reporting",
-  "/app/workflow": "Workflow",
-  "/app/approvals": "Approvals",
-  "/app/account/email-verification": "Email verification",
-  "/app/account/mfa": "MFA",
+const MODULE_LABELS: Record<string, string> = {
+  sales: "Sales",
+  procurement: "Procurement",
+  inventory: "Inventory",
+  finance: "Finance",
+  projects: "Projects",
+  crm: "CRM",
+  service: "Service",
+  hr: "HR",
+  manufacturing: "Manufacturing",
+  cms: "CMS",
+  dam: "DAM",
+  me: "My workspace",
+  notifications: "Notifications",
+  search: "Search",
+  reporting: "Reporting",
+  workflow: "Workflow",
+  approvals: "Approvals",
 };
+
+function breadcrumbLabel(pathname: string): string {
+  if (pathname === "/app") return "Executive dashboard";
+  if (pathname.startsWith("/app/account/")) {
+    return pathname.includes("mfa") ? "MFA" : "Email verification";
+  }
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts[0] === "app" && parts[1]) {
+    const mod = MODULE_LABELS[parts[1]] ?? parts[1];
+    if (parts.length === 2) return mod;
+    return `${mod} · ${parts.slice(2).join(" / ")}`;
+  }
+  return "Workspace";
+}
 
 export function TopBar() {
   const {
@@ -53,7 +64,7 @@ export function TopBar() {
   } = useWorkspaceUi();
   const { pathname } = useLocation();
   const unread = NOTIFICATIONS.filter((n) => n.unread).length;
-  const crumb = CRUMBS[pathname] ?? "Workspace";
+  const crumb = breadcrumbLabel(pathname);
   const isFav = favorites.includes(pathname);
 
   async function onLogout() {

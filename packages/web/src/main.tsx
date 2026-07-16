@@ -6,6 +6,7 @@ import { SessionProvider } from "./state/session";
 import "./styles/global.css";
 import "./styles/components.css";
 import "./styles/workspace.css";
+import "./styles/modules.css";
 import "./styles/marketing.css";
 
 const root = document.getElementById("root");
