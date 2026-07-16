@@ -2,7 +2,7 @@
   "name": "@afh/runtime-host",
   "version": "0.1.0",
   "private": true,
-  "description": "Enterprise production readiness foundation (Phase 9A)",
+  "description": "Enterprise production readiness and hardening (Phases 9A–9B)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,7 +22,9 @@
     "lint": "eslint src --max-warnings 0",
     "start": "node dist/bin/main.js",
     "verify": "node dist/bin/verify-release.js",
-    "test": "npm run verify"
+    "harden": "node dist/bin/harden.js",
+    "accept": "node dist/bin/accept.js",
+    "test": "npm run verify && npm run harden && npm run accept"
   },
   "dependencies": {
     "@afh/api": "0.1.0",

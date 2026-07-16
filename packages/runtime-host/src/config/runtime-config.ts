@@ -1,5 +1,6 @@
 /**
  * Environment profiles — no environment-specific business logic.
+ * Phase 9B adds resilience / messaging / SQL operational knobs (defaults preserve 9A behavior).
  */
 
 export type RuntimeProfile =
@@ -23,12 +24,54 @@ export type ProductionRuntimeConfig = {
   readonly eventBusEnabled: boolean;
   readonly requireSecrets: boolean;
   readonly validateOnStartup: boolean;
+  /** SQL busy timeout (ms). */
+  readonly busyTimeoutMs: number;
+  /** Advisory transaction timeout budget for ops tooling (ms). */
+  readonly transactionTimeoutMs: number;
+  readonly startupRetryAttempts: number;
+  readonly startupRetryBackoffMs: readonly number[];
+  readonly shutdownTimeoutMs: number;
+  readonly messagingMaxAttempts: number;
+  readonly messagingBackoffMs: readonly number[];
+  readonly messagingConsumerConcurrency: number;
+  readonly messagingBatchSize: number;
+  readonly messagingPoisonThreshold: number;
+  readonly messagingClaimLeaseMs: number;
+  readonly integrityCheckOnStartup: boolean;
 };
 
-const PROFILE_DEFAULTS: Record<
-  RuntimeProfile,
-  Omit<ProductionRuntimeConfig, "profile">
+type ProfileDefaults = Omit<ProductionRuntimeConfig, "profile">;
+
+const SHARED_HARDENING: Pick<
+  ProfileDefaults,
+  | "busyTimeoutMs"
+  | "transactionTimeoutMs"
+  | "startupRetryAttempts"
+  | "startupRetryBackoffMs"
+  | "shutdownTimeoutMs"
+  | "messagingMaxAttempts"
+  | "messagingBackoffMs"
+  | "messagingConsumerConcurrency"
+  | "messagingBatchSize"
+  | "messagingPoisonThreshold"
+  | "messagingClaimLeaseMs"
+  | "integrityCheckOnStartup"
 > = {
+  busyTimeoutMs: 5_000,
+  transactionTimeoutMs: 30_000,
+  startupRetryAttempts: 3,
+  startupRetryBackoffMs: [250, 750, 1_500],
+  shutdownTimeoutMs: 30_000,
+  messagingMaxAttempts: 8,
+  messagingBackoffMs: [5_000, 30_000, 120_000, 600_000, 3_600_000],
+  messagingConsumerConcurrency: 4,
+  messagingBatchSize: 50,
+  messagingPoisonThreshold: 1,
+  messagingClaimLeaseMs: 60_000,
+  integrityCheckOnStartup: true,
+};
+
+const PROFILE_DEFAULTS: Record<RuntimeProfile, ProfileDefaults> = {
   development: {
     serviceName: "afh-api",
     host: "127.0.0.1",
@@ -43,6 +86,8 @@ const PROFILE_DEFAULTS: Record<
     eventBusEnabled: true,
     requireSecrets: false,
     validateOnStartup: true,
+    ...SHARED_HARDENING,
+    integrityCheckOnStartup: false,
   },
   testing: {
     serviceName: "afh-api",
@@ -58,6 +103,11 @@ const PROFILE_DEFAULTS: Record<
     eventBusEnabled: true,
     requireSecrets: true,
     validateOnStartup: true,
+    ...SHARED_HARDENING,
+    messagingMaxAttempts: 3,
+    messagingBatchSize: 20,
+    messagingConsumerConcurrency: 2,
+    shutdownTimeoutMs: 5_000,
   },
   staging: {
     serviceName: "afh-api",
@@ -73,6 +123,7 @@ const PROFILE_DEFAULTS: Record<
     eventBusEnabled: true,
     requireSecrets: true,
     validateOnStartup: true,
+    ...SHARED_HARDENING,
   },
   production: {
     serviceName: "afh-api",
@@ -88,6 +139,7 @@ const PROFILE_DEFAULTS: Record<
     eventBusEnabled: true,
     requireSecrets: true,
     validateOnStartup: true,
+    ...SHARED_HARDENING,
   },
 };
 
@@ -109,6 +161,16 @@ function readBool(name: string, fallback: boolean): boolean {
   if (raw === "1" || raw === "true" || raw === "yes") return true;
   if (raw === "0" || raw === "false" || raw === "no") return false;
   return fallback;
+}
+
+function readNumberList(name: string, fallback: readonly number[]): readonly number[] {
+  const raw = readEnv(name);
+  if (!raw) return fallback;
+  const parts = raw.split(",").map((p) => Number(p.trim()));
+  if (parts.length === 0 || parts.some((n) => !Number.isFinite(n) || n < 0)) {
+    return fallback;
+  }
+  return parts;
 }
 
 export function resolveRuntimeProfile(
@@ -170,6 +232,45 @@ export function loadProductionRuntimeConfig(
     validateOnStartup:
       overrides.validateOnStartup ??
       readBool("AFH_VALIDATE_ON_STARTUP", base.validateOnStartup),
+    busyTimeoutMs:
+      overrides.busyTimeoutMs ??
+      readNumber("AFH_SQL_BUSY_TIMEOUT_MS", base.busyTimeoutMs),
+    transactionTimeoutMs:
+      overrides.transactionTimeoutMs ??
+      readNumber("AFH_SQL_TRANSACTION_TIMEOUT_MS", base.transactionTimeoutMs),
+    startupRetryAttempts:
+      overrides.startupRetryAttempts ??
+      readNumber("AFH_STARTUP_RETRY_ATTEMPTS", base.startupRetryAttempts),
+    startupRetryBackoffMs:
+      overrides.startupRetryBackoffMs ??
+      readNumberList("AFH_STARTUP_RETRY_BACKOFF_MS", base.startupRetryBackoffMs),
+    shutdownTimeoutMs:
+      overrides.shutdownTimeoutMs ??
+      readNumber("AFH_SHUTDOWN_TIMEOUT_MS", base.shutdownTimeoutMs),
+    messagingMaxAttempts:
+      overrides.messagingMaxAttempts ??
+      readNumber("AFH_MESSAGING_MAX_ATTEMPTS", base.messagingMaxAttempts),
+    messagingBackoffMs:
+      overrides.messagingBackoffMs ??
+      readNumberList("AFH_MESSAGING_BACKOFF_MS", base.messagingBackoffMs),
+    messagingConsumerConcurrency:
+      overrides.messagingConsumerConcurrency ??
+      readNumber(
+        "AFH_MESSAGING_CONSUMER_CONCURRENCY",
+        base.messagingConsumerConcurrency,
+      ),
+    messagingBatchSize:
+      overrides.messagingBatchSize ??
+      readNumber("AFH_MESSAGING_BATCH_SIZE", base.messagingBatchSize),
+    messagingPoisonThreshold:
+      overrides.messagingPoisonThreshold ??
+      readNumber("AFH_MESSAGING_POISON_THRESHOLD", base.messagingPoisonThreshold),
+    messagingClaimLeaseMs:
+      overrides.messagingClaimLeaseMs ??
+      readNumber("AFH_MESSAGING_CLAIM_LEASE_MS", base.messagingClaimLeaseMs),
+    integrityCheckOnStartup:
+      overrides.integrityCheckOnStartup ??
+      readBool("AFH_SQL_INTEGRITY_ON_STARTUP", base.integrityCheckOnStartup),
   };
 }
 
@@ -190,5 +291,20 @@ export function assertProductionRuntimeConfig(
   }
   if (config.outboxBatchSize <= 0 || config.outboxMaxAttempts <= 0) {
     throw new Error("Outbox batch size and max attempts must be positive");
+  }
+  if (config.busyTimeoutMs < 0 || config.transactionTimeoutMs <= 0) {
+    throw new Error("SQL timeout configuration invalid");
+  }
+  if (config.startupRetryAttempts <= 0 || config.shutdownTimeoutMs <= 0) {
+    throw new Error("Resilience timeout/retry configuration invalid");
+  }
+  if (
+    config.messagingMaxAttempts <= 0 ||
+    config.messagingConsumerConcurrency <= 0 ||
+    config.messagingBatchSize <= 0 ||
+    config.messagingPoisonThreshold <= 0 ||
+    config.messagingClaimLeaseMs <= 0
+  ) {
+    throw new Error("Messaging hardening configuration invalid");
   }
 }

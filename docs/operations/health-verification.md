@@ -7,7 +7,7 @@ Production host registers Phase 0F-aligned probes, including:
 | Database | Infrastructure |
 | Event Bus | Infrastructure |
 | Configuration | Infrastructure |
-| Migrations / transactions | SQL persistence |
+| Migrations / transactions / integrity | SQL persistence |
 | Broker / publish / consumer / DLQ | Messaging broker |
 | Outbox / Inbox / Secrets / Outbox dispatcher | Runtime host |
 | Identity / signing / session | Identity security providers (when enabled) |

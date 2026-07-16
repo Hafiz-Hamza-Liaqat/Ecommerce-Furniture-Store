@@ -104,13 +104,19 @@ export class SqliteDatabaseTransaction implements DatabaseTransaction {
 export class SqliteDatabaseClient implements DatabaseClient, SqlExec {
   readonly name = "sqlite";
   readonly #db: DatabaseSync;
+  readonly #busyTimeoutMs: number;
   #sequence = 0;
   #activeTx: SqliteDatabaseTransaction | null = null;
 
   constructor(databasePath: string, busyTimeoutMs: number) {
+    this.#busyTimeoutMs = Math.max(0, busyTimeoutMs);
     this.#db = new DatabaseSync(databasePath);
     this.#db.exec("PRAGMA foreign_keys = ON");
-    this.#db.exec(`PRAGMA busy_timeout = ${Math.max(0, busyTimeoutMs)}`);
+    this.#db.exec(`PRAGMA busy_timeout = ${this.#busyTimeoutMs}`);
+  }
+
+  get busyTimeoutMs(): number {
+    return this.#busyTimeoutMs;
   }
 
   get raw(): DatabaseSync {
@@ -171,6 +177,35 @@ export class SqliteDatabaseClient implements DatabaseClient, SqlExec {
       return fail(
         new InfrastructureError("SQL health check failed", {
           code: "sql_health_failed",
+          cause,
+        }),
+      );
+    }
+  }
+
+  /**
+   * Production integrity verification — PRAGMA quick_check / integrity_check.
+   * Additive operational helper; does not alter schema.
+   */
+  integrityCheck(
+    mode: "quick" | "full" = "quick",
+  ): Result<{ ok: boolean; detail: string }, PlatformError> {
+    try {
+      const pragma =
+        mode === "full" ? "PRAGMA integrity_check" : "PRAGMA quick_check";
+      const row = this.#db.prepare(pragma).get() as
+        | { integrity_check?: string; quick_check?: string }
+        | undefined;
+      const detail =
+        row?.integrity_check ??
+        row?.quick_check ??
+        (row ? String(Object.values(row)[0] ?? "") : "");
+      const passed = detail === "ok";
+      return ok({ ok: passed, detail: detail || "empty" });
+    } catch (cause) {
+      return fail(
+        new InfrastructureError("SQL integrity check failed", {
+          code: "sql_integrity_failed",
           cause,
         }),
       );

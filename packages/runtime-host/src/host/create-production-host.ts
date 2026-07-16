@@ -1,5 +1,6 @@
 /**
  * Production composition root — wires SQL, broker, identity providers, API host.
+ * Phase 9B: resilience knobs, integrity probe, startup schema verification.
  * No business logic.
  */
 
@@ -11,6 +12,7 @@ import {
 import { InboxRuntime } from "@afh/infrastructure";
 import { createMessagingRuntime, type MessagingRuntime } from "@afh/messaging-broker";
 import {
+  createIntegrityHealthProbe,
   createMigrationHealthProbe,
   createSqlPersistenceFoundation,
   createTransactionHealthProbe,
@@ -28,6 +30,7 @@ import {
   createOutboxHealthProbe,
   createSecretsHealthProbe,
 } from "../health/production-health.js";
+import { verifyStartupSchema } from "../hardening/sql-validation.js";
 import {
   createDeploymentLifecycle,
   installGracefulShutdown,
@@ -103,12 +106,26 @@ export async function createProductionHost(
 
   const clock = new SystemUtcClock();
   const sql = createSqlPersistenceFoundation({
-    config: { databasePath: config.databasePath },
+    config: {
+      databasePath: config.databasePath,
+      busyTimeoutMs: config.busyTimeoutMs,
+      defaultOutboxBatchSize: config.outboxBatchSize,
+    },
     clock,
   });
 
-  // Shared inbox store for consumer dedupe; infrastructure creates its own
-  // InboxRuntime wrapper over the same store when the API host composes.
+  const schema = await verifyStartupSchema(sql, {
+    expectedBusyTimeoutMs: config.busyTimeoutMs,
+    requireIntegrity: config.integrityCheckOnStartup,
+  });
+  if (isFail(schema)) {
+    sql.dispose();
+    throw schema.error;
+  }
+  logger.info("Startup schema verification passed", {
+    checked: schema.value.checked.join(","),
+  });
+
   const messagingInbox = new InboxRuntime(sql.inboxStore, clock);
   const messaging = createMessagingRuntime({
     logger,
@@ -118,6 +135,12 @@ export async function createProductionHost(
     config: {
       brokerDatabasePath: config.brokerDatabasePath,
       brokerEndpoint: config.brokerEndpoint,
+      maxAttempts: config.messagingMaxAttempts,
+      backoffMs: config.messagingBackoffMs,
+      consumerConcurrency: config.messagingConsumerConcurrency,
+      batchSize: config.messagingBatchSize,
+      poisonThreshold: config.messagingPoisonThreshold,
+      claimLeaseMs: config.messagingClaimLeaseMs,
     },
   });
 
@@ -154,6 +177,7 @@ export async function createProductionHost(
   const health = api.composition.infrastructure.health;
   health.register(createMigrationHealthProbe(sql));
   health.register(createTransactionHealthProbe(sql));
+  health.register(createIntegrityHealthProbe(sql));
   for (const probe of messaging.healthProbes) {
     health.register(probe);
   }
@@ -165,8 +189,6 @@ export async function createProductionHost(
       api.composition.infrastructure.outboxDispatcher,
     ),
   );
-
-  // Identity / signing / session probes already registered via security.enabled
 
   const startup = await validateStartup(
     {
@@ -188,6 +210,7 @@ export async function createProductionHost(
     host: api,
     messaging,
     logger,
+    shutdownTimeoutMs: config.shutdownTimeoutMs,
     onBeforeStop: async () => {
       metrics.counter("runtime.shutdown").add(1);
       try {
@@ -214,6 +237,7 @@ export async function createProductionHost(
     persistence: "sql",
     messaging: "broker",
     security: "enabled",
+    hardening: "phase-9b",
   });
 
   if (options.autoStart !== false) {

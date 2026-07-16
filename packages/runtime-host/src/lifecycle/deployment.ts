@@ -1,11 +1,13 @@
 /**
  * Deployment contracts — container-friendly startup, readiness, graceful shutdown.
+ * Phase 9B: shutdown timeout + cancellation-aware stop.
  * No Kubernetes-specific APIs.
  */
 
 import type { ApiHost } from "@afh/api";
 import type { MessagingRuntime } from "@afh/messaging-broker";
 import type { Logger } from "@afh/shared-kernel";
+import { withTimeout } from "../hardening/resilience.js";
 
 export type DeploymentLifecycle = {
   readonly started: boolean;
@@ -21,6 +23,7 @@ export type ProductionHostHandles = {
   readonly messaging: MessagingRuntime;
   readonly logger: Logger;
   readonly onBeforeStop?: () => Promise<void>;
+  readonly shutdownTimeoutMs?: number;
 };
 
 /**
@@ -71,6 +74,7 @@ export function createDeploymentLifecycle(
   let started = false;
   let ready = false;
   let stopping = false;
+  const shutdownTimeoutMs = handles.shutdownTimeoutMs ?? 30_000;
 
   return {
     get started() {
@@ -92,19 +96,45 @@ export function createDeploymentLifecycle(
       if (stopping) return;
       stopping = true;
       ready = false;
-      try {
-        await handles.onBeforeStop?.();
-      } catch (error) {
-        handles.logger.warn("onBeforeStop failed", { error: String(error) });
+
+      const performStop = async () => {
+        try {
+          await handles.onBeforeStop?.();
+        } catch (error) {
+          handles.logger.warn("onBeforeStop failed", { error: String(error) });
+        }
+        if (started) {
+          await handles.host.stop();
+          started = false;
+        } else {
+          handles.host.composition.dispose();
+        }
+        handles.messaging.dispose();
+      };
+
+      const timed = await withTimeout(
+        performStop(),
+        shutdownTimeoutMs,
+        "graceful_shutdown",
+      );
+      if (!timed.ok) {
+        handles.logger.error("Graceful shutdown timed out or failed", {
+          code: timed.error.code,
+          message: timed.error.message,
+          shutdownTimeoutMs,
+        });
+        // Best-effort resource release after timeout
+        try {
+          handles.messaging.dispose();
+        } catch {
+          /* ignore */
+        }
+        throw timed.error;
       }
-      if (started) {
-        await handles.host.stop();
-        started = false;
-      } else {
-        handles.host.composition.dispose();
-      }
-      handles.messaging.dispose();
-      handles.logger.info("Deployment lifecycle stopped");
+
+      handles.logger.info("Deployment lifecycle stopped", {
+        shutdownTimeoutMs,
+      });
     },
     isLive() {
       return started;

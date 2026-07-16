@@ -73,6 +73,29 @@ export function createTransactionHealthProbe(
   };
 }
 
+export function createIntegrityHealthProbe(
+  foundation: SqlPersistenceFoundation,
+): HealthProbe {
+  return {
+    name: "sql_integrity",
+    async check() {
+      const result = foundation.sqlClient.integrityCheck("quick");
+      if (!result.ok) {
+        return ok({
+          name: "sql_integrity",
+          status: "down" as const,
+          detail: result.error.message,
+        });
+      }
+      return ok({
+        name: "sql_integrity",
+        status: result.value.ok ? ("up" as const) : ("down" as const),
+        detail: result.value.detail,
+      });
+    },
+  };
+}
+
 /**
  * Creates infrastructure runtime with SQL persistence selected.
  */

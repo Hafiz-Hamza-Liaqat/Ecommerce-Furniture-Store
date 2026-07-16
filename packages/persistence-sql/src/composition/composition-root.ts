@@ -37,6 +37,7 @@ export type SqlPersistenceFoundation = PersistenceFoundation & {
   readonly securityAuditStore: SqlSecurityAuditStore;
   readonly repositories: SqlDomainRepositories;
   readonly migrationCompatible: boolean;
+  readonly busyTimeoutMs: number;
   dispose(): void;
 };
 
@@ -94,6 +95,7 @@ export function createSqlPersistenceFoundation(
     securityAuditStore,
     repositories,
     migrationCompatible,
+    busyTimeoutMs: config.busyTimeoutMs,
     dispose() {
       sqlClient.close();
     },
