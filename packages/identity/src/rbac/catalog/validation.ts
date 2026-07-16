@@ -12,6 +12,10 @@
 
 import type { CatalogPermissionDefinition } from "./permission-catalog.js";
 import type { CatalogRoleDefinition } from "./role-catalog.js";
+import type {
+  RouteAccessDefinition,
+  RoutePermissionDefinition,
+} from "./route-permission-catalog.js";
 
 /** Frozen RC5 verb vocabulary (governance spec §1.2). */
 export const APPROVED_ACTIONS: ReadonlySet<string> = new Set([
@@ -158,6 +162,8 @@ export function validatePermissionCode(code: string): readonly string[] {
 export function validateRbacCatalog(
   permissions: readonly CatalogPermissionDefinition[],
   roles: readonly CatalogRoleDefinition[],
+  routePermissions: readonly RoutePermissionDefinition[] = [],
+  routeAccess: readonly RouteAccessDefinition[] = [],
 ): readonly string[] {
   const errors: string[] = [];
 
@@ -188,6 +194,38 @@ export function validateRbacCatalog(
       );
     }
     legacyKeys.add(permission.legacyKey);
+  }
+
+  for (const permission of routePermissions) {
+    errors.push(...validatePermissionCode(permission.code));
+    if (!permission.code.startsWith(`${permission.module}.`)) {
+      errors.push(
+        `"${permission.code}": declared module "${permission.module}" does not match code prefix`,
+      );
+    }
+    if (canonicalCodes.has(permission.code)) {
+      errors.push(`duplicate canonical permission code "${permission.code}"`);
+    }
+    canonicalCodes.add(permission.code);
+  }
+
+  const routeKeys = new Set<string>();
+  for (const route of routeAccess) {
+    const key = `${route.match}:${route.path}`;
+    if (routeKeys.has(key)) {
+      errors.push(`duplicate route access definition "${key}"`);
+    }
+    routeKeys.add(key);
+    if (!route.path.startsWith("/")) {
+      errors.push(`route path "${route.path}" must start with "/"`);
+    }
+    for (const code of route.requiredPermissions) {
+      if (!canonicalCodes.has(code)) {
+        errors.push(
+          `route "${route.path}": permission "${code}" is not in the canonical catalog`,
+        );
+      }
+    }
   }
 
   // Role code uniqueness and grammar.

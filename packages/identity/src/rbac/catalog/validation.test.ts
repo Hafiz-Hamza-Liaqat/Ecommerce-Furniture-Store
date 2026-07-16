@@ -11,6 +11,10 @@ import { PERMISSION_CATALOG } from "./permission-catalog.js";
 import type { CatalogRoleDefinition } from "./role-catalog.js";
 import { ROLE_CATALOG } from "./role-catalog.js";
 import {
+  ROUTE_ACCESS_CATALOG,
+  ROUTE_PERMISSION_DEFINITIONS,
+} from "./route-permission-catalog.js";
+import {
   APPROVED_ACTIONS,
   validatePermissionCode,
   validateRbacCatalog,
@@ -100,7 +104,15 @@ describe("validatePermissionCode", () => {
 
 describe("validateRbacCatalog", () => {
   it("accepts the frozen RC5.1 catalog", () => {
-    assert.deepEqual(validateRbacCatalog(PERMISSION_CATALOG, ROLE_CATALOG), []);
+    assert.deepEqual(
+      validateRbacCatalog(
+        PERMISSION_CATALOG,
+        ROLE_CATALOG,
+        ROUTE_PERMISSION_DEFINITIONS,
+        ROUTE_ACCESS_CATALOG,
+      ),
+      [],
+    );
   });
 
   it("rejects duplicate canonical codes", () => {
@@ -112,6 +124,8 @@ describe("validateRbacCatalog", () => {
     const errors = validateRbacCatalog(
       [...PERMISSION_CATALOG, duplicate],
       ROLE_CATALOG,
+      ROUTE_PERMISSION_DEFINITIONS,
+      ROUTE_ACCESS_CATALOG,
     );
     assert.ok(errors.some((e) => e.includes("duplicate canonical")));
   });
@@ -125,6 +139,8 @@ describe("validateRbacCatalog", () => {
     const errors = validateRbacCatalog(
       [...PERMISSION_CATALOG, duplicate],
       ROLE_CATALOG,
+      ROUTE_PERMISSION_DEFINITIONS,
+      ROUTE_ACCESS_CATALOG,
     );
     assert.ok(errors.some((e) => e.includes("mapped more than once")));
   });
@@ -151,12 +167,12 @@ describe("validateRbacCatalog", () => {
       parentCode: "cycle_a",
       permissions: [],
     };
-    const errors = validateRbacCatalog(PERMISSION_CATALOG, [
-      ...ROLE_CATALOG,
-      orphan,
-      cycleA,
-      cycleB,
-    ]);
+    const errors = validateRbacCatalog(
+      PERMISSION_CATALOG,
+      [...ROLE_CATALOG, orphan, cycleA, cycleB],
+      ROUTE_PERMISSION_DEFINITIONS,
+      ROUTE_ACCESS_CATALOG,
+    );
     assert.ok(errors.some((e) => e.includes("not a catalog role")));
     assert.ok(errors.some((e) => e.includes("cycle")));
   });
@@ -169,10 +185,12 @@ describe("validateRbacCatalog", () => {
       parentCode: null,
       permissions: ["opportunity.create", "sales.orders.*"],
     };
-    const errors = validateRbacCatalog(PERMISSION_CATALOG, [
-      ...ROLE_CATALOG,
-      badRole,
-    ]);
+    const errors = validateRbacCatalog(
+      PERMISSION_CATALOG,
+      [...ROLE_CATALOG, badRole],
+      ROUTE_PERMISSION_DEFINITIONS,
+      ROUTE_ACCESS_CATALOG,
+    );
     assert.ok(errors.some((e) => e.includes("not in the canonical catalog")));
     assert.ok(errors.some((e) => e.includes("wildcard grant")));
   });

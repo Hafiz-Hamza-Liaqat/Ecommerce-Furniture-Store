@@ -142,7 +142,7 @@ const HANDLER_ACTION_REFERENCES: readonly string[] = [
 
 describe("RC5.1 permission catalog", () => {
   it("has the frozen catalog version", () => {
-    assert.equal(RBAC_CATALOG_VERSION, "rc5.rbac-catalog.v1");
+    assert.equal(RBAC_CATALOG_VERSION, "rc5.rbac-catalog.v2");
   });
 
   it("contains exactly 105 canonical backend permissions", () => {

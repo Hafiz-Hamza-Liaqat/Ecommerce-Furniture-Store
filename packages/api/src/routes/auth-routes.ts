@@ -3,7 +3,10 @@
  * No authorization decisions (Policy remains sole authz engine).
  */
 
-import type { IdentityFoundation } from "@afh/identity";
+import {
+  ALL_CANONICAL_PERMISSION_CODES,
+  type IdentityFoundation,
+} from "@afh/identity";
 import { isFail, type PlatformError, type Result } from "@afh/shared-kernel";
 import {
   ApiPaths,
@@ -27,6 +30,26 @@ import {
 } from "../transport/contracts.js";
 import type { RateLimitHook } from "../rate-limit/rate-limit.js";
 import { rateLimitExceededResponse as buildRateLimitResponse } from "../rate-limit/rate-limit.js";
+
+const CANONICAL_PERMISSION_SET = new Set(ALL_CANONICAL_PERMISSION_CODES);
+
+/**
+ * Resolve the authenticated user's effective canonical permission codes using
+ * the existing Policy principal builder. This exposes RBAC state only; it
+ * performs no authorization decision and does not change Policy semantics.
+ */
+export async function resolveSessionPermissionCodes(
+  identity: IdentityFoundation,
+  userId: string,
+): Promise<readonly string[]> {
+  const principal = await identity.policyEngine.buildPrincipal(userId);
+  if (principal === null) {
+    return [];
+  }
+  return principal.permissionCodes
+    .filter((code) => CANONICAL_PERMISSION_SET.has(code))
+    .sort();
+}
 
 function readString(
   body: Record<string, unknown>,
@@ -333,6 +356,10 @@ export function createAuthRoutes(
         }
         const user = await identity.store.getUserById(userId);
         const profile = await identity.store.getProfile(userId);
+        const permissionCodes = await resolveSessionPermissionCodes(
+          identity,
+          userId,
+        );
         return jsonResponse(
           200,
           {
@@ -349,6 +376,7 @@ export function createAuthRoutes(
                     fullName: profile?.fullName ?? null,
                   }
                 : null,
+              permissionCodes,
             },
             correlationId: auth.value.correlationId,
           },

@@ -16,6 +16,7 @@ import {
   RBAC_CATALOG_VERSION,
 } from "./permission-catalog.js";
 import { ROLE_CATALOG } from "./role-catalog.js";
+import { ROUTE_PERMISSION_DEFINITIONS } from "./route-permission-catalog.js";
 import { computeCatalogChecksum, seedRbacCatalog } from "./seed.js";
 
 const fixedClock = { now: (): Date => new Date("2026-07-17T00:00:00.000Z") };
@@ -34,13 +35,21 @@ describe("seedRbacCatalog", () => {
     assert.equal(report.catalogVersion, RBAC_CATALOG_VERSION);
     assert.equal(report.canonicalPermissions.created, 105);
     assert.equal(report.canonicalPermissions.existing, 0);
+    assert.equal(
+      report.routePermissions.created,
+      ROUTE_PERMISSION_DEFINITIONS.length,
+    );
+    assert.equal(report.routePermissions.existing, 0);
     assert.equal(report.legacyCompatibilityPermissions.created, compatCount);
     assert.equal(report.systemRoles.created, 33);
     assert.equal(report.systemRoles.existing, 0);
     assert.equal(report.legacyMappingCount, 105);
     assert.ok(report.rolePermissionLinks.created > 0);
 
-    assert.equal(store.permissions.size, 105 + compatCount);
+    assert.equal(
+      store.permissions.size,
+      105 + ROUTE_PERMISSION_DEFINITIONS.length + compatCount,
+    );
     assert.equal(store.roles.size, 33);
   });
 
@@ -61,6 +70,11 @@ describe("seedRbacCatalog", () => {
     const report = second.value;
     assert.equal(report.canonicalPermissions.created, 0);
     assert.equal(report.canonicalPermissions.existing, 105);
+    assert.equal(report.routePermissions.created, 0);
+    assert.equal(
+      report.routePermissions.existing,
+      ROUTE_PERMISSION_DEFINITIONS.length,
+    );
     assert.equal(report.legacyCompatibilityPermissions.created, 0);
     assert.equal(report.legacyCompatibilityPermissions.existing, compatCount);
     assert.equal(report.systemRoles.created, 0);

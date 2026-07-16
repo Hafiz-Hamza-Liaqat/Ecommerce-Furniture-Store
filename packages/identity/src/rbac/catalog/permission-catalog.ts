@@ -11,7 +11,12 @@
  * seed layer (see seed.ts) so current handlers keep working unchanged.
  */
 
-export const RBAC_CATALOG_VERSION = "rc5.rbac-catalog.v1";
+import {
+  ROUTE_PERMISSION_CODES,
+  ROUTE_PERMISSION_DEFINITIONS,
+} from "./route-permission-catalog.js";
+
+export const RBAC_CATALOG_VERSION = "rc5.rbac-catalog.v2";
 
 export type CatalogPermissionDefinition = {
   /** Canonical permission code (`<module>.<resource>.<action>`). */
@@ -177,6 +182,18 @@ export const PERMISSION_CATALOG: readonly CatalogPermissionDefinition[] = [
 /** All canonical permission codes in catalog order. */
 export const CANONICAL_PERMISSION_CODES: readonly string[] =
   PERMISSION_CATALOG.map((entry) => entry.code);
+
+/** All backend and inactive route permission codes in catalog order. */
+export const ALL_CANONICAL_PERMISSION_CODES: readonly string[] = [
+  ...CANONICAL_PERMISSION_CODES,
+  ...ROUTE_PERMISSION_CODES,
+];
+
+/** All canonical permission definitions seeded by catalog v2. */
+export const ALL_PERMISSION_DEFINITIONS = [
+  ...PERMISSION_CATALOG,
+  ...ROUTE_PERMISSION_DEFINITIONS,
+] as const;
 
 /**
  * Explicit legacy executable action key → canonical permission code map.

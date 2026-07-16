@@ -78,7 +78,11 @@ export class ApiClient {
   }
 
   async getSession(): Promise<
-    ApiSuccess<{ sessionId: string | null; user: AuthUser | null }>
+    ApiSuccess<{
+      sessionId: string | null;
+      user: AuthUser | null;
+      permissionCodes: readonly string[];
+    }>
   > {
     return this.#request("GET", "/api/v1/auth/session");
   }

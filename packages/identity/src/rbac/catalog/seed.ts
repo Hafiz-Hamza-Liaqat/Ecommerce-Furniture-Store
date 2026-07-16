@@ -32,6 +32,10 @@ import {
   type CatalogPermissionDefinition,
 } from "./permission-catalog.js";
 import { ROLE_CATALOG, type CatalogRoleDefinition } from "./role-catalog.js";
+import {
+  ROUTE_ACCESS_CATALOG,
+  ROUTE_PERMISSION_DEFINITIONS,
+} from "./route-permission-catalog.js";
 import { validateRbacCatalog } from "./validation.js";
 
 export type SeedCounts = {
@@ -43,6 +47,7 @@ export type RbacCatalogSeedReport = {
   readonly catalogVersion: string;
   readonly checksum: string;
   readonly canonicalPermissions: SeedCounts;
+  readonly routePermissions: SeedCounts;
   readonly legacyCompatibilityPermissions: SeedCounts;
   readonly systemRoles: SeedCounts;
   readonly rolePermissionLinks: SeedCounts;
@@ -67,6 +72,11 @@ export function computeCatalogChecksum(
       module: p.module,
       legacyKey: p.legacyKey,
     })),
+    routePermissions: ROUTE_PERMISSION_DEFINITIONS.map((p) => ({
+      code: p.code,
+      module: p.module,
+    })),
+    routeAccess: ROUTE_ACCESS_CATALOG,
     roles: roles.map((r) => ({
       code: r.code,
       parentCode: r.parentCode,
@@ -114,7 +124,12 @@ export async function seedRbacCatalog(
 ): Promise<Result<RbacCatalogSeedReport>> {
   const { store, audit, actorUserId = null } = deps;
 
-  const violations = validateRbacCatalog(PERMISSION_CATALOG, ROLE_CATALOG);
+  const violations = validateRbacCatalog(
+    PERMISSION_CATALOG,
+    ROLE_CATALOG,
+    ROUTE_PERMISSION_DEFINITIONS,
+    ROUTE_ACCESS_CATALOG,
+  );
   if (violations.length > 0) {
     if (audit) {
       await audit.record({
@@ -143,6 +158,10 @@ export async function seedRbacCatalog(
     existing: 0,
   };
   const compat: SeedCounts & { created: number; existing: number } = {
+    created: 0,
+    existing: 0,
+  };
+  const route: SeedCounts & { created: number; existing: number } = {
     created: 0,
     existing: 0,
   };
@@ -177,6 +196,14 @@ export async function seedRbacCatalog(
       permission.module,
       `${permission.description} (${RBAC_CATALOG_VERSION})`,
       canonical,
+    );
+  }
+  for (const permission of ROUTE_PERMISSION_DEFINITIONS) {
+    await upsertPermission(
+      permission.code,
+      permission.module,
+      `${permission.description} (${RBAC_CATALOG_VERSION}; inactive until RC5.2)`,
+      route,
     );
   }
   for (const permission of PERMISSION_CATALOG) {
@@ -276,6 +303,7 @@ export async function seedRbacCatalog(
     catalogVersion: RBAC_CATALOG_VERSION,
     checksum,
     canonicalPermissions: canonical,
+    routePermissions: route,
     legacyCompatibilityPermissions: compat,
     systemRoles: roleCounts,
     rolePermissionLinks: linkCounts,

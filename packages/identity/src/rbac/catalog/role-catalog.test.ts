@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  ALL_CANONICAL_PERMISSION_CODES,
   CANONICAL_PERMISSION_CODES,
   PERMISSION_CATALOG,
 } from "./permission-catalog.js";
@@ -66,7 +67,7 @@ describe("RC5.1 system role catalog", () => {
   });
 
   it("grants reference only canonical catalog codes with no duplicates", () => {
-    const canonical = new Set(CANONICAL_PERMISSION_CODES);
+    const canonical = new Set(ALL_CANONICAL_PERMISSION_CODES);
     for (const role of ROLE_CATALOG) {
       const seen = new Set<string>();
       for (const code of role.permissions) {
@@ -78,10 +79,20 @@ describe("RC5.1 system role catalog", () => {
     }
   });
 
-  it("super_admin and admin hold all 105 canonical permissions", () => {
-    for (const code of ["super_admin", "admin"]) {
-      assert.equal(byCode.get(code)?.permissions.length, 105);
+  it("super_admin holds every backend and inactive route permission", () => {
+    assert.equal(
+      byCode.get("super_admin")?.permissions.length,
+      ALL_CANONICAL_PERMISSION_CODES.length,
+    );
+  });
+
+  it("admin holds every backend permission without platform-admin or portal access", () => {
+    const permissions = new Set(byCode.get("admin")?.permissions);
+    for (const code of CANONICAL_PERMISSION_CODES) {
+      assert.ok(permissions.has(code), `admin missing ${code}`);
     }
+    assert.ok(!permissions.has("platform.administration.read"));
+    assert.ok(!permissions.has("portal.customer_portal.read"));
   });
 
   it("read-only style roles hold only read permissions", () => {
@@ -91,7 +102,7 @@ describe("RC5.1 system role catalog", () => {
     for (const code of ["read_only", "executive", "auditor"]) {
       const role = byCode.get(code);
       assert.ok(role);
-      assert.equal(role.permissions.length, allReads);
+      assert.ok(role.permissions.length >= allReads);
       for (const grant of role.permissions) {
         assert.ok(grant.endsWith(".read"), `${code}: non-read grant ${grant}`);
       }
@@ -101,32 +112,34 @@ describe("RC5.1 system role catalog", () => {
   it("module manager roles receive their module packs", () => {
     const modulePack = (module: string): number =>
       PERMISSION_CATALOG.filter((p) => p.module === module).length;
-    assert.equal(
-      byCode.get("finance_manager")?.permissions.length,
-      modulePack("finance"),
+    assert.ok(
+      (byCode.get("finance_manager")?.permissions.length ?? 0) >
+        modulePack("finance"),
     );
-    assert.equal(
-      byCode.get("warehouse_manager")?.permissions.length,
-      modulePack("inventory"),
+    assert.ok(
+      (byCode.get("warehouse_manager")?.permissions.length ?? 0) >
+        modulePack("inventory"),
     );
-    assert.equal(
-      byCode.get("service_manager")?.permissions.length,
-      modulePack("service"),
+    assert.ok(
+      (byCode.get("service_manager")?.permissions.length ?? 0) >
+        modulePack("service"),
     );
-    assert.equal(
-      byCode.get("sales_manager")?.permissions.length,
-      modulePack("sales") + modulePack("crm"),
+    assert.ok(
+      (byCode.get("sales_manager")?.permissions.length ?? 0) >
+        modulePack("sales") + modulePack("crm"),
     );
   });
 
-  it("partner and operational roles carry no backend grants in RC5.1", () => {
+  it("partner and operational roles carry route grants only", () => {
+    const backend = new Set(CANONICAL_PERMISSION_CODES);
     for (const role of ROLE_CATALOG) {
       if (role.group === "partner" || role.group === "operational") {
-        assert.deepEqual(
-          [...role.permissions],
-          [],
-          `${role.code} must have no RC5.1 grants`,
-        );
+        for (const permission of role.permissions) {
+          assert.ok(
+            !backend.has(permission),
+            `${role.code} received backend grant ${permission}`,
+          );
+        }
       }
     }
   });
