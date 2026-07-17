@@ -28,6 +28,7 @@ import {
   buildProcurementEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeProcurementRules,
   newEntityId,
@@ -180,12 +181,26 @@ export function createSubmitPurchaseRequisitionHandler(
 > {
   return {
     commandType: ProcurementCommandTypes.SubmitPurchaseRequisition,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.requisitions.findById({
+          companyId: p.companyId,
+          id: p.requisitionId,
+        }),
+      );
       return companyResource(
         "requisition",
         ProcurementPolicyActions.RequisitionSubmit,
-        command.payload.companyId,
-        command.payload.requisitionId,
+        p.companyId,
+        p.requisitionId,
+        {
+          ownerUserId: record?.requestedByUserId ?? null,
+          attributes: {
+            projectId: record?.projectId ?? null,
+            warehouseId: record?.warehouseId ?? null,
+          },
+        },
       );
     },
     validate() {

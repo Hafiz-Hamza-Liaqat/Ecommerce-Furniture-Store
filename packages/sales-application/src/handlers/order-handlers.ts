@@ -36,6 +36,7 @@ import {
   companyResource,
   enqueueDomainEvent,
   invokeSalesRules,
+  loadRecordForAuthorization,
   newEntityId,
   recordSalesAudit,
   requireApproval,
@@ -264,12 +265,25 @@ export function createCancelSalesOrderHandler(
 > {
   return {
     commandType: SalesCommandTypes.CancelSalesOrder,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.orders.findById({ companyId: p.companyId, id: p.salesOrderId }),
+      );
       return companyResource(
         "order",
         SalesPolicyActions.OrderCancel,
-        command.payload.companyId,
-        command.payload.salesOrderId,
+        p.companyId,
+        p.salesOrderId,
+        {
+          ownerUserId: record?.salesRepUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+            quoteId: record?.quoteId ?? null,
+          },
+        },
       );
     },
     validate() {

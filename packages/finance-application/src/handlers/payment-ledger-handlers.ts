@@ -33,6 +33,7 @@ import {
   buildFinanceEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeFinanceRules,
   newEntityId,
@@ -232,12 +233,27 @@ export function createRecordCreditAdjustmentHandler(
 > {
   return {
     commandType: FinanceCommandTypes.RecordCreditAdjustment,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.credits.findAccountById({
+          companyId: p.companyId,
+          id: p.creditAccountId,
+        }),
+      );
       return companyResource(
         "credit_account",
         FinancePolicyActions.CreditAdjust,
-        command.payload.companyId,
-        command.payload.creditAccountId,
+        p.companyId,
+        p.creditAccountId,
+        {
+          organizationId:
+            record?.ownerType === "organization" ? record.ownerId : null,
+          attributes: {
+            ownerType: record?.ownerType ?? null,
+            ownerId: record?.ownerId ?? null,
+          },
+        },
       );
     },
     validate() {

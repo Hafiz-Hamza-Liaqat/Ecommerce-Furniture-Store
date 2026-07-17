@@ -30,6 +30,7 @@ import {
   companyResource,
   enqueueDomainEvent,
   invokeSalesRules,
+  loadRecordForAuthorization,
   newEntityId,
   recordSalesAudit,
   requireCompanyId,
@@ -269,12 +270,25 @@ export function createReviseQuoteHandler(
 > {
   return {
     commandType: SalesCommandTypes.ReviseQuote,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.quotes.findById({ companyId: p.companyId, id: p.quoteId }),
+      );
       return companyResource(
         "quote",
         SalesPolicyActions.QuoteRevise,
-        command.payload.companyId,
-        command.payload.quoteId,
+        p.companyId,
+        p.quoteId,
+        {
+          ownerUserId: record?.salesRepUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+            opportunityId: record?.opportunityId ?? null,
+          },
+        },
       );
     },
     validate() {

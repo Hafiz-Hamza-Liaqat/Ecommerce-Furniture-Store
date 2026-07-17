@@ -54,6 +54,7 @@ Canonical business decision IDs D01–D36 originated in Phase 0A Decision Regist
 | D42 | Notifications = Event Bus consumers + Settings templates | Accepted | No domain→channel bypass | 0A, 0D | 0A |
 | D43 | Zero Trust + Policy on every command/query | Accepted | Enterprise security | 0E | 0A |
 | D44 | Observability does not create business engines | Accepted | Keep kernel purity | 0F | 0A |
+| [D45](./ADR-D45-record-authorization-load-before-authorize.md) | Record-level authorization via load-before-authorize; persisted owner/org/branch feed Policy; fail-closed on unresolved context | Accepted | RC5.5 record security without spoofable payload scope data | Handler authorize() for record-targeting CQRS | D02, D35, D43, RC5.5 |
 
 ---
 

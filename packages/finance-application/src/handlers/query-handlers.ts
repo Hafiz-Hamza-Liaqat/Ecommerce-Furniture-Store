@@ -30,7 +30,11 @@ import {
   getPaymentQueryValidator,
 } from "../validators/validators.js";
 import type { FinanceHandlerDeps } from "./deps.js";
-import { companyResource, requireCompanyId } from "../support/support.js";
+import {
+  companyResource,
+  loadRecordForAuthorization,
+  requireCompanyId,
+} from "../support/support.js";
 
 export function createGetFinancialAccountHandler(
   deps: FinanceHandlerDeps,
@@ -76,12 +80,23 @@ export function createGetInvoiceHandler(
 > {
   return {
     queryType: FinanceQueryTypes.GetInvoice,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.invoices.findById({ companyId: p.companyId, id: p.invoiceId }),
+      );
       return companyResource(
         "invoice",
         FinancePolicyActions.InvoiceRead,
-        query.payload.companyId,
-        query.payload.invoiceId,
+        p.companyId,
+        p.invoiceId,
+        {
+          organizationId: record?.organizationId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            billToAddressId: record?.billToAddressId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -121,12 +136,23 @@ export function createGetPaymentHandler(
 ): QueryHandler<GetPaymentPayload, Payment> {
   return {
     queryType: FinanceQueryTypes.GetPayment,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.payments.findById({ companyId: p.companyId, id: p.paymentId }),
+      );
       return companyResource(
         "payment",
         FinancePolicyActions.PaymentRead,
-        query.payload.companyId,
-        query.payload.paymentId,
+        p.companyId,
+        p.paymentId,
+        {
+          organizationId: record?.payerOrganizationId ?? null,
+          attributes: {
+            invoiceId: record?.invoiceId ?? null,
+            payerCustomerId: record?.payerCustomerId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -210,12 +236,27 @@ export function createGetCreditAccountHandler(
 > {
   return {
     queryType: FinanceQueryTypes.GetCreditAccount,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.credits.findAccountById({
+          companyId: p.companyId,
+          id: p.creditAccountId,
+        }),
+      );
       return companyResource(
         "credit_account",
         FinancePolicyActions.CreditRead,
-        query.payload.companyId,
-        query.payload.creditAccountId,
+        p.companyId,
+        p.creditAccountId,
+        {
+          organizationId:
+            record?.ownerType === "organization" ? record.ownerId : null,
+          attributes: {
+            ownerType: record?.ownerType ?? null,
+            ownerId: record?.ownerId ?? null,
+          },
+        },
       );
     },
     validate() {

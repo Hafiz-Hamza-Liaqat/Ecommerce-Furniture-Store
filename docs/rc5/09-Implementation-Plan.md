@@ -104,6 +104,8 @@ Any pull request containing excluded work is not RC5.1 and must be split or reje
 | **Acceptance** | Cross-company and cross-own attacks fail on live Get/Update/lifecycle commands |
 | **Complexity** | High |
 
+**Implementation evidence (2026-07-17, RC5.5 completion):** ADR D45 load-before-authorize is delivered for record-targeting update/lifecycle/get-by-id handlers across the seven application packages. Persisted `ownerUserId` / `organizationId` / `branchId` / `attributes` feed the existing Policy Engine; fail-closed on repository load failure. Targeted tests cover owner allow/deny, organization/branch isolation, cross-company denial, missing resource, and fail-closed behavior. Permission-to-scope binding and field-level security remain out of scope. Evidence: `docs/release/RC5.5-record-authorization.md` and `docs/release/RC5.5-record-authorization-audit.md`.
+
 ---
 
 ## RC5.6 — Field-level authorization

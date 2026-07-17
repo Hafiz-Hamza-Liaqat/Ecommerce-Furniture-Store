@@ -17,6 +17,7 @@ import {
 import type { ProcurementHandlerDeps } from "./deps.js";
 import {
   companyResource,
+  loadRecordForAuthorization,
   invokeProcurementRules,
   newEntityId,
   recordProcurementAudit,
@@ -105,16 +106,19 @@ export function createUpdateSupplierHandler(
 ): CommandHandler<UpdateSupplierPayload, { supplierId: string }> {
   return {
     commandType: ProcurementCommandTypes.UpdateSupplier,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.suppliers.findById({ companyId: p.companyId, id: p.supplierId }),
+      );
       return companyResource(
         "supplier",
         ProcurementPolicyActions.SupplierUpdate,
         p.companyId,
         p.supplierId,
         {
-          organizationId: p.identityOrganizationId ?? null,
-          attributes: { categoryId: p.categoryId ?? null },
+          organizationId: record?.identityOrganizationId ?? null,
+          attributes: { categoryId: record?.categoryId ?? null },
         },
       );
     },

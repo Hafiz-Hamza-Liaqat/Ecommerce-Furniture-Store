@@ -30,19 +30,34 @@ import {
   getLeadQueryValidator,
 } from "../validators/validators.js";
 import type { CrmHandlerDeps } from "./deps.js";
-import { companyResource, requireCompanyId } from "../support/support.js";
+import {
+  companyResource,
+  loadRecordForAuthorization,
+  requireCompanyId,
+} from "../support/support.js";
 
 export function createGetLeadHandler(
   deps: CrmHandlerDeps,
 ): QueryHandler<GetLeadPayload, Lead> {
   return {
     queryType: CrmQueryTypes.GetLead,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.leads.findById({ companyId: p.companyId, id: p.leadId }),
+      );
       return companyResource(
         "lead",
         CrmPolicyActions.LeadRead,
-        query.payload.companyId,
-        query.payload.leadId,
+        p.companyId,
+        p.leadId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          attributes: {
+            contactId: record?.contactId ?? null,
+            accountId: record?.accountId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -71,12 +86,23 @@ export function createGetContactHandler(
 ): QueryHandler<GetContactPayload, Contact> {
   return {
     queryType: CrmQueryTypes.GetContact,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.contacts.findById({ companyId: p.companyId, id: p.contactId }),
+      );
       return companyResource(
         "contact",
         CrmPolicyActions.ContactRead,
-        query.payload.companyId,
-        query.payload.contactId,
+        p.companyId,
+        p.contactId,
+        {
+          ownerUserId: record?.userId ?? null,
+          attributes: {
+            accountId: record?.accountId ?? null,
+            leadId: record?.leadId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -105,12 +131,21 @@ export function createGetAccountHandler(
 ): QueryHandler<GetAccountPayload, Account> {
   return {
     queryType: CrmQueryTypes.GetAccount,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.accounts.findById({ companyId: p.companyId, id: p.accountId }),
+      );
       return companyResource(
         "account",
         CrmPolicyActions.AccountRead,
-        query.payload.companyId,
-        query.payload.accountId,
+        p.companyId,
+        p.accountId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          organizationId: record?.identityOrganizationId ?? null,
+          attributes: { primaryContactId: record?.primaryContactId ?? null },
+        },
       );
     },
     validate() {
@@ -139,12 +174,25 @@ export function createGetActivityHandler(
 ): QueryHandler<GetActivityPayload, Activity> {
   return {
     queryType: CrmQueryTypes.GetActivity,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.activities.findById({ companyId: p.companyId, id: p.activityId }),
+      );
       return companyResource(
         "activity",
         CrmPolicyActions.ActivityRead,
-        query.payload.companyId,
-        query.payload.activityId,
+        p.companyId,
+        p.activityId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          attributes: {
+            leadId: record?.leadId ?? null,
+            contactId: record?.contactId ?? null,
+            accountId: record?.accountId ?? null,
+            opportunityId: record?.opportunityId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -211,12 +259,20 @@ export function createGetCampaignHandler(
 ): QueryHandler<GetCampaignPayload, Campaign> {
   return {
     queryType: CrmQueryTypes.GetCampaign,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.campaigns.findById({ companyId: p.companyId, id: p.campaignId }),
+      );
       return companyResource(
         "campaign",
         CrmPolicyActions.CampaignRead,
-        query.payload.companyId,
-        query.payload.campaignId,
+        p.companyId,
+        p.campaignId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          attributes: { audienceId: record?.audience?.audienceId ?? null },
+        },
       );
     },
     validate() {

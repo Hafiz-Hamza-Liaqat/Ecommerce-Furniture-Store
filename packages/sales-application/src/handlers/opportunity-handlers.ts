@@ -22,6 +22,7 @@ import {
   commandCausationId,
   companyResource,
   enqueueDomainEvent,
+  loadRecordForAuthorization,
   newEntityId,
   recordSalesAudit,
   requireCompanyId,
@@ -140,20 +141,26 @@ export function createUpdateOpportunityHandler(
 ): CommandHandler<UpdateOpportunityPayload, { opportunityId: string }> {
   return {
     commandType: SalesCommandTypes.UpdateOpportunity,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.opportunities.findById({
+          companyId: p.companyId,
+          id: p.opportunityId,
+        }),
+      );
       return companyResource(
         "opportunity",
         SalesPolicyActions.OpportunityUpdate,
         p.companyId,
         p.opportunityId,
         {
-          ownerUserId: p.salesRepUserId ?? null,
-          organizationId: p.organizationId ?? null,
+          ownerUserId: record?.salesRepUserId ?? null,
+          organizationId: record?.organizationId ?? null,
           attributes: {
-            customerId: p.customerId ?? null,
-            projectId: p.projectId ?? null,
-            territoryId: p.territoryId ?? null,
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+            territoryId: record?.territoryId ?? null,
           },
         },
       );

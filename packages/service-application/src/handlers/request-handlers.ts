@@ -26,6 +26,7 @@ import {
   buildServiceEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeServiceRules,
   newEntityId,
@@ -168,20 +169,27 @@ export function createUpdateServiceRequestHandler(
 ): CommandHandler<UpdateServiceRequestPayload, { serviceRequestId: string }> {
   return {
     commandType: ServiceCommandTypes.UpdateServiceRequest,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.serviceRequests.findById({
+          companyId: p.companyId,
+          id: p.serviceRequestId,
+        }),
+      );
       return companyResource(
         "service_request",
         ServicePolicyActions.ServiceRequestUpdate,
         p.companyId,
         p.serviceRequestId,
         {
+          ownerUserId: record?.requestedByUserId ?? null,
           attributes: {
-            customerId: p.customerId ?? null,
-            projectId: p.projectId ?? null,
-            salesOrderId: p.salesOrderId ?? null,
-            crmContactId: p.crmContactId ?? null,
-            crmAccountId: p.crmAccountId ?? null,
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+            salesOrderId: record?.salesOrderId ?? null,
+            crmContactId: record?.crmContactId ?? null,
+            crmAccountId: record?.crmAccountId ?? null,
           },
         },
       );
@@ -294,12 +302,26 @@ export function createCloseServiceRequestHandler(
 > {
   return {
     commandType: ServiceCommandTypes.CloseServiceRequest,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.serviceRequests.findById({
+          companyId: p.companyId,
+          id: p.serviceRequestId,
+        }),
+      );
       return companyResource(
         "service_request",
         ServicePolicyActions.ServiceRequestClose,
-        command.payload.companyId,
-        command.payload.serviceRequestId,
+        p.companyId,
+        p.serviceRequestId,
+        {
+          ownerUserId: record?.requestedByUserId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

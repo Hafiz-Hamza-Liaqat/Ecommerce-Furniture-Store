@@ -24,6 +24,7 @@ import {
   buildCrmEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeCrmRules,
   newEntityId,
@@ -113,12 +114,23 @@ export function createUpdateContactHandler(
 ): CommandHandler<UpdateContactPayload, { contactId: string }> {
   return {
     commandType: CrmCommandTypes.UpdateContact,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.contacts.findById({ companyId: p.companyId, id: p.contactId }),
+      );
       return companyResource(
         "contact",
         CrmPolicyActions.ContactUpdate,
-        command.payload.companyId,
-        command.payload.contactId,
+        p.companyId,
+        p.contactId,
+        {
+          ownerUserId: record?.userId ?? null,
+          attributes: {
+            accountId: record?.accountId ?? null,
+            leadId: record?.leadId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -243,17 +255,20 @@ export function createUpdateAccountHandler(
 ): CommandHandler<UpdateAccountPayload, { accountId: string }> {
   return {
     commandType: CrmCommandTypes.UpdateAccount,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.accounts.findById({ companyId: p.companyId, id: p.accountId }),
+      );
       return companyResource(
         "account",
         CrmPolicyActions.AccountUpdate,
         p.companyId,
         p.accountId,
         {
-          ownerUserId: p.ownerUserId ?? null,
-          organizationId: p.identityOrganizationId ?? null,
-          attributes: { primaryContactId: p.primaryContactId ?? null },
+          ownerUserId: record?.ownerUserId ?? null,
+          organizationId: record?.identityOrganizationId ?? null,
+          attributes: { primaryContactId: record?.primaryContactId ?? null },
         },
       );
     },

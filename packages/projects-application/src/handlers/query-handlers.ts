@@ -34,19 +34,32 @@ import {
   getWorkItemQueryValidator,
 } from "../validators/validators.js";
 import type { ProjectHandlerDeps } from "./deps.js";
-import { companyResource, requireCompanyId } from "../support/support.js";
+import {
+  companyResource,
+  loadRecordForAuthorization,
+  requireCompanyId,
+} from "../support/support.js";
 
 export function createGetProjectHandler(
   deps: ProjectHandlerDeps,
 ): QueryHandler<GetProjectPayload, Project> {
   return {
     queryType: ProjectsQueryTypes.GetProject,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.projects.findById({ companyId: p.companyId, id: p.projectId }),
+      );
       return companyResource(
         "project",
         ProjectsPolicyActions.ProjectRead,
-        query.payload.companyId,
-        query.payload.projectId,
+        p.companyId,
+        p.projectId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: { customerId: record?.customerId ?? null },
+        },
       );
     },
     validate() {
@@ -75,12 +88,23 @@ export function createGetTaskHandler(
 ): QueryHandler<GetTaskPayload, Task> {
   return {
     queryType: ProjectsQueryTypes.GetTask,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.tasks.findById({ companyId: p.companyId, id: p.taskId }),
+      );
       return companyResource(
         "task",
         ProjectsPolicyActions.TaskRead,
-        query.payload.companyId,
-        query.payload.taskId,
+        p.companyId,
+        p.taskId,
+        {
+          ownerUserId: record?.assigneeUserId ?? null,
+          attributes: {
+            projectId: record?.projectId ?? null,
+            assigneeTeamId: record?.assigneeTeamId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -109,12 +133,19 @@ export function createGetMilestoneHandler(
 ): QueryHandler<GetMilestonePayload, Milestone> {
   return {
     queryType: ProjectsQueryTypes.GetMilestone,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.milestones.findById({ companyId: p.companyId, id: p.milestoneId }),
+      );
       return companyResource(
         "milestone",
         ProjectsPolicyActions.MilestoneRead,
-        query.payload.companyId,
-        query.payload.milestoneId,
+        p.companyId,
+        p.milestoneId,
+        {
+          attributes: { projectId: record?.projectId ?? null },
+        },
       );
     },
     validate() {
@@ -145,12 +176,20 @@ export function createGetResourceHandler(
 ): QueryHandler<GetResourcePayload, Resource> {
   return {
     queryType: ProjectsQueryTypes.GetResource,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.resources.findById({ companyId: p.companyId, id: p.resourceId }),
+      );
       return companyResource(
         "resource",
         ProjectsPolicyActions.ResourceRead,
-        query.payload.companyId,
-        query.payload.resourceId,
+        p.companyId,
+        p.resourceId,
+        {
+          ownerUserId: record?.human?.userId ?? null,
+          attributes: { resourceKind: record?.kind ?? null },
+        },
       );
     },
     validate() {
@@ -184,12 +223,19 @@ export function createGetTeamHandler(
 > {
   return {
     queryType: ProjectsQueryTypes.GetTeam,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.teams.findById({ companyId: p.companyId, id: p.teamId }),
+      );
       return companyResource(
         "team",
         ProjectsPolicyActions.TeamRead,
-        query.payload.companyId,
-        query.payload.teamId,
+        p.companyId,
+        p.teamId,
+        {
+          attributes: { projectId: record?.projectId ?? null },
+        },
       );
     },
     validate() {
@@ -229,12 +275,19 @@ export function createGetScheduleHandler(
 ): QueryHandler<GetSchedulePayload, Schedule> {
   return {
     queryType: ProjectsQueryTypes.GetSchedule,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.schedules.findById({ companyId: p.companyId, id: p.scheduleId }),
+      );
       return companyResource(
         "schedule",
         ProjectsPolicyActions.ScheduleRead,
-        query.payload.companyId,
-        query.payload.scheduleId,
+        p.companyId,
+        p.scheduleId,
+        {
+          attributes: { projectId: record?.projectId ?? null },
+        },
       );
     },
     validate() {
@@ -265,12 +318,23 @@ export function createGetWorkItemHandler(
 ): QueryHandler<GetWorkItemPayload, WorkItem> {
   return {
     queryType: ProjectsQueryTypes.GetWorkItem,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.workItems.findById({ companyId: p.companyId, id: p.workItemId }),
+      );
       return companyResource(
         "work_item",
         ProjectsPolicyActions.WorkItemRead,
-        query.payload.companyId,
-        query.payload.workItemId,
+        p.companyId,
+        p.workItemId,
+        {
+          attributes: {
+            projectId: record?.projectId ?? null,
+            taskId: record?.taskId ?? null,
+            teamId: record?.teamId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -301,12 +365,21 @@ export function createGetProjectSummaryHandler(
 ): QueryHandler<GetProjectSummaryPayload, ProjectSummary> {
   return {
     queryType: ProjectsQueryTypes.GetProjectSummary,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.projects.findById({ companyId: p.companyId, id: p.projectId }),
+      );
       return companyResource(
         "project",
         ProjectsPolicyActions.SummaryRead,
-        query.payload.companyId,
-        query.payload.projectId,
+        p.companyId,
+        p.projectId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: { customerId: record?.customerId ?? null },
+        },
       );
     },
     validate() {

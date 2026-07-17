@@ -25,6 +25,7 @@ import {
   buildProjectEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeProjectRules,
   newEntityId,
@@ -47,18 +48,22 @@ export function createAssignResourceHandler(
 > {
   return {
     commandType: ProjectsCommandTypes.AssignResource,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.resources.findById({ companyId: p.companyId, id: p.resourceId }),
+      );
       return companyResource(
         "resource",
         ProjectsPolicyActions.ResourceAssign,
         p.companyId,
         p.resourceId,
         {
-          ownerUserId: p.assigneeId ?? null,
+          ownerUserId: record?.human?.userId ?? null,
           attributes: {
             projectId: p.projectId ?? null,
             workItemId: p.workItemId ?? null,
+            resourceKind: record?.kind ?? null,
           },
         },
       );
@@ -237,12 +242,20 @@ export function createReleaseResourceHandler(
 ): CommandHandler<ReleaseResourcePayload, { resourceId: string }> {
   return {
     commandType: ProjectsCommandTypes.ReleaseResource,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.resources.findById({ companyId: p.companyId, id: p.resourceId }),
+      );
       return companyResource(
         "resource",
         ProjectsPolicyActions.ResourceRelease,
-        command.payload.companyId,
-        command.payload.resourceId,
+        p.companyId,
+        p.resourceId,
+        {
+          ownerUserId: record?.human?.userId ?? null,
+          attributes: { resourceKind: record?.kind ?? null },
+        },
       );
     },
     validate() {
@@ -340,8 +353,11 @@ export function createUpdateScheduleHandler(
 ): CommandHandler<UpdateSchedulePayload, { scheduleId: string }> {
   return {
     commandType: ProjectsCommandTypes.UpdateSchedule,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.schedules.findById({ companyId: p.companyId, id: p.scheduleId }),
+      );
       return companyResource(
         "schedule",
         ProjectsPolicyActions.ScheduleUpdate,
@@ -349,8 +365,8 @@ export function createUpdateScheduleHandler(
         p.scheduleId,
         {
           attributes: {
-            projectId: p.projectId ?? null,
-            calendarId: p.calendarId ?? null,
+            projectId: record?.projectId ?? null,
+            calendarId: record?.calendar?.calendarId ?? null,
           },
         },
       );

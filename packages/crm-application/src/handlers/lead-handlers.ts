@@ -28,6 +28,7 @@ import {
   buildCrmEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeCrmRules,
   newEntityId,
@@ -170,20 +171,22 @@ export function createUpdateLeadHandler(
 ): CommandHandler<UpdateLeadPayload, { leadId: string }> {
   return {
     commandType: CrmCommandTypes.UpdateLead,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.leads.findById({ companyId: p.companyId, id: p.leadId }),
+      );
       return companyResource(
         "lead",
         CrmPolicyActions.LeadUpdate,
         p.companyId,
         p.leadId,
         {
-          ownerUserId: p.ownerUserId ?? null,
+          ownerUserId: record?.ownerUserId ?? null,
           attributes: {
-            contactId: p.contactId ?? null,
-            accountId: p.accountId ?? null,
-            salesCustomerId: p.salesCustomerId ?? null,
-            sourceId: p.sourceId ?? null,
+            contactId: record?.contactId ?? null,
+            accountId: record?.accountId ?? null,
+            salesCustomerId: record?.salesCustomerId ?? null,
           },
         },
       );
@@ -286,12 +289,23 @@ export function createQualifyLeadHandler(
 > {
   return {
     commandType: CrmCommandTypes.QualifyLead,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.leads.findById({ companyId: p.companyId, id: p.leadId }),
+      );
       return companyResource(
         "lead",
         CrmPolicyActions.LeadQualify,
-        command.payload.companyId,
-        command.payload.leadId,
+        p.companyId,
+        p.leadId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          attributes: {
+            contactId: record?.contactId ?? null,
+            accountId: record?.accountId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -434,12 +448,23 @@ export function createConvertLeadHandler(
 > {
   return {
     commandType: CrmCommandTypes.ConvertLead,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.leads.findById({ companyId: p.companyId, id: p.leadId }),
+      );
       return companyResource(
         "lead",
         CrmPolicyActions.LeadConvert,
-        command.payload.companyId,
-        command.payload.leadId,
+        p.companyId,
+        p.leadId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          attributes: {
+            contactId: record?.contactId ?? null,
+            accountId: record?.accountId ?? null,
+          },
+        },
       );
     },
     validate() {

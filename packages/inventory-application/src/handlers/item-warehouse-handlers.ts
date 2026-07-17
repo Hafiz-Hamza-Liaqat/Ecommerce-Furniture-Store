@@ -31,6 +31,7 @@ import {
   buildInventoryEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   newEntityId,
   recordInventoryAudit,
@@ -318,16 +319,20 @@ export function createCreateStorageLocationHandler(
 ): CommandHandler<CreateStorageLocationPayload, { locationId: string }> {
   return {
     commandType: InventoryCommandTypes.CreateStorageLocation,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const warehouse = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({ companyId: p.companyId, id: p.warehouseId }),
+      );
       return companyResource(
         "storage_location",
         InventoryPolicyActions.LocationCreate,
         p.companyId,
         null,
         {
+          branchId: warehouse?.branchId ?? null,
           attributes: {
-            warehouseId: p.warehouseId ?? null,
+            warehouseId: p.warehouseId,
             parentId: p.parentId ?? null,
           },
         },

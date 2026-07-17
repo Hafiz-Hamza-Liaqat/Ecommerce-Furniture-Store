@@ -36,6 +36,7 @@ import {
   buildProcurementEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeProcurementRules,
   newEntityId,
@@ -276,12 +277,27 @@ export function createIssuePurchaseOrderHandler(
 > {
   return {
     commandType: ProcurementCommandTypes.IssuePurchaseOrder,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.purchaseOrders.findById({
+          companyId: p.companyId,
+          id: p.purchaseOrderId,
+        }),
+      );
       return companyResource(
         "purchase_order",
         ProcurementPolicyActions.PurchaseOrderIssue,
-        command.payload.companyId,
-        command.payload.purchaseOrderId,
+        p.companyId,
+        p.purchaseOrderId,
+        {
+          attributes: {
+            supplierId: record?.supplierId ?? null,
+            requisitionId: record?.requisitionId ?? null,
+            projectId: record?.projectId ?? null,
+            warehouseId: record?.warehouseId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -432,12 +448,27 @@ export function createCancelPurchaseOrderHandler(
 > {
   return {
     commandType: ProcurementCommandTypes.CancelPurchaseOrder,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.purchaseOrders.findById({
+          companyId: p.companyId,
+          id: p.purchaseOrderId,
+        }),
+      );
       return companyResource(
         "purchase_order",
         ProcurementPolicyActions.PurchaseOrderCancel,
-        command.payload.companyId,
-        command.payload.purchaseOrderId,
+        p.companyId,
+        p.purchaseOrderId,
+        {
+          attributes: {
+            supplierId: record?.supplierId ?? null,
+            requisitionId: record?.requisitionId ?? null,
+            projectId: record?.projectId ?? null,
+            warehouseId: record?.warehouseId ?? null,
+          },
+        },
       );
     },
     validate() {

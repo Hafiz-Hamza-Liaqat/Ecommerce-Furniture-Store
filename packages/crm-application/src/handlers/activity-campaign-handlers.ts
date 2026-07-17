@@ -31,6 +31,7 @@ import {
   buildCrmEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeCrmRules,
   newEntityId,
@@ -311,16 +312,19 @@ export function createUpdateCampaignHandler(
 ): CommandHandler<UpdateCampaignPayload, { campaignId: string }> {
   return {
     commandType: CrmCommandTypes.UpdateCampaign,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.campaigns.findById({ companyId: p.companyId, id: p.campaignId }),
+      );
       return companyResource(
         "campaign",
         CrmPolicyActions.CampaignUpdate,
         p.companyId,
         p.campaignId,
         {
-          ownerUserId: p.ownerUserId ?? null,
-          attributes: { audienceId: p.audienceId ?? null },
+          ownerUserId: record?.ownerUserId ?? null,
+          attributes: { audienceId: record?.audience?.audienceId ?? null },
         },
       );
     },

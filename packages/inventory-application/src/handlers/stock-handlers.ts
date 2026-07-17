@@ -33,6 +33,7 @@ import {
   buildInventoryEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeInventoryRules,
   newEntityId,
@@ -50,14 +51,18 @@ export function createReceiveStockHandler(
 > {
   return {
     commandType: InventoryCommandTypes.ReceiveStock,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const warehouse = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({ companyId: p.companyId, id: p.warehouseId }),
+      );
       return companyResource(
         "stock",
         InventoryPolicyActions.StockReceive,
         p.companyId,
         null,
         {
+          branchId: warehouse?.branchId ?? null,
           attributes: {
             inventoryItemId: p.inventoryItemId ?? null,
             warehouseId: p.warehouseId ?? null,
@@ -162,14 +167,18 @@ export function createAdjustStockHandler(
 > {
   return {
     commandType: InventoryCommandTypes.AdjustStock,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const warehouse = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({ companyId: p.companyId, id: p.warehouseId }),
+      );
       return companyResource(
         "stock",
         InventoryPolicyActions.StockAdjust,
         p.companyId,
         null,
         {
+          branchId: warehouse?.branchId ?? null,
           attributes: {
             inventoryItemId: p.inventoryItemId ?? null,
             warehouseId: p.warehouseId ?? null,
@@ -332,14 +341,18 @@ export function createReserveStockHandler(
 > {
   return {
     commandType: InventoryCommandTypes.ReserveStock,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const warehouse = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({ companyId: p.companyId, id: p.warehouseId }),
+      );
       return companyResource(
         "stock",
         InventoryPolicyActions.StockReserve,
         p.companyId,
         null,
         {
+          branchId: warehouse?.branchId ?? null,
           attributes: {
             inventoryItemId: p.inventoryItemId ?? null,
             warehouseId: p.warehouseId ?? null,
@@ -458,14 +471,18 @@ export function createReleaseReservationHandler(
 > {
   return {
     commandType: InventoryCommandTypes.ReleaseReservation,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const warehouse = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({ companyId: p.companyId, id: p.warehouseId }),
+      );
       return companyResource(
         "stock",
         InventoryPolicyActions.StockRelease,
         p.companyId,
         null,
         {
+          branchId: warehouse?.branchId ?? null,
           attributes: {
             inventoryItemId: p.inventoryItemId ?? null,
             warehouseId: p.warehouseId ?? null,
@@ -586,15 +603,32 @@ export function createTransferStockHandler(
 > {
   return {
     commandType: InventoryCommandTypes.TransferStock,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const fromWarehouse = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({
+          companyId: p.companyId,
+          id: p.fromWarehouseId,
+        }),
+      );
+      const toWarehouse = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({
+          companyId: p.companyId,
+          id: p.toWarehouseId,
+        }),
+      );
+      // Single-branch PolicyResource: source branch drives the scope check;
+      // destination branch is exposed as an attribute (ADR D45 deferral).
       return companyResource(
         "stock",
         InventoryPolicyActions.StockTransfer,
         p.companyId,
         null,
         {
+          branchId: fromWarehouse?.branchId ?? null,
           attributes: {
+            fromBranchId: fromWarehouse?.branchId ?? null,
+            toBranchId: toWarehouse?.branchId ?? null,
             inventoryItemId: p.inventoryItemId ?? null,
             fromWarehouseId: p.fromWarehouseId ?? null,
             toWarehouseId: p.toWarehouseId ?? null,

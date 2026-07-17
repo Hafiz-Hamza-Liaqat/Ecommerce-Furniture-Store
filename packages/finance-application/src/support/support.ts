@@ -66,8 +66,8 @@ export type PolicyResourceScope = {
 
 /**
  * Build an AuthorizationSpec for a company-scoped resource.
- * RC5.4: populate owner/org/branch/attributes from the payload when present.
- * Persisted-record re-authorization remains RC5.5.
+ * RC5.4: populate owner/org/branch/attributes when present.
+ * RC5.5: record-targeting handlers populate from persisted records via loadRecordForAuthorization.
  */
 export function companyResource(
   type: string,
@@ -90,6 +90,24 @@ export function companyResource(
         : {}),
     },
   };
+}
+
+/**
+ * RC5.5 — load the persisted record before authorization (ADR D45).
+ * Fail-closed: a repository failure aborts authorization by throwing the
+ * PlatformError (mapped to a failed result by ExceptionMappingBehavior);
+ * it never falls back to a permissive resource. A missing record resolves
+ * to null so Policy evaluates payload data alone and handle() reports
+ * not-found without leaking cross-company existence.
+ */
+export async function loadRecordForAuthorization<T>(
+  load: () => Promise<Result<T | null, PlatformError>>,
+): Promise<T | null> {
+  const found = await load();
+  if (!found.ok) {
+    throw found.error;
+  }
+  return found.value;
 }
 
 export function requireCompanyId(

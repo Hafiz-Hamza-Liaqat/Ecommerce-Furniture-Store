@@ -37,7 +37,11 @@ import {
   getWarehouseQueryValidator,
 } from "../validators/validators.js";
 import type { InventoryHandlerDeps } from "./deps.js";
-import { companyResource, requireCompanyId } from "../support/support.js";
+import {
+  companyResource,
+  loadRecordForAuthorization,
+  requireCompanyId,
+} from "../support/support.js";
 
 export function createGetInventoryItemHandler(
   deps: InventoryHandlerDeps,
@@ -83,12 +87,20 @@ export function createGetWarehouseHandler(
 > {
   return {
     queryType: InventoryQueryTypes.GetWarehouse,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.warehouses.findById({ companyId: p.companyId, id: p.warehouseId }),
+      );
       return companyResource(
         "warehouse",
         InventoryPolicyActions.WarehouseRead,
-        query.payload.companyId,
-        query.payload.warehouseId,
+        p.companyId,
+        p.warehouseId,
+        {
+          branchId: record?.branchId ?? null,
+          attributes: { addressId: record?.addressId ?? null },
+        },
       );
     },
     validate() {
@@ -133,17 +145,27 @@ export function createGetStockHandler(
 > {
   return {
     queryType: InventoryQueryTypes.GetStock,
-    authorize(query) {
+    async authorize(query) {
       const p = query.payload;
+      const warehouseId = p.warehouseId ?? null;
+      const warehouse = warehouseId
+        ? await loadRecordForAuthorization(() =>
+            deps.warehouses.findById({
+              companyId: p.companyId,
+              id: warehouseId,
+            }),
+          )
+        : null;
       return companyResource(
         "stock",
         InventoryPolicyActions.StockRead,
         p.companyId,
         null,
         {
+          branchId: warehouse?.branchId ?? null,
           attributes: {
             inventoryItemId: p.inventoryItemId ?? null,
-            warehouseId: p.warehouseId ?? null,
+            warehouseId,
             locationId: p.locationId ?? null,
           },
         },

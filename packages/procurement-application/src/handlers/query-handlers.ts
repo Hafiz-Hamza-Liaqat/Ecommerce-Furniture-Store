@@ -25,19 +25,31 @@ import {
   getSupplierQueryValidator,
 } from "../validators/validators.js";
 import type { ProcurementHandlerDeps } from "./deps.js";
-import { companyResource, requireCompanyId } from "../support/support.js";
+import {
+  companyResource,
+  loadRecordForAuthorization,
+  requireCompanyId,
+} from "../support/support.js";
 
 export function createGetSupplierHandler(
   deps: ProcurementHandlerDeps,
 ): QueryHandler<GetSupplierPayload, Supplier> {
   return {
     queryType: ProcurementQueryTypes.GetSupplier,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.suppliers.findById({ companyId: p.companyId, id: p.supplierId }),
+      );
       return companyResource(
         "supplier",
         ProcurementPolicyActions.SupplierRead,
-        query.payload.companyId,
-        query.payload.supplierId,
+        p.companyId,
+        p.supplierId,
+        {
+          organizationId: record?.identityOrganizationId ?? null,
+          attributes: { categoryId: record?.categoryId ?? null },
+        },
       );
     },
     validate() {
@@ -72,12 +84,26 @@ export function createGetPurchaseRequisitionHandler(
 > {
   return {
     queryType: ProcurementQueryTypes.GetPurchaseRequisition,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.requisitions.findById({
+          companyId: p.companyId,
+          id: p.requisitionId,
+        }),
+      );
       return companyResource(
         "requisition",
         ProcurementPolicyActions.RequisitionRead,
-        query.payload.companyId,
-        query.payload.requisitionId,
+        p.companyId,
+        p.requisitionId,
+        {
+          ownerUserId: record?.requestedByUserId ?? null,
+          attributes: {
+            projectId: record?.projectId ?? null,
+            warehouseId: record?.warehouseId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -123,12 +149,27 @@ export function createGetPurchaseOrderHandler(
 > {
   return {
     queryType: ProcurementQueryTypes.GetPurchaseOrder,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.purchaseOrders.findById({
+          companyId: p.companyId,
+          id: p.purchaseOrderId,
+        }),
+      );
       return companyResource(
         "purchase_order",
         ProcurementPolicyActions.PurchaseOrderRead,
-        query.payload.companyId,
-        query.payload.purchaseOrderId,
+        p.companyId,
+        p.purchaseOrderId,
+        {
+          attributes: {
+            supplierId: record?.supplierId ?? null,
+            requisitionId: record?.requisitionId ?? null,
+            projectId: record?.projectId ?? null,
+            warehouseId: record?.warehouseId ?? null,
+          },
+        },
       );
     },
     validate() {

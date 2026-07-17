@@ -3,7 +3,7 @@
 **Reuse only:** Policy Engine + `PolicyResource` + RBAC scopes (`company` | `branch` | `organization` | `own` | `global`).  
 **Do not** invent a separate RLS database engine or per-table security microservice.
 
-> **Audit correction (2026-07-17):** Company isolation is implemented and enforced. Branch/organization/own are Policy capabilities. RC5.4 populates `ownerUserId` / `organizationId` / `branchId` / `attributes` on AuthorizationSpecs from command/query payloads when those fields are present; get-by-id and other payloads without ownership fields still leave them null. Persisted-record load-before-authorize and enforceable own/branch/org checks remain RC5.5. Workspace is UI-only. Department exists on employee profiles but is not a Policy scope. See `docs/rc5/audit/10-Record-Security-Audit.md` and `docs/release/RC5.4-api-authorization.md`.
+> **Audit correction (2026-07-17):** Company isolation is implemented and enforced. Branch/organization/own are Policy capabilities. RC5.4 populates `ownerUserId` / `organizationId` / `branchId` / `attributes` from command/query payloads on create-style operations when those fields are present. RC5.5 (ADR D45) loads the persisted record before authorization for update/lifecycle/get-by-id handlers and populates those fields from persisted data, making own/branch/org enforceable and fail-closed when the load fails. Workspace is UI-only. Department exists on employee profiles but is not a Policy scope. See `docs/rc5/audit/10-Record-Security-Audit.md`, `docs/release/RC5.4-api-authorization.md`, and `docs/release/RC5.5-record-authorization.md`.
 
 ---
 
@@ -98,9 +98,9 @@ Do not add a new scope enum without ADR. Prefer Team/attributes.
 ## 7. Implementation guidance (RC5.5)
 
 1. Audit every handler `authorize()` for complete `PolicyResource`.  
-2. **[RC5.5 target, not implemented]** Add post-load re-authorization for updates using persisted company/owner. Today `authorize()` runs pre-handle on the command payload only (`packages/application` AuthorizationBehavior); owner/branch/org fields are not populated. Requires an ADR before treating own-scope as enforceable.  
-3. Add automated cross-company tests.  
-4. Document attribute keys in a shared glossary — no new engine.  
+2. **[RC5.5 delivered — ADR D45]** Record-targeting update/lifecycle/get-by-id handlers load the persisted aggregate via company-scoped `findById` inside `authorize()`, then populate `ownerUserId` / `organizationId` / `branchId` / `attributes` from persisted data. Own-scope is enforceable for those operations. Create-style commands remain payload-derived. Evidence: `docs/release/RC5.5-record-authorization.md`.  
+3. Automated cross-company, owner, organization, branch, missing-resource, and fail-closed tests live in `packages/api/src/authorization/record-authorization.test.ts`.  
+4. Attribute keys are documented in the RC5.5 release report glossary — no new engine.  
 5. UI filters are convenience only.
 
 ---

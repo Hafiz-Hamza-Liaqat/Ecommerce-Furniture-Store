@@ -35,6 +35,7 @@ import {
   buildFinanceEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeFinanceRules,
   newEntityId,
@@ -399,18 +400,21 @@ export function createUpdateInvoiceHandler(
 > {
   return {
     commandType: FinanceCommandTypes.UpdateInvoice,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.invoices.findById({ companyId: p.companyId, id: p.invoiceId }),
+      );
       return companyResource(
         "invoice",
         FinancePolicyActions.InvoiceUpdate,
         p.companyId,
         p.invoiceId,
         {
-          organizationId: p.organizationId ?? null,
+          organizationId: record?.organizationId ?? null,
           attributes: {
-            customerId: p.customerId ?? null,
-            billToAddressId: p.billToAddressId ?? null,
+            customerId: record?.customerId ?? null,
+            billToAddressId: record?.billToAddressId ?? null,
           },
         },
       );

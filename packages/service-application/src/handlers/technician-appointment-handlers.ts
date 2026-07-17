@@ -32,6 +32,7 @@ import {
   buildServiceEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeServiceRules,
   newEntityId,
@@ -238,18 +239,26 @@ export function createReassignTechnicianHandler(
 ): CommandHandler<ReassignTechnicianPayload, { assignmentId: string }> {
   return {
     commandType: ServiceCommandTypes.ReassignTechnician,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.technicianAssignments.findById({
+          companyId: p.companyId,
+          id: p.assignmentId,
+        }),
+      );
       return companyResource(
         "technician_assignment",
         ServicePolicyActions.TechnicianReassign,
         p.companyId,
         p.assignmentId,
         {
-          ownerUserId: p.userId ?? null,
+          ownerUserId: record?.technician.userId ?? null,
           attributes: {
-            employeeId: p.employeeId ?? null,
-            teamId: p.teamId ?? null,
+            employeeId: record?.technician.employeeId ?? null,
+            workOrderId: record?.workOrderId ?? null,
+            appointmentId: record?.appointmentId ?? null,
+            teamId: record?.team?.teamId ?? null,
           },
         },
       );
@@ -483,12 +492,26 @@ export function createRescheduleAppointmentHandler(
 ): CommandHandler<RescheduleAppointmentPayload, { appointmentId: string }> {
   return {
     commandType: ServiceCommandTypes.RescheduleAppointment,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.appointments.findById({
+          companyId: p.companyId,
+          id: p.appointmentId,
+        }),
+      );
       return companyResource(
         "appointment",
         ServicePolicyActions.AppointmentReschedule,
-        command.payload.companyId,
-        command.payload.appointmentId,
+        p.companyId,
+        p.appointmentId,
+        {
+          attributes: {
+            serviceRequestId: record?.serviceRequestId ?? null,
+            workOrderId: record?.workOrderId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

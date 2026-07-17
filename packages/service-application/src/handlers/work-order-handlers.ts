@@ -26,6 +26,7 @@ import {
   buildServiceEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeServiceRules,
   newEntityId,
@@ -178,8 +179,11 @@ export function createUpdateWorkOrderHandler(
 ): CommandHandler<UpdateWorkOrderPayload, { workOrderId: string }> {
   return {
     commandType: ServiceCommandTypes.UpdateWorkOrder,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.workOrders.findById({ companyId: p.companyId, id: p.workOrderId }),
+      );
       return companyResource(
         "work_order",
         ServicePolicyActions.WorkOrderUpdate,
@@ -187,8 +191,9 @@ export function createUpdateWorkOrderHandler(
         p.workOrderId,
         {
           attributes: {
-            projectId: p.projectId ?? null,
-            workTypeId: p.workTypeId ?? null,
+            serviceRequestId: record?.serviceRequestId ?? null,
+            projectId: record?.projectId ?? null,
+            workTypeId: record?.workType?.workTypeId ?? null,
           },
         },
       );
@@ -282,12 +287,22 @@ export function createCompleteWorkOrderHandler(
 > {
   return {
     commandType: ServiceCommandTypes.CompleteWorkOrder,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.workOrders.findById({ companyId: p.companyId, id: p.workOrderId }),
+      );
       return companyResource(
         "work_order",
         ServicePolicyActions.WorkOrderComplete,
-        command.payload.companyId,
-        command.payload.workOrderId,
+        p.companyId,
+        p.workOrderId,
+        {
+          attributes: {
+            serviceRequestId: record?.serviceRequestId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

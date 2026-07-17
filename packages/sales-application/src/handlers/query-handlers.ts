@@ -16,19 +16,38 @@ import {
   getSalesOrderQueryValidator,
 } from "../validators/validators.js";
 import type { SalesHandlerDeps } from "./deps.js";
-import { companyResource, requireCompanyId } from "../support/support.js";
+import {
+  companyResource,
+  loadRecordForAuthorization,
+  requireCompanyId,
+} from "../support/support.js";
 
 export function createGetOpportunityHandler(
   deps: SalesHandlerDeps,
 ): QueryHandler<GetOpportunityPayload, Opportunity> {
   return {
     queryType: SalesQueryTypes.GetOpportunity,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.opportunities.findById({
+          companyId: p.companyId,
+          id: p.opportunityId,
+        }),
+      );
       return companyResource(
         "opportunity",
         SalesPolicyActions.OpportunityRead,
-        query.payload.companyId,
-        query.payload.opportunityId,
+        p.companyId,
+        p.opportunityId,
+        {
+          ownerUserId: record?.salesRepUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -63,12 +82,24 @@ export function createGetQuoteHandler(
 > {
   return {
     queryType: SalesQueryTypes.GetQuote,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.quotes.findById({ companyId: p.companyId, id: p.quoteId }),
+      );
       return companyResource(
         "quote",
         SalesPolicyActions.QuoteRead,
-        query.payload.companyId,
-        query.payload.quoteId,
+        p.companyId,
+        p.quoteId,
+        {
+          ownerUserId: record?.salesRepUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -113,12 +144,24 @@ export function createGetSalesOrderHandler(
 > {
   return {
     queryType: SalesQueryTypes.GetSalesOrder,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.orders.findById({ companyId: p.companyId, id: p.salesOrderId }),
+      );
       return companyResource(
         "order",
         SalesPolicyActions.OrderRead,
-        query.payload.companyId,
-        query.payload.salesOrderId,
+        p.companyId,
+        p.salesOrderId,
+        {
+          ownerUserId: record?.salesRepUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

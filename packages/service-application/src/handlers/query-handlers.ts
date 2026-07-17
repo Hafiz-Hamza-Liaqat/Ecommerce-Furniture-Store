@@ -28,19 +28,37 @@ import {
   getWorkOrderQueryValidator,
 } from "../validators/validators.js";
 import type { ServiceHandlerDeps } from "./deps.js";
-import { companyResource, requireCompanyId } from "../support/support.js";
+import {
+  companyResource,
+  loadRecordForAuthorization,
+  requireCompanyId,
+} from "../support/support.js";
 
 export function createGetServiceRequestHandler(
   deps: ServiceHandlerDeps,
 ): QueryHandler<GetServiceRequestPayload, ServiceRequest> {
   return {
     queryType: ServiceQueryTypes.GetServiceRequest,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.serviceRequests.findById({
+          companyId: p.companyId,
+          id: p.serviceRequestId,
+        }),
+      );
       return companyResource(
         "service_request",
         ServicePolicyActions.ServiceRequestRead,
-        query.payload.companyId,
-        query.payload.serviceRequestId,
+        p.companyId,
+        p.serviceRequestId,
+        {
+          ownerUserId: record?.requestedByUserId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -74,12 +92,22 @@ export function createGetWorkOrderHandler(
 > {
   return {
     queryType: ServiceQueryTypes.GetWorkOrder,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.workOrders.findById({ companyId: p.companyId, id: p.workOrderId }),
+      );
       return companyResource(
         "work_order",
         ServicePolicyActions.WorkOrderRead,
-        query.payload.companyId,
-        query.payload.workOrderId,
+        p.companyId,
+        p.workOrderId,
+        {
+          attributes: {
+            serviceRequestId: record?.serviceRequestId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -121,12 +149,26 @@ export function createGetAppointmentHandler(
 ): QueryHandler<GetAppointmentPayload, Appointment> {
   return {
     queryType: ServiceQueryTypes.GetAppointment,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.appointments.findById({
+          companyId: p.companyId,
+          id: p.appointmentId,
+        }),
+      );
       return companyResource(
         "appointment",
         ServicePolicyActions.AppointmentRead,
-        query.payload.companyId,
-        query.payload.appointmentId,
+        p.companyId,
+        p.appointmentId,
+        {
+          attributes: {
+            serviceRequestId: record?.serviceRequestId ?? null,
+            workOrderId: record?.workOrderId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -157,12 +199,28 @@ export function createGetTechnicianAssignmentHandler(
 ): QueryHandler<GetTechnicianAssignmentPayload, TechnicianAssignmentReference> {
   return {
     queryType: ServiceQueryTypes.GetTechnicianAssignment,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.technicianAssignments.findById({
+          companyId: p.companyId,
+          id: p.assignmentId,
+        }),
+      );
       return companyResource(
         "technician_assignment",
         ServicePolicyActions.TechnicianAssignmentRead,
-        query.payload.companyId,
-        query.payload.assignmentId,
+        p.companyId,
+        p.assignmentId,
+        {
+          ownerUserId: record?.technician.userId ?? null,
+          attributes: {
+            employeeId: record?.technician.employeeId ?? null,
+            workOrderId: record?.workOrderId ?? null,
+            appointmentId: record?.appointmentId ?? null,
+            teamId: record?.team?.teamId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -193,12 +251,26 @@ export function createGetServiceHistoryHandler(
 ): QueryHandler<GetServiceHistoryPayload, ServiceHistory> {
   return {
     queryType: ServiceQueryTypes.GetServiceHistory,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.serviceRequests.findById({
+          companyId: p.companyId,
+          id: p.serviceRequestId,
+        }),
+      );
       return companyResource(
         "service_request",
         ServicePolicyActions.HistoryRead,
-        query.payload.companyId,
-        query.payload.serviceRequestId,
+        p.companyId,
+        p.serviceRequestId,
+        {
+          ownerUserId: record?.requestedByUserId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -258,12 +330,26 @@ export function createGetServiceSummaryHandler(
 ): QueryHandler<GetServiceSummaryPayload, ServiceSummary> {
   return {
     queryType: ServiceQueryTypes.GetServiceSummary,
-    authorize(query) {
+    async authorize(query) {
+      const p = query.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.serviceRequests.findById({
+          companyId: p.companyId,
+          id: p.serviceRequestId,
+        }),
+      );
       return companyResource(
         "service_request",
         ServicePolicyActions.SummaryRead,
-        query.payload.companyId,
-        query.payload.serviceRequestId,
+        p.companyId,
+        p.serviceRequestId,
+        {
+          ownerUserId: record?.requestedByUserId ?? null,
+          attributes: {
+            customerId: record?.customerId ?? null,
+            projectId: record?.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

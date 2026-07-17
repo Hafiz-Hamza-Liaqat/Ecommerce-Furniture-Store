@@ -26,6 +26,7 @@ import {
   buildProjectEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeProjectRules,
   newEntityId,
@@ -151,19 +152,22 @@ export function createUpdateProjectHandler(
 ): CommandHandler<UpdateProjectPayload, { projectId: string }> {
   return {
     commandType: ProjectsCommandTypes.UpdateProject,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.projects.findById({ companyId: p.companyId, id: p.projectId }),
+      );
       return companyResource(
         "project",
         ProjectsPolicyActions.ProjectUpdate,
         p.companyId,
         p.projectId,
         {
-          ownerUserId: p.ownerUserId ?? null,
-          organizationId: p.organizationId ?? null,
+          ownerUserId: record?.ownerUserId ?? null,
+          organizationId: record?.organizationId ?? null,
           attributes: {
-            customerId: p.customerId ?? null,
-            siteAddressId: p.siteAddressId ?? null,
+            customerId: record?.customerId ?? null,
+            siteAddressId: record?.siteAddressId ?? null,
           },
         },
       );
@@ -254,12 +258,21 @@ export function createArchiveProjectHandler(
 > {
   return {
     commandType: ProjectsCommandTypes.ArchiveProject,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.projects.findById({ companyId: p.companyId, id: p.projectId }),
+      );
       return companyResource(
         "project",
         ProjectsPolicyActions.ProjectArchive,
-        command.payload.companyId,
-        command.payload.projectId,
+        p.companyId,
+        p.projectId,
+        {
+          ownerUserId: record?.ownerUserId ?? null,
+          organizationId: record?.organizationId ?? null,
+          attributes: { customerId: record?.customerId ?? null },
+        },
       );
     },
     validate() {

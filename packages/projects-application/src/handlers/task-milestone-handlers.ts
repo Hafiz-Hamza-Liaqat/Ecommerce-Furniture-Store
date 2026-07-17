@@ -30,6 +30,7 @@ import {
   buildProjectEvent,
   commandCausationId,
   companyResource,
+  loadRecordForAuthorization,
   enqueueDomainEvent,
   invokeProjectRules,
   newEntityId,
@@ -173,12 +174,23 @@ export function createUpdateTaskHandler(
 ): CommandHandler<UpdateTaskPayload, { taskId: string }> {
   return {
     commandType: ProjectsCommandTypes.UpdateTask,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.tasks.findById({ companyId: p.companyId, id: p.taskId }),
+      );
       return companyResource(
         "task",
         ProjectsPolicyActions.TaskUpdate,
-        command.payload.companyId,
-        command.payload.taskId,
+        p.companyId,
+        p.taskId,
+        {
+          ownerUserId: record?.assigneeUserId ?? null,
+          attributes: {
+            projectId: record?.projectId ?? null,
+            assigneeTeamId: record?.assigneeTeamId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -248,16 +260,22 @@ export function createAssignTaskHandler(
 ): CommandHandler<AssignTaskPayload, { taskId: string }> {
   return {
     commandType: ProjectsCommandTypes.AssignTask,
-    authorize(command) {
+    async authorize(command) {
       const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.tasks.findById({ companyId: p.companyId, id: p.taskId }),
+      );
       return companyResource(
         "task",
         ProjectsPolicyActions.TaskAssign,
         p.companyId,
         p.taskId,
         {
-          ownerUserId: p.assigneeUserId ?? null,
-          attributes: { assigneeTeamId: p.assigneeTeamId ?? null },
+          ownerUserId: record?.assigneeUserId ?? null,
+          attributes: {
+            projectId: record?.projectId ?? null,
+            assigneeTeamId: record?.assigneeTeamId ?? null,
+          },
         },
       );
     },
@@ -338,12 +356,23 @@ export function createCompleteTaskHandler(
 ): CommandHandler<CompleteTaskPayload, { taskId: string }> {
   return {
     commandType: ProjectsCommandTypes.CompleteTask,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.tasks.findById({ companyId: p.companyId, id: p.taskId }),
+      );
       return companyResource(
         "task",
         ProjectsPolicyActions.TaskComplete,
-        command.payload.companyId,
-        command.payload.taskId,
+        p.companyId,
+        p.taskId,
+        {
+          ownerUserId: record?.assigneeUserId ?? null,
+          attributes: {
+            projectId: record?.projectId ?? null,
+            assigneeTeamId: record?.assigneeTeamId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -495,12 +524,19 @@ export function createUpdateMilestoneHandler(
 ): CommandHandler<UpdateMilestonePayload, { milestoneId: string }> {
   return {
     commandType: ProjectsCommandTypes.UpdateMilestone,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      const record = await loadRecordForAuthorization(() =>
+        deps.milestones.findById({ companyId: p.companyId, id: p.milestoneId }),
+      );
       return companyResource(
         "milestone",
         ProjectsPolicyActions.MilestoneUpdate,
-        command.payload.companyId,
-        command.payload.milestoneId,
+        p.companyId,
+        p.milestoneId,
+        {
+          attributes: { projectId: record?.projectId ?? null },
+        },
       );
     },
     validate() {
