@@ -369,7 +369,7 @@ export function createGetFinancialSummaryHandler(
         FinancePolicyActions.SummaryRead,
         query.payload.companyId,
         null,
-        principalListScope(ctx.principal),
+        principalListScope(ctx.principal, FinancePolicyActions.SummaryRead),
       );
     },
     validate() {

@@ -3,6 +3,7 @@ export {
 } from "./policy-engine.js";
 export type {
   PolicyPrincipal,
+  PolicyPrincipalRole,
   PolicyResource,
   PolicyContext,
   PolicyDecision,

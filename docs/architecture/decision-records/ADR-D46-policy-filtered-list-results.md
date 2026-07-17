@@ -87,6 +87,9 @@ frozen and must remain the sole authorization authority.
   metadata; when true `List*` endpoints ship (RC7), totals must be computed
   after filtering — noted as an obligation, not delivered here.
 - Permission-to-scope binding remains deferred exactly as recorded in D45.
+  *Update 2026-07-18: delivered in RC5.8 by ADR D47, which also makes
+  `principalListScope` action-aware so collection-gate hints come only from
+  assignments that grant the gate action.*
 
 ## Rejected alternatives
 

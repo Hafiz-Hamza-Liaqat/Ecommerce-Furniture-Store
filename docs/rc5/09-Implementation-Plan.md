@@ -149,6 +149,8 @@ Any pull request containing excluded work is not RC5.1 and must be split or reje
 | **Acceptance** | `docs/rc5` + ops notes consistent with shipped behavior |
 | **Complexity** | Low–Medium |
 
+**Implementation evidence (2026-07-18, RC5.8 completion — approved scope: permission-to-scope binding in the Policy Engine):** The approved RC5.8 slice delivered the target assignment rule deferred by ADR D45 (see ADR D47). `buildPrincipal` now attaches each role entry's contributed permission codes, and the Policy Engine's scope stage evaluates only the entries that granted the action — a company/global-scoped assignment can no longer widen the scope of a permission granted only by an own/organization/branch assignment. The flat session permission projection, reason codes, RBAC catalog, route protection, and authentication are unchanged; legacy principals without per-entry data keep the pre-RC5.8 behavior, and partially populated principals fail closed. `principalListScope` became action-aware so RC5.7 collection gates derive hints from granting assignments only. Tests: `packages/identity/src/policy/policy-engine.test.ts` (engine binding, hierarchy, super_admin, legacy/partial fallback, unchanged stages) and `packages/api/src/authorization/scope-binding.test.ts` (pipeline cross-role widening closed, owner path preserved, list-filtering interplay). Reports: `docs/release/RC5.8-scope-binding.md`, `docs/release/RC5.8-verification-report.md`, `docs/release/RC5.8-scope-binding-audit.md`.
+
 ---
 
 ## RC5.9 — Release candidate

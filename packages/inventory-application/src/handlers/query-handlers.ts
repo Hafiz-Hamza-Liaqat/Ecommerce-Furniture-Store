@@ -381,7 +381,10 @@ export function createGetInventorySummaryHandler(
         p.companyId,
         null,
         {
-          ...principalListScope(ctx.principal),
+          ...principalListScope(
+            ctx.principal,
+            InventoryPolicyActions.SummaryRead,
+          ),
           attributes: { warehouseId: p.warehouseId ?? null },
         },
       );

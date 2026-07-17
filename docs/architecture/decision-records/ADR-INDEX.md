@@ -56,6 +56,7 @@ Canonical business decision IDs D01–D36 originated in Phase 0A Decision Regist
 | D44 | Observability does not create business engines | Accepted | Keep kernel purity | 0F | 0A |
 | [D45](./ADR-D45-record-authorization-load-before-authorize.md) | Record-level authorization via load-before-authorize; persisted owner/org/branch feed Policy; fail-closed on unresolved context | Accepted | RC5.5 record security without spoofable payload scope data | Handler authorize() for record-targeting CQRS | D02, D35, D43, RC5.5 |
 | [D46](./ADR-D46-policy-filtered-list-results.md) | Query/list results Policy-filtered per row; collection gate uses principal scope hints; bounded in-process evaluation; fail-closed | Accepted | RC5.7 list filtering without a second authorization authority | Collection-bearing query handlers | D02, D35, D43, D45, RC5.7 |
+| [D47](./ADR-D47-permission-to-scope-binding.md) | Permissions bound to the scope of the assignments that granted them; scope gate evaluates granting role entries only; legacy principals keep union behavior; partial data fails closed | Accepted | RC5.8 closes the cross-role scope-widening risk deferred by D45 | RbacPolicyEngine scope stage; principalListScope gate hints | D02, D43, D45, D46, RC5.8 |
 
 ---
 

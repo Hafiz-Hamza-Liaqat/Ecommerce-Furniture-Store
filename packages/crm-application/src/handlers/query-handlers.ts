@@ -312,7 +312,7 @@ export function createGetCrmSummaryHandler(
         CrmPolicyActions.SummaryRead,
         query.payload.companyId,
         null,
-        principalListScope(ctx.principal),
+        principalListScope(ctx.principal, CrmPolicyActions.SummaryRead),
       );
     },
     validate() {

@@ -213,7 +213,10 @@ export function createGetCustomerSalesSummaryHandler(
         SalesPolicyActions.CustomerSalesSummaryRead,
         query.payload.companyId,
         null,
-        principalListScope(ctx.principal),
+        principalListScope(
+          ctx.principal,
+          SalesPolicyActions.CustomerSalesSummaryRead,
+        ),
       );
     },
     validate() {

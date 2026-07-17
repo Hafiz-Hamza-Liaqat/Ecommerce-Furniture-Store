@@ -87,7 +87,7 @@ Partner types already exist (`PartnerType` in identity models). Roles bind permi
 1. **Deny by default.**
 2. **Super Admin** is not grantable by Admin (`identity.roles.assign` for the `super_admin` target is Super-Admin-only). Super Admin is a scope shortcut after permission and company checks, not a universal bypass (`13`).
 3. **Inheritance** uses single-parent `parentRoleId` on `RoleRecord` (already implemented).
-4. **Scope intent:** company ⊃ branch ⊃ location/project ⊃ own. Current Policy unions permissions across assignments and can satisfy scope from a different assignment; least-privilege seeds must not rely on that widening. Binding permission to the contributing assignment’s scope is an RC5.5 hardening target.
+4. **Scope intent:** company ⊃ branch ⊃ location/project ⊃ own. **RC5.8 (ADR D47):** the Policy Engine binds each permission to the scope of the assignments that granted it; a different assignment can no longer satisfy the scope gate for a permission it did not contribute. Least-privilege seeds get exactly the scopes they declare.
 5. **Partner/org roles** never receive company-wide finance/HR/KYC unless explicitly assigned and audited.
 6. **Presentation-only modules** still get `*.dashboard.read` permissions so UI can be gated later; live data arrives in RC7+.
 

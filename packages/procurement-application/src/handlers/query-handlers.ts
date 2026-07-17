@@ -221,7 +221,10 @@ export function createGetProcurementSummaryHandler(
         ProcurementPolicyActions.ProcurementSummaryRead,
         query.payload.companyId,
         null,
-        principalListScope(ctx.principal),
+        principalListScope(
+          ctx.principal,
+          ProcurementPolicyActions.ProcurementSummaryRead,
+        ),
       );
     },
     validate() {

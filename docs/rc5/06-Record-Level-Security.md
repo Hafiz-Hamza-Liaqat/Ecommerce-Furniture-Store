@@ -34,7 +34,7 @@
 | **Assigned** | assigneeUserId / team contains principal | service technician work orders |
 | **Global** | Explicit platform control-plane resources only | super_admin / platform_admin; no implicit company ERP access |
 
-Authorization follows the complete order in `13-Authorization-Governance-Specification.md`. Inside the current Policy Engine the ordered denies are permission → company isolation → scope. Default deny applies, and any applicable explicit deny overrides all role-derived allows. Super Admin currently short-circuits only the scope step after permission and company checks pass.
+Authorization follows the complete order in `13-Authorization-Governance-Specification.md`. Inside the current Policy Engine the ordered denies are permission → company isolation → scope. Default deny applies, and any applicable explicit deny overrides all role-derived allows. **RC5.8 (ADR D47):** the scope step is bound per assignment — only role entries that actually granted the evaluated permission can satisfy the scope gate, so a company/global-scoped assignment no longer widens permissions granted only by an own/org/branch assignment. Super Admin short-circuits only the scope step, and only through entries that grant the evaluated permission, after permission and company checks pass.
 
 ---
 

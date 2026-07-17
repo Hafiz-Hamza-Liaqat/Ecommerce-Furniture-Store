@@ -27,6 +27,13 @@ import type { ApplicationContext } from "../context/context.js";
  * filtering then enforces exactly that. Company/global principals are
  * unaffected (their scope gate already passes); principals with no active
  * scoped assignment keep all-null fields and remain denied by Policy.
+ *
+ * RC5.8 (ADR D47): the Policy Engine binds each permission to the
+ * assignments that granted it, so when `action` is provided the hints are
+ * derived only from role entries that grant that action — otherwise a
+ * non-granting assignment's scopeId could shadow the granting one and cause
+ * a false gate denial. Legacy principals without per-entry permission data
+ * keep the pre-RC5.8 behavior (all entries considered).
  */
 export type PrincipalListScope = {
   readonly ownerUserId: string | null;
@@ -36,14 +43,23 @@ export type PrincipalListScope = {
 
 export function principalListScope(
   principal: PolicyPrincipal | null,
+  action?: string,
 ): PrincipalListScope {
   if (!principal) {
     return { ownerUserId: null, organizationId: null, branchId: null };
   }
+  const bound =
+    action !== undefined &&
+    principal.roles.some((r) => r.permissionCodes !== undefined);
+  const entries = bound
+    ? principal.roles.filter(
+        (r) => r.permissionCodes?.includes(action) ?? false,
+      )
+    : principal.roles;
   let ownerUserId: string | null = null;
   let organizationId: string | null = null;
   let branchId: string | null = null;
-  for (const role of principal.roles) {
+  for (const role of entries) {
     if (role.scopeType === "own") {
       ownerUserId = principal.userId;
     } else if (role.scopeType === "organization" && role.scopeId !== null) {

@@ -132,7 +132,7 @@ Until E2E exists, manual checklist acceptable for RC5.9 with recorded evidence.
 | Missing data | Unknown permission, unmapped legacy key, missing required resource/scope attribute | Deny and emit configuration/security audit |
 | Super Admin | Company ERP without company assignment; missing permission; cross-company resource; approval bypass attempt; platform scope-only case | Missing permission and cross-company deny; scope shortcut alone never grants permission; all audited |
 | Empty catalog / zero roles | Active user with no role/permission seed | Every protected command/query denies `permission_missing` |
-| Permission/scope decoupling | Permission from own-scoped role plus unrelated company-scoped role | Document current union risk; prove RC5.5 binding when that milestone claims completion |
+| Permission/scope decoupling | Permission from own-scoped role plus unrelated company-scoped role | **RC5.8 delivered (ADR D47):** the unrelated company-scoped role no longer widens the own-granted permission's scope; proven by `packages/identity/src/policy/policy-engine.test.ts` and `packages/api/src/authorization/scope-binding.test.ts` |
 | Seed evolution | Idempotent rerun; hierarchy cycle; unmapped legacy key; rollback snapshot restore | Fail closed / restore previous catalog version |
 
 These cases are milestone-aware: RC5.1 executes catalog/mapping/seed tests only. Route/menu tests begin in RC5.2, API tests in RC5.4, record/IDOR tests in RC5.5, and field tests in RC5.6. A later milestone may not weaken an earlier green case.

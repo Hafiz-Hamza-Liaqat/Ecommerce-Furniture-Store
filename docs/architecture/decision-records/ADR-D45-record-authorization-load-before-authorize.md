@@ -72,6 +72,7 @@ Constraints in force:
   permission to the scope of the assignment that contributed it requires a Policy
   Engine algorithm change, which is out of RC5.5's freeze ("existing Policy Engine
   only"). The union risk remains documented until that engine change is approved.
+  *Update 2026-07-18: delivered in RC5.8 by ADR D47.*
 - **Dual-branch validation on stock transfers** (06 §3): `PolicyResource` carries a
   single `branchId` (populated from the source warehouse); the destination branch is
   exposed as `attributes.toBranchId` only. Enforcing both requires engine capability.

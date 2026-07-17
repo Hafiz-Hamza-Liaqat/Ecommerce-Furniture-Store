@@ -17,7 +17,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "test": "node --test dist/routes/auth-routes.test.js dist/authorization/module-permissions.test.js dist/authorization/api-authorization.test.js dist/authorization/record-authorization.test.js dist/authorization/field-authorization.test.js dist/authorization/list-filtering.test.js"
+    "test": "node --test dist/routes/auth-routes.test.js dist/authorization/module-permissions.test.js dist/authorization/api-authorization.test.js dist/authorization/record-authorization.test.js dist/authorization/field-authorization.test.js dist/authorization/list-filtering.test.js dist/authorization/scope-binding.test.js"
   },
   "dependencies": {
     "@afh/application": "0.1.0",
