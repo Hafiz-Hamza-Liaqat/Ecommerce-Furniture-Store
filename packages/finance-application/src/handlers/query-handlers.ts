@@ -1,4 +1,5 @@
 import type { QueryHandler } from "@afh/application";
+import { filterAuthorizedRecords, principalListScope } from "@afh/application";
 import type { PageRequest } from "@afh/shared-kernel";
 import { NotFoundError, fail, ok } from "@afh/shared-kernel";
 import type {
@@ -360,11 +361,15 @@ export function createGetFinancialSummaryHandler(
 ): QueryHandler<GetFinancialSummaryPayload, FinancialSummary> {
   return {
     queryType: FinanceQueryTypes.GetFinancialSummary,
-    authorize(query) {
+    authorize(query, ctx) {
+      // RC5.7: the collection gate targets records within the caller's own
+      // scopes; per-row Policy filtering in handle() enforces exactly that.
       return companyResource(
         "finance",
         FinancePolicyActions.SummaryRead,
         query.payload.companyId,
+        null,
+        principalListScope(ctx.principal),
       );
     },
     validate() {
@@ -380,14 +385,40 @@ export function createGetFinancialSummaryHandler(
       const invoices = await deps.invoices.listByCompany(scope.value, page);
       if (!invoices.ok) return invoices;
 
+      // RC5.7: Policy-filter every row before counting or projecting ids.
+      // Financial accounts persist no owner/org/branch fields, so scoped
+      // principals see none of them (missing data denies); invoices carry
+      // organizationId.
+      const visibleAccounts = await filterAuthorizedRecords(
+        ctx,
+        FinancePolicyActions.AccountRead,
+        "financial_account",
+        accounts.value.items,
+        (a) => ({ id: a.id, companyId: a.companyId }),
+      );
+      if (!visibleAccounts.ok) return visibleAccounts;
+
+      const visibleInvoices = await filterAuthorizedRecords(
+        ctx,
+        FinancePolicyActions.InvoiceRead,
+        "invoice",
+        invoices.value.items,
+        (i) => ({
+          id: i.id,
+          companyId: i.companyId,
+          organizationId: i.organizationId,
+        }),
+      );
+      if (!visibleInvoices.ok) return visibleInvoices;
+
       return ok({
         companyId: scope.value,
-        accountCount: accounts.value.items.length,
-        invoiceCount: invoices.value.items.length,
-        draftInvoiceIds: invoices.value.items
+        accountCount: visibleAccounts.value.length,
+        invoiceCount: visibleInvoices.value.length,
+        draftInvoiceIds: visibleInvoices.value
           .filter((i) => i.status === "draft")
           .map((i) => i.id),
-        issuedInvoiceIds: invoices.value.items
+        issuedInvoiceIds: visibleInvoices.value
           .filter((i) => i.status === "issued")
           .map((i) => i.id),
         activeCreditAccountIds: [],

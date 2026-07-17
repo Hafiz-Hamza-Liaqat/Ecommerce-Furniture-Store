@@ -61,7 +61,7 @@ Use **seeded fixtures** of roles from `03-Role-Catalog.md` — not ad-hoc string
 | Cross-company GetOpportunity | 403/404 |
 | Cross-company UpdateInvoice | 403/404 |
 | Cross-company upload | 403 |
-| List pollution | N/A until List*; document residual UI fixture risk |
+| List pollution | **RC5.7:** summary/list rows are Policy-filtered per row (ADR D46); covered by `packages/api/src/authorization/list-filtering.test.ts`. Residual UI fixture risk remains documented until RC7 `List*` endpoints. |
 | Platform admin without company role accessing ERP command | Deny |
 
 ---

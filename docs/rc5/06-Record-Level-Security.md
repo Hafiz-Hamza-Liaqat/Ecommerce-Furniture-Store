@@ -109,7 +109,7 @@ Do not add a new scope enum without ADR. Prefer Team/attributes.
 
 | Gap | Disposition |
 |---|---|
-| List queries without server filters | Cannot enforce row-level on lists until RC7 List* |
+| List queries without server filters | **[RC5.7 delivered — ADR D46]** The five company-wide module summary queries (sales, procurement, inventory, finance, CRM) now Policy-filter every row after the company-scoped repository page: counts and id projections include only rows the principal's scopes allow, and the collection gate uses principal scope hints so scoped principals receive their slice instead of a blanket deny. Dedicated `List*` endpoints remain RC7; they must reuse `filterAuthorizedRecords` and compute pagination metadata after filtering. Evidence: `docs/release/RC5.7-list-filtering.md`. |
 | Fixture grids | Client-side only; do not treat as secure multi-tenant data |
 | In-memory Approval/Workflow stores | Not durable ownership sources until RC6 |
 | Department scope type | Use attributes/teams; ADR if first-class scope required |

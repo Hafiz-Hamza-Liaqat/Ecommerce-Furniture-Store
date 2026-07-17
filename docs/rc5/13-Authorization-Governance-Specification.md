@@ -299,7 +299,7 @@ These are engineering goals, not permission shortcuts:
 | Policy overhead | p95 ≤ 10 ms and p99 ≤ 25 ms per in-process evaluation, excluding authentication, aggregate/database load, network, and audit sink latency |
 | Request impact | Authorization should remain below 10% of end-to-end latency for ordinary CQRS requests under representative load |
 | Frequency | Exactly once before each protected command/query handler, plus post-load re-evaluation only where persisted resource data is required |
-| Batching | List/summary/export operations authorize the operation once and enforce tenant/scope in the authoritative query; never perform unbounded per-row remote authorization |
+| Batching | List/summary/export operations authorize the operation once and enforce tenant/scope in the authoritative query; never perform unbounded per-row remote authorization. **RC5.7 (ADR D46):** scope is enforced over the bounded, company-scoped repository page via in-process Policy Engine row evaluation (`filterAuthorizedRecords`); this is not remote per-row authorization and SQL scope predicates were rejected as a second authorization authority |
 | Role resolution | Resolve active assignments and inherited permissions deterministically; avoid repeated lookups within one request |
 | Caching | No new caching framework. Existing request-local memoization may reuse immutable principal/catalog data only within the request |
 | Cross-request cache | Optional only through already-approved infrastructure; keys must include principal, company/scope, catalog version, and assignment version; revocation/expiry must not be bypassed |

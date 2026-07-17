@@ -1,4 +1,5 @@
 import type { QueryHandler } from "@afh/application";
+import { filterAuthorizedRecords, principalListScope } from "@afh/application";
 import { NotFoundError, fail, ok } from "@afh/shared-kernel";
 import type {
   PurchaseOrder,
@@ -212,11 +213,15 @@ export function createGetProcurementSummaryHandler(
 ): QueryHandler<GetProcurementSummaryPayload, ProcurementSummary> {
   return {
     queryType: ProcurementQueryTypes.GetProcurementSummary,
-    authorize(query) {
+    authorize(query, ctx) {
+      // RC5.7: the collection gate targets records within the caller's own
+      // scopes; per-row Policy filtering in handle() enforces exactly that.
       return companyResource(
         "purchase_order",
         ProcurementPolicyActions.ProcurementSummaryRead,
         query.payload.companyId,
+        null,
+        principalListScope(ctx.principal),
       );
     },
     validate() {
@@ -244,24 +249,58 @@ export function createGetProcurementSummaryHandler(
       );
       if (!orders.ok) return orders;
 
+      // RC5.7: Policy-filter every row before counting or projecting ids.
+      // Suppliers and purchase orders persist no owner/org/branch fields, so
+      // scoped principals see none of them (missing data denies).
+      const visibleSuppliers = await filterAuthorizedRecords(
+        ctx,
+        ProcurementPolicyActions.SupplierRead,
+        "supplier",
+        suppliers.value.items,
+        (s) => ({ id: s.id, companyId: s.companyId }),
+      );
+      if (!visibleSuppliers.ok) return visibleSuppliers;
+
+      const visibleRequisitions = await filterAuthorizedRecords(
+        ctx,
+        ProcurementPolicyActions.RequisitionRead,
+        "requisition",
+        requisitions.value.items,
+        (r) => ({
+          id: r.id,
+          companyId: r.companyId,
+          ownerUserId: r.requestedByUserId,
+        }),
+      );
+      if (!visibleRequisitions.ok) return visibleRequisitions;
+
+      const visibleOrders = await filterAuthorizedRecords(
+        ctx,
+        ProcurementPolicyActions.PurchaseOrderRead,
+        "purchase_order",
+        orders.value.items,
+        (o) => ({ id: o.id, companyId: o.companyId }),
+      );
+      if (!visibleOrders.ok) return visibleOrders;
+
       const filteredSuppliers = supplierFilter
-        ? suppliers.value.items.filter((s) => s.id === supplierFilter)
-        : suppliers.value.items;
+        ? visibleSuppliers.value.filter((s) => s.id === supplierFilter)
+        : visibleSuppliers.value;
 
       const filteredOrders = supplierFilter
-        ? orders.value.items.filter((o) => o.supplierId === supplierFilter)
-        : orders.value.items;
+        ? visibleOrders.value.filter((o) => o.supplierId === supplierFilter)
+        : visibleOrders.value;
 
       const summary: ProcurementSummary = {
         companyId: scope.value,
         supplierId: supplierFilter,
         supplierCount: filteredSuppliers.length,
-        requisitionCount: requisitions.value.items.length,
+        requisitionCount: visibleRequisitions.value.length,
         purchaseOrderCount: filteredOrders.length,
-        draftRequisitionIds: requisitions.value.items
+        draftRequisitionIds: visibleRequisitions.value
           .filter((r) => r.status === "draft")
           .map((r) => r.id),
-        submittedRequisitionIds: requisitions.value.items
+        submittedRequisitionIds: visibleRequisitions.value
           .filter((r) => r.status === "submitted")
           .map((r) => r.id),
         draftPurchaseOrderIds: filteredOrders

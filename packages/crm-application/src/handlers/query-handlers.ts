@@ -1,4 +1,5 @@
 import type { QueryHandler } from "@afh/application";
+import { filterAuthorizedRecords, principalListScope } from "@afh/application";
 import type { PageRequest } from "@afh/shared-kernel";
 import { NotFoundError, fail, ok } from "@afh/shared-kernel";
 import type {
@@ -303,11 +304,15 @@ export function createGetCrmSummaryHandler(
 ): QueryHandler<GetCrmSummaryPayload, CrmSummary> {
   return {
     queryType: CrmQueryTypes.GetCrmSummary,
-    authorize(query) {
+    authorize(query, ctx) {
+      // RC5.7: the collection gate targets records within the caller's own
+      // scopes; per-row Policy filtering in handle() enforces exactly that.
       return companyResource(
         "crm",
         CrmPolicyActions.SummaryRead,
         query.payload.companyId,
+        null,
+        principalListScope(ctx.principal),
       );
     },
     validate() {
@@ -334,10 +339,49 @@ export function createGetCrmSummaryHandler(
       const campaigns = await deps.campaigns.listByCompany(scope.value, page);
       if (!campaigns.ok) return campaigns;
 
+      // RC5.7: Policy-filter every row before counting or projecting ids.
+      // Contacts persist no owner/org/branch fields, so scoped principals
+      // see none of them (missing data denies).
+      const visibleLeads = await filterAuthorizedRecords(
+        ctx,
+        CrmPolicyActions.LeadRead,
+        "lead",
+        leads.value.items,
+        (l) => ({ id: l.id, companyId: l.companyId, ownerUserId: l.ownerUserId }),
+      );
+      if (!visibleLeads.ok) return visibleLeads;
+
+      const visibleContacts = await filterAuthorizedRecords(
+        ctx,
+        CrmPolicyActions.ContactRead,
+        "contact",
+        contacts.value.items,
+        (c) => ({ id: c.id, companyId: c.companyId }),
+      );
+      if (!visibleContacts.ok) return visibleContacts;
+
+      const visibleAccounts = await filterAuthorizedRecords(
+        ctx,
+        CrmPolicyActions.AccountRead,
+        "account",
+        accounts.value.items,
+        (a) => ({ id: a.id, companyId: a.companyId, ownerUserId: a.ownerUserId }),
+      );
+      if (!visibleAccounts.ok) return visibleAccounts;
+
+      const visibleCampaigns = await filterAuthorizedRecords(
+        ctx,
+        CrmPolicyActions.CampaignRead,
+        "campaign",
+        campaigns.value.items,
+        (c) => ({ id: c.id, companyId: c.companyId, ownerUserId: c.ownerUserId }),
+      );
+      if (!visibleCampaigns.ok) return visibleCampaigns;
+
       return ok({
         companyId: scope.value,
-        leadCount: leads.value.items.length,
-        openLeadIds: leads.value.items
+        leadCount: visibleLeads.value.length,
+        openLeadIds: visibleLeads.value
           .filter(
             (l) =>
               l.status === "new" ||
@@ -345,13 +389,13 @@ export function createGetCrmSummaryHandler(
               l.status === "qualified",
           )
           .map((l) => l.id),
-        qualifiedLeadIds: leads.value.items
+        qualifiedLeadIds: visibleLeads.value
           .filter((l) => l.status === "qualified")
           .map((l) => l.id),
-        contactCount: contacts.value.items.length,
-        accountCount: accounts.value.items.length,
-        campaignCount: campaigns.value.items.length,
-        activeCampaignIds: campaigns.value.items
+        contactCount: visibleContacts.value.length,
+        accountCount: visibleAccounts.value.length,
+        campaignCount: visibleCampaigns.value.length,
+        activeCampaignIds: visibleCampaigns.value
           .filter((c) => c.status === "active" || c.status === "scheduled")
           .map((c) => c.id),
       });

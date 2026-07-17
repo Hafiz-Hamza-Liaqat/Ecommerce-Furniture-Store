@@ -55,6 +55,7 @@ Canonical business decision IDs D01–D36 originated in Phase 0A Decision Regist
 | D43 | Zero Trust + Policy on every command/query | Accepted | Enterprise security | 0E | 0A |
 | D44 | Observability does not create business engines | Accepted | Keep kernel purity | 0F | 0A |
 | [D45](./ADR-D45-record-authorization-load-before-authorize.md) | Record-level authorization via load-before-authorize; persisted owner/org/branch feed Policy; fail-closed on unresolved context | Accepted | RC5.5 record security without spoofable payload scope data | Handler authorize() for record-targeting CQRS | D02, D35, D43, RC5.5 |
+| [D46](./ADR-D46-policy-filtered-list-results.md) | Query/list results Policy-filtered per row; collection gate uses principal scope hints; bounded in-process evaluation; fail-closed | Accepted | RC5.7 list filtering without a second authorization authority | Collection-bearing query handlers | D02, D35, D43, D45, RC5.7 |
 
 ---
 

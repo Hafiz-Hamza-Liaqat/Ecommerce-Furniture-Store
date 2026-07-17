@@ -1,4 +1,5 @@
 import type { QueryHandler } from "@afh/application";
+import { filterAuthorizedRecords, principalListScope } from "@afh/application";
 import { NotFoundError, fail, ok } from "@afh/shared-kernel";
 import type { Opportunity, Quote, QuoteLine, SalesOrder, SalesOrderLine } from "@afh/sales";
 import { SalesPolicyActions, SalesQueryTypes } from "../constants.js";
@@ -204,11 +205,15 @@ export function createGetCustomerSalesSummaryHandler(
 ): QueryHandler<GetCustomerSalesSummaryPayload, CustomerSalesSummary> {
   return {
     queryType: SalesQueryTypes.GetCustomerSalesSummary,
-    authorize(query) {
+    authorize(query, ctx) {
+      // RC5.7: the collection gate targets records within the caller's own
+      // scopes; per-row Policy filtering in handle() enforces exactly that.
       return companyResource(
         "order",
         SalesPolicyActions.CustomerSalesSummaryRead,
         query.payload.companyId,
+        null,
+        principalListScope(ctx.principal),
       );
     },
     validate() {
@@ -233,13 +238,56 @@ export function createGetCustomerSalesSummaryHandler(
       const orders = await deps.orders.listByCompany(scope.value, page);
       if (!orders.ok) return orders;
 
-      const customerOpps = opportunities.value.items.filter(
+      // RC5.7: Policy-filter every row before counting or projecting ids.
+      const visibleOpps = await filterAuthorizedRecords(
+        ctx,
+        SalesPolicyActions.OpportunityRead,
+        "opportunity",
+        opportunities.value.items,
+        (o) => ({
+          id: o.id,
+          companyId: o.companyId,
+          ownerUserId: o.salesRepUserId,
+          organizationId: o.organizationId,
+        }),
+      );
+      if (!visibleOpps.ok) return visibleOpps;
+
+      const visibleQuotes = await filterAuthorizedRecords(
+        ctx,
+        SalesPolicyActions.QuoteRead,
+        "quote",
+        quotes.value.items,
+        (q) => ({
+          id: q.id,
+          companyId: q.companyId,
+          ownerUserId: q.salesRepUserId,
+          organizationId: q.organizationId,
+        }),
+      );
+      if (!visibleQuotes.ok) return visibleQuotes;
+
+      const visibleOrders = await filterAuthorizedRecords(
+        ctx,
+        SalesPolicyActions.OrderRead,
+        "order",
+        orders.value.items,
+        (o) => ({
+          id: o.id,
+          companyId: o.companyId,
+          ownerUserId: o.salesRepUserId,
+          organizationId: o.organizationId,
+        }),
+      );
+      if (!visibleOrders.ok) return visibleOrders;
+
+      const customerOpps = visibleOpps.value.filter(
         (o) => o.customerId === customerId,
       );
-      const customerQuotes = quotes.value.items.filter(
+      const customerQuotes = visibleQuotes.value.filter(
         (q) => q.customerId === customerId,
       );
-      const customerOrders = orders.value.items.filter(
+      const customerOrders = visibleOrders.value.filter(
         (o) => o.customerId === customerId,
       );
 

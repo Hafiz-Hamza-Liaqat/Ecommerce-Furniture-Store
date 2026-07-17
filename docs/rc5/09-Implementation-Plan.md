@@ -134,6 +134,8 @@ Any pull request containing excluded work is not RC5.1 and must be split or reje
 | **Acceptance** | Gate suite green in CI for auth pack; documented residual risks |
 | **Complexity** | High |
 
+**Implementation evidence (2026-07-18, RC5.7 completion — approved scope: query/list record filtering):** The approved RC5.7 slice delivered Policy-based result filtering for collection-bearing queries (ADR D46). A shared `filterAuthorizedRecords` helper in `@afh/application` delegates every row decision to the existing Policy Engine; the five company-wide module summary handlers (sales, procurement, inventory, finance, CRM) and their derived id/count projections now include only rows the principal's scopes allow, the collection gate uses principal scope hints (`principalListScope`) so scoped principals get filtered results instead of a blanket deny, and evaluation failures fail the whole query closed. Rows without persisted scope fields stay hidden from scoped principals (missing data denies). Tests: `packages/api/src/authorization/list-filtering.test.ts` (owner/organization/branch/company scopes, cross-company and leaked-row denial, fail-closed). The RBAC catalog, role seeds, sessions, routes, and the Policy Engine algorithm are unchanged. Evidence: `docs/release/RC5.7-list-filtering.md`, `docs/release/RC5.7-verification-report.md`, `docs/release/RC5.7-list-filtering-audit.md`.
+
 ---
 
 ## RC5.8 — Documentation

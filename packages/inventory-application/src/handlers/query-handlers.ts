@@ -1,4 +1,5 @@
 import type { QueryHandler } from "@afh/application";
+import { filterAuthorizedRecords, principalListScope } from "@afh/application";
 import type { PageRequest } from "@afh/shared-kernel";
 import { NotFoundError, ValidationError, fail, ok } from "@afh/shared-kernel";
 import type {
@@ -370,14 +371,17 @@ export function createGetInventorySummaryHandler(
 ): QueryHandler<GetInventorySummaryPayload, InventorySummary> {
   return {
     queryType: InventoryQueryTypes.GetInventorySummary,
-    authorize(query) {
+    authorize(query, ctx) {
       const p = query.payload;
+      // RC5.7: the collection gate targets records within the caller's own
+      // scopes; per-row Policy filtering in handle() enforces exactly that.
       return companyResource(
         "inventory",
         InventoryPolicyActions.SummaryRead,
         p.companyId,
         null,
         {
+          ...principalListScope(ctx.principal),
           attributes: { warehouseId: p.warehouseId ?? null },
         },
       );
@@ -398,15 +402,37 @@ export function createGetInventorySummaryHandler(
       );
       if (!warehouses.ok) return warehouses;
 
+      // RC5.7: Policy-filter every row before counting or projecting ids.
+      // Items persist no owner/org/branch fields, so scoped principals see
+      // none of them (missing data denies); warehouses carry branchId.
+      const visibleItems = await filterAuthorizedRecords(
+        ctx,
+        InventoryPolicyActions.ItemRead,
+        "inventory_item",
+        items.value.items,
+        (i) => ({ id: i.id, companyId: i.companyId }),
+      );
+      if (!visibleItems.ok) return visibleItems;
+
+      const visibleWarehouses = await filterAuthorizedRecords(
+        ctx,
+        InventoryPolicyActions.WarehouseRead,
+        "warehouse",
+        warehouses.value.items,
+        (w) => ({ id: w.id, companyId: w.companyId, branchId: w.branchId }),
+      );
+      if (!visibleWarehouses.ok) return visibleWarehouses;
+
       const warehouseFilter = query.payload.warehouseId ?? null;
       const filteredWarehouses = warehouseFilter
-        ? warehouses.value.items.filter((w) => w.id === warehouseFilter)
-        : warehouses.value.items;
+        ? visibleWarehouses.value.filter((w) => w.id === warehouseFilter)
+        : visibleWarehouses.value;
 
-      // Sample movements from first page of items for open reservations / pending transfers
+      // Sample movements from first page of visible items for open
+      // reservations / pending transfers.
       const openReservationMovementIds: string[] = [];
       const pendingTransferMovementIds: string[] = [];
-      for (const item of items.value.items.slice(0, 50)) {
+      for (const item of visibleItems.value.slice(0, 50)) {
         const movements = await deps.movements.listByItem(
           scope.value,
           item.id,
@@ -438,7 +464,7 @@ export function createGetInventorySummaryHandler(
       return ok({
         companyId: scope.value,
         warehouseId: warehouseFilter,
-        itemCount: items.value.items.length,
+        itemCount: visibleItems.value.length,
         warehouseCount: filteredWarehouses.length,
         openReservationMovementIds,
         pendingTransferMovementIds,
