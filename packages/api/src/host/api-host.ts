@@ -3,6 +3,7 @@
  * No business logic.
  */
 
+import { seedPlatformDefinitions } from "@afh/platform";
 import type { RouteDefinition } from "../transport/contracts.js";
 import {
   createNodeHttpServer,
@@ -110,6 +111,32 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
       return started;
     },
     async start() {
+      // RC6.1 — register default workflow/approval definitions before serving.
+      const seeded = await seedPlatformDefinitions({
+        workflow: composition.platform.workflow,
+        approval: composition.platform.approval,
+        audit: composition.identity.audit,
+      });
+      if (!seeded.ok) {
+        composition.infrastructure.logger.error(
+          "api.host.definitions_seed_failed",
+          {
+            service: API_SERVICE_NAME,
+            code: seeded.error.code,
+            message: seeded.error.message,
+          },
+        );
+        throw seeded.error;
+      }
+      composition.infrastructure.logger.info("api.host.definitions_seeded", {
+        service: API_SERVICE_NAME,
+        catalogVersion: seeded.value.catalogVersion,
+        workflowsCreated: seeded.value.workflows.created,
+        workflowsExisting: seeded.value.workflows.existing,
+        approvalsCreated: seeded.value.approvals.created,
+        approvalsExisting: seeded.value.approvals.existing,
+      });
+
       await http.start();
       started = true;
       composition.infrastructure.logger.info("api.host.started", {

@@ -10,3 +10,4 @@ export * from "./approval/index.js";
 export * from "./rules/index.js";
 export * from "./policy/index.js";
 export * from "./composition/index.js";
+export * from "./catalog/index.js";

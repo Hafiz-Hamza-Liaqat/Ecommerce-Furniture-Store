@@ -16,8 +16,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src --max-warnings 0"
+    "lint": "eslint src --max-warnings 0",
+    "test": "node --test dist/catalog/seed.test.js"
   },
+
   "dependencies": {
     "@afh/shared-kernel": "0.1.0",
     "@afh/persistence": "0.1.0",
