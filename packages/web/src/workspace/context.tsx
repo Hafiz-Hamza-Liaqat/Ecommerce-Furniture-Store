@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   applyUserPrefsToDocument,
+  clampSidebarWidth,
   loadFavoriteCommands,
   loadFavorites,
   loadRecentCommands,
@@ -33,6 +34,7 @@ export type ToastItem = {
 
 type WorkspaceUiValue = {
   readonly sidebarCollapsed: boolean;
+  readonly sidebarWidth: number;
   readonly mobileNavOpen: boolean;
   readonly workspaceId: string;
   readonly companyId: string;
@@ -49,6 +51,7 @@ type WorkspaceUiValue = {
   readonly aiPanelOpen: boolean;
   readonly toasts: ToastItem[];
   setSidebarCollapsed(v: boolean): void;
+  setSidebarWidth(px: number): void;
   setMobileNavOpen(v: boolean): void;
   setWorkspaceId(id: string): void;
   setCompanyId(id: string): void;
@@ -72,6 +75,7 @@ const WorkspaceUiContext = createContext<WorkspaceUiValue | null>(null);
 export function WorkspaceUiProvider({ children }: { readonly children: ReactNode }) {
   const initial = loadWorkspaceContext();
   const [sidebarCollapsed, setSidebarCollapsedState] = useState(initial.sidebarCollapsed);
+  const [sidebarWidth, setSidebarWidthState] = useState(initial.sidebarWidth);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [workspaceId, setWorkspaceIdState] = useState(initial.workspaceId);
   const [companyId, setCompanyIdState] = useState(initial.companyId);
@@ -89,7 +93,15 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   useEffect(() => {
-    applyUserPrefsToDocument(loadUserPrefs());
+    const prefs = loadUserPrefs();
+    // The last explicit dark/light toggle (session setTheme) wins over the
+    // stored preference default, otherwise entering /app resets the theme.
+    const toggled = localStorage.getItem("afh.web.theme");
+    applyUserPrefsToDocument(
+      toggled === "dark" || toggled === "light"
+        ? { ...prefs, theme: toggled }
+        : prefs,
+    );
   }, []);
 
   const persist = useCallback((patch: Partial<WorkspaceContextPrefs>) => {
@@ -98,15 +110,25 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       companyId,
       branchId,
       sidebarCollapsed,
+      sidebarWidth,
       ...patch,
     };
     saveWorkspaceContext(next);
-  }, [workspaceId, companyId, branchId, sidebarCollapsed]);
+  }, [workspaceId, companyId, branchId, sidebarCollapsed, sidebarWidth]);
 
   const setSidebarCollapsed = useCallback(
     (v: boolean) => {
       setSidebarCollapsedState(v);
       persist({ sidebarCollapsed: v });
+    },
+    [persist],
+  );
+
+  const setSidebarWidth = useCallback(
+    (px: number) => {
+      const clamped = clampSidebarWidth(px);
+      setSidebarWidthState(clamped);
+      persist({ sidebarWidth: clamped });
     },
     [persist],
   );
@@ -225,6 +247,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
   const value: WorkspaceUiValue = useMemo(
     () => ({
       sidebarCollapsed,
+      sidebarWidth,
       mobileNavOpen,
       workspaceId,
       companyId,
@@ -241,6 +264,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       aiPanelOpen,
       toasts,
       setSidebarCollapsed,
+      setSidebarWidth,
       setMobileNavOpen,
       setWorkspaceId,
       setCompanyId,
@@ -260,6 +284,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
     }),
     [
       sidebarCollapsed,
+      sidebarWidth,
       mobileNavOpen,
       workspaceId,
       companyId,
@@ -276,6 +301,7 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
       aiPanelOpen,
       toasts,
       setSidebarCollapsed,
+      setSidebarWidth,
       setWorkspaceId,
       setCompanyId,
       setBranchId,

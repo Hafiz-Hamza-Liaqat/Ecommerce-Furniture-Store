@@ -34,6 +34,7 @@ export function ForbiddenRoute() {
  * - guard flag disabled → render children (pre-RC5.2 session-only behavior);
  * - `required` empty → render children (authentication-only route);
  * - permission codes still resolving → loading fallback (never a false deny);
+ * - permission load failed → retriable error (fail-closed, never a false allow);
  * - codes resolved and incomplete → Forbidden experience.
  */
 export function RequirePermission({
@@ -43,11 +44,22 @@ export function RequirePermission({
   readonly required: readonly string[];
   readonly children: ReactNode;
 }) {
-  const { permissionCodes } = useSession();
+  const { permissionCodes, permissionsError, reloadPermissions } = useSession();
   if (!isRoutePermissionGuardEnabled() || required.length === 0) {
     return children;
   }
   if (permissionCodes === null) {
+    if (permissionsError) {
+      return (
+        <EnterpriseError
+          kind="network"
+          title="Could not load your permissions"
+          body="The session service is unreachable, so this page cannot be shown yet. Access is still enforced by the backend Policy Engine."
+          onRetry={reloadPermissions}
+          homeHref="/app/me"
+        />
+      );
+    }
     return <RouteFallback />;
   }
   if (!hasRequiredPermissions(required, permissionCodes)) {

@@ -34,6 +34,12 @@ type SessionContextValue = {
    * Presentation-only signal — backend Policy remains authoritative.
    */
   readonly permissionCodes: readonly string[] | null;
+  /**
+   * True when the last permission fetch failed (e.g. API unreachable) and
+   * codes are therefore unresolved. Lets guards show a retriable error
+   * instead of an indefinite loading state. Never grants access.
+   */
+  readonly permissionsError: boolean;
   readonly api: ApiClient;
   readonly developerMode: boolean;
   readonly theme: "light" | "dark";
@@ -44,6 +50,8 @@ type SessionContextValue = {
   setTheme(theme: "light" | "dark"): void;
   setLastCorrelationId(id: string | null): void;
   refreshSession(): Promise<boolean>;
+  /** Re-request effective permission codes after a failed load. */
+  reloadPermissions(): void;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -77,6 +85,9 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
   const [permissionCodes, setPermissionCodes] = useState<
     readonly string[] | null
   >(null);
+  const [permissionsError, setPermissionsError] = useState(false);
+  // Bumped by reloadPermissions() to re-run the fetch effect after a failure.
+  const [permissionFetchAttempt, setPermissionFetchAttempt] = useState(0);
   // Identity (user + session) the current permissionCodes belong to. A silent
   // token refresh keeps the same identity, so codes stay valid while they are
   // re-resolved; a different user/session invalidates them immediately.
@@ -88,6 +99,7 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
     setUser(null);
     setTokens(null);
     setPermissionCodes(null);
+    setPermissionsError(false);
     permissionIdentityRef.current = null;
     localStorage.removeItem(STORAGE_KEY);
   }, []);
@@ -166,6 +178,7 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
   useEffect(() => {
     if (!tokens?.sessionId) {
       setPermissionCodes(null);
+      setPermissionsError(false);
       return;
     }
     let cancelled = false;
@@ -173,20 +186,32 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
       .getSession()
       .then((res) => {
         if (!cancelled) {
-          setPermissionCodes(res.data.permissionCodes);
+          // Boundary guard: an older/other backend build may omit the field;
+          // treat it as unresolved instead of crashing permission checks.
+          const codes = res.data.permissionCodes ?? null;
+          setPermissionCodes(codes);
+          setPermissionsError(codes === null);
         }
       })
       .catch(() => {
         // Leave codes unresolved; a 401/403 already clears the session via
         // onUnauthorized, and the backend Policy Engine stays authoritative.
+        // Flag the failure so guards can offer a retry instead of an
+        // indefinite loading skeleton (fail-closed either way).
         if (!cancelled) {
           setPermissionCodes(null);
+          setPermissionsError(true);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [api, tokens]);
+  }, [api, tokens, permissionFetchAttempt]);
+
+  const reloadPermissions = useCallback(() => {
+    setPermissionsError(false);
+    setPermissionFetchAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (!tokens?.expiresAt) return;
@@ -207,6 +232,7 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
     user,
     tokens,
     permissionCodes,
+    permissionsError,
     api,
     developerMode,
     theme,
@@ -217,6 +243,7 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
     setTheme,
     setLastCorrelationId,
     refreshSession,
+    reloadPermissions,
   };
 
   return createElement(SessionContext.Provider, { value }, children);

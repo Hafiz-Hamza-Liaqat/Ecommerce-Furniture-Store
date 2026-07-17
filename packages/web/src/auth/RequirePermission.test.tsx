@@ -105,6 +105,22 @@ describe("RequirePermission", () => {
     expect(await screen.findByText("Access denied")).toBeTruthy();
   });
 
+  it("shows a retriable error (not access) when the permission load fails", async () => {
+    seedStoredSession();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("network down");
+      }),
+    );
+    const screen = renderGuarded(["finance.dashboard.read"]);
+    expect(
+      await screen.findByText("Could not load your permissions"),
+    ).toBeTruthy();
+    expect(screen.queryByTestId("protected-content")).toBeNull();
+    expect(screen.getByText("Retry")).toBeTruthy();
+  });
+
   it("shows a loading state while permissions resolve, never a false deny", () => {
     seedStoredSession();
     vi.stubGlobal(

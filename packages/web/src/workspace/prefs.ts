@@ -26,7 +26,17 @@ export type WorkspaceContextPrefs = {
   readonly companyId: string;
   readonly branchId: string;
   readonly sidebarCollapsed: boolean;
+  readonly sidebarWidth: number;
 };
+
+export const SIDEBAR_MIN_WIDTH = 220;
+export const SIDEBAR_MAX_WIDTH = 460;
+export const SIDEBAR_DEFAULT_WIDTH = 280;
+
+export function clampSidebarWidth(value: number): number {
+  if (!Number.isFinite(value)) return SIDEBAR_DEFAULT_WIDTH;
+  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, Math.round(value)));
+}
 
 export type RecentPage = {
   readonly path: string;
@@ -169,24 +179,24 @@ export function toggleFavoriteCommand(id: string): string[] {
 }
 
 export function loadWorkspaceContext(): WorkspaceContextPrefs {
+  const fallback: WorkspaceContextPrefs = {
+    workspaceId: "executive",
+    companyId: "afh-pk",
+    branchId: "lahore-hq",
+    sidebarCollapsed: false,
+    sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
+  };
   try {
     const raw = localStorage.getItem(CONTEXT_KEY);
-    if (!raw) {
-      return {
-        workspaceId: "executive",
-        companyId: "afh-pk",
-        branchId: "lahore-hq",
-        sidebarCollapsed: false,
-      };
-    }
-    return JSON.parse(raw) as WorkspaceContextPrefs;
-  } catch {
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<WorkspaceContextPrefs>;
     return {
-      workspaceId: "executive",
-      companyId: "afh-pk",
-      branchId: "lahore-hq",
-      sidebarCollapsed: false,
+      ...fallback,
+      ...parsed,
+      sidebarWidth: clampSidebarWidth(parsed.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH),
     };
+  } catch {
+    return fallback;
   }
 }
 

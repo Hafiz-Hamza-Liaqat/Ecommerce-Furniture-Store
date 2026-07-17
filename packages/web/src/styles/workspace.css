@@ -22,6 +22,43 @@
   padding-inline: 0.55rem;
 }
 
+/* Fixed to the viewport edge of the sidebar column: the sidebar itself is a
+   scroll container, so an absolute child would scroll away with the content. */
+.ws-sidebar__resizer {
+  position: fixed;
+  top: 0;
+  left: calc(var(--afh-sidebar) - 7px);
+  width: 7px;
+  height: 100vh;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 31;
+}
+
+.ws-sidebar__resizer:hover,
+.ws-sidebar__resizer:focus-visible {
+  background: rgba(255, 255, 255, 0.22);
+  outline: none;
+}
+
+.app-shell.is-resizing,
+.app-shell.is-resizing .ws-sidebar {
+  transition: none !important;
+}
+
+.app-shell.is-resizing {
+  user-select: none;
+}
+
+@media (max-width: 960px) {
+  .ws-sidebar__resizer {
+    display: none;
+  }
+}
+
 .ws-sidebar.is-collapsed .brand {
   font-size: 0.95rem;
   text-align: center;

@@ -1,5 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { BRANCHES, COMPANIES, NAV_GROUPS, WORKSPACES } from "../workspace/data";
 import { useWorkspaceUi } from "../workspace/context";
 import { loadBookmarks } from "../workspace/prefs";
@@ -7,6 +13,8 @@ import { loadBookmarks } from "../workspace/prefs";
 export function Sidebar() {
   const {
     sidebarCollapsed,
+    sidebarWidth,
+    setSidebarWidth,
     mobileNavOpen,
     setMobileNavOpen,
     workspaceId,
@@ -23,10 +31,55 @@ export function Sidebar() {
   );
   const [bookmarks] = useState(() => loadBookmarks());
   const { pathname } = useLocation();
+  const asideRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const rafRef = useRef(0);
 
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname, setMobileNavOpen]);
+
+  const shellEl = () => asideRef.current?.closest(".app-shell");
+
+  const onResizeStart = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startWidth: sidebarWidth };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Pointer may already be gone (e.g. synthetic events); drag still works.
+    }
+    shellEl()?.classList.add("is-resizing");
+  };
+
+  const onResizeMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const next = drag.startWidth + e.clientX - drag.startX;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => setSidebarWidth(next));
+  };
+
+  const onResizeEnd = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // No active capture — nothing to release.
+    }
+    shellEl()?.classList.remove("is-resizing");
+  };
+
+  const onResizeKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      setSidebarWidth(sidebarWidth - 16);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      setSidebarWidth(sidebarWidth + 16);
+    }
+  };
 
   const frequent = recentPages
     .slice()
@@ -44,6 +97,7 @@ export function Sidebar() {
         />
       ) : null}
       <aside
+        ref={asideRef}
         className={`sidebar ws-sidebar${sidebarCollapsed ? " is-collapsed" : ""}${mobileNavOpen ? " is-open" : ""}`}
         aria-label="Primary"
       >
@@ -194,6 +248,23 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {!sidebarCollapsed ? (
+          <button
+            type="button"
+            className="ws-sidebar__resizer"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize navigation"
+            aria-valuenow={sidebarWidth}
+            title="Drag to resize navigation"
+            onPointerDown={onResizeStart}
+            onPointerMove={onResizeMove}
+            onPointerUp={onResizeEnd}
+            onPointerCancel={onResizeEnd}
+            onKeyDown={onResizeKeyDown}
+          />
+        ) : null}
       </aside>
     </>
   );

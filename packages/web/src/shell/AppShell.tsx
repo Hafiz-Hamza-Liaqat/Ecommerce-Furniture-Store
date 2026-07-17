@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { WorkspaceUiProvider, useWorkspaceUi } from "../workspace/context";
@@ -58,7 +58,7 @@ function pageLabel(pathname: string): string {
 function ShellInner() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { rememberPage } = useWorkspaceUi();
+  const { rememberPage, sidebarWidth } = useWorkspaceUi();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -101,7 +101,10 @@ function ShellInner() {
   }, []);
 
   return (
-    <div className="app-shell ws-shell">
+    <div
+      className="app-shell ws-shell"
+      style={{ "--afh-sidebar": `${sidebarWidth}px` } as CSSProperties}
+    >
       <a className="sr-only" href="#main-content">
         Skip to content
       </a>

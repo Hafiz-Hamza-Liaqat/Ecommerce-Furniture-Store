@@ -131,6 +131,9 @@
 .site-theme-toggle {
   border: 1px solid var(--site-line);
   background: transparent;
+  /* Buttons do not inherit text color by default; without this the label
+     kept the UA light-scheme color and vanished in dark mode. */
+  color: inherit;
   font: inherit;
   padding: 0.35rem 0.6rem;
   cursor: pointer;
@@ -636,7 +639,9 @@
 }
 .site-whatsapp { right: 1rem; bottom: 5.5rem; }
 .site-chat { right: 1rem; bottom: 1.25rem; }
-.site-top { left: 1rem; bottom: 1.25rem; background: var(--site-ink); }
+/* --site-ink flips to near-white in dark mode, so the label must flip with
+   it (paper token) instead of staying hardcoded light. */
+.site-top { left: 1rem; bottom: 1.25rem; background: var(--site-ink); color: var(--site-paper); }
 .site-chat-panel {
   position: fixed;
   right: 1rem;
