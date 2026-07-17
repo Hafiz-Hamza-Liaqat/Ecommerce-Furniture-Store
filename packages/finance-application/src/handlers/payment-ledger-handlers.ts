@@ -56,10 +56,20 @@ export function createRecordPaymentHandler(
   return {
     commandType: FinanceCommandTypes.RecordPayment,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "payment",
         FinancePolicyActions.PaymentRecord,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          organizationId: p.payerOrganizationId ?? null,
+          attributes: {
+            invoiceId: p.invoiceId ?? null,
+            payerCustomerId: p.payerCustomerId ?? null,
+            methodId: p.methodId ?? null,
+          },
+        },
       );
     },
     validate() {

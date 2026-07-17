@@ -46,21 +46,27 @@ export const ServiceRuleSetCodes = {
   AppointmentOptimization: "service.appointment_optimization",
 } as const;
 
+/**
+ * Canonical RC5 permission codes (`<module>.<resource>.<action>`), normalized
+ * from legacy executable keys in RC5.3 per the frozen RC5.1 mapping. The seed
+ * keeps granting the legacy compatibility codes as the documented overlap
+ * window for rollback.
+ */
 export const ServicePolicyActions = {
-  ServiceRequestCreate: "service_request.create",
-  ServiceRequestUpdate: "service_request.update",
-  ServiceRequestClose: "service_request.close",
-  ServiceRequestRead: "service_request.read",
-  TechnicianAssign: "technician.assign",
-  TechnicianReassign: "technician.reassign",
-  TechnicianAssignmentRead: "technician_assignment.read",
-  AppointmentSchedule: "appointment.schedule",
-  AppointmentReschedule: "appointment.reschedule",
-  AppointmentRead: "appointment.read",
-  WorkOrderCreate: "work_order.create",
-  WorkOrderUpdate: "work_order.update",
-  WorkOrderComplete: "work_order.complete",
-  WorkOrderRead: "work_order.read",
+  ServiceRequestCreate: "service.requests.create",
+  ServiceRequestUpdate: "service.requests.update",
+  ServiceRequestClose: "service.requests.close",
+  ServiceRequestRead: "service.requests.read",
+  TechnicianAssign: "service.technicians.assign",
+  TechnicianReassign: "service.technicians.reassign",
+  TechnicianAssignmentRead: "service.technician_assignments.read",
+  AppointmentSchedule: "service.appointments.schedule",
+  AppointmentReschedule: "service.appointments.reschedule",
+  AppointmentRead: "service.appointments.read",
+  WorkOrderCreate: "service.work_orders.create",
+  WorkOrderUpdate: "service.work_orders.update",
+  WorkOrderComplete: "service.work_orders.complete",
+  WorkOrderRead: "service.work_orders.read",
   HistoryRead: "service.history.read",
   SummaryRead: "service.summary.read",
 } as const;

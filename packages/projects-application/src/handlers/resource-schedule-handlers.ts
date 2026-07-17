@@ -48,11 +48,19 @@ export function createAssignResourceHandler(
   return {
     commandType: ProjectsCommandTypes.AssignResource,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "resource",
         ProjectsPolicyActions.ResourceAssign,
-        command.payload.companyId,
-        command.payload.resourceId,
+        p.companyId,
+        p.resourceId,
+        {
+          ownerUserId: p.assigneeId ?? null,
+          attributes: {
+            projectId: p.projectId ?? null,
+            workItemId: p.workItemId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -333,11 +341,18 @@ export function createUpdateScheduleHandler(
   return {
     commandType: ProjectsCommandTypes.UpdateSchedule,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "schedule",
         ProjectsPolicyActions.ScheduleUpdate,
-        command.payload.companyId,
-        command.payload.scheduleId,
+        p.companyId,
+        p.scheduleId,
+        {
+          attributes: {
+            projectId: p.projectId ?? null,
+            calendarId: p.calendarId ?? null,
+          },
+        },
       );
     },
     validate() {

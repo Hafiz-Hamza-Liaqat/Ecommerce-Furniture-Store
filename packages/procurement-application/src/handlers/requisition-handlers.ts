@@ -57,10 +57,19 @@ export function createCreatePurchaseRequisitionHandler(
   return {
     commandType: ProcurementCommandTypes.CreatePurchaseRequisition,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "requisition",
         ProcurementPolicyActions.RequisitionCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.requestedByUserId ?? null,
+          attributes: {
+            projectId: p.projectId ?? null,
+            warehouseId: p.warehouseId ?? null,
+          },
+        },
       );
     },
     validate() {

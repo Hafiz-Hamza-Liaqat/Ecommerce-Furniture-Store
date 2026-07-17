@@ -7,6 +7,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  ALL_CANONICAL_PERMISSION_CODES,
+  API_PERMISSION_DEFINITIONS,
   CANONICAL_PERMISSION_CODES,
   LEGACY_ACTION_MAP,
   PERMISSION_CATALOG,
@@ -142,12 +144,20 @@ const HANDLER_ACTION_REFERENCES: readonly string[] = [
 
 describe("RC5.1 permission catalog", () => {
   it("has the frozen catalog version", () => {
-    assert.equal(RBAC_CATALOG_VERSION, "rc5.rbac-catalog.v2");
+    assert.equal(RBAC_CATALOG_VERSION, "rc5.rbac-catalog.v3");
   });
 
   it("contains exactly 105 canonical backend permissions", () => {
     assert.equal(PERMISSION_CATALOG.length, 105);
     assert.equal(CANONICAL_PERMISSION_CODES.length, 105);
+  });
+
+  it("includes the RC5.4 API upload permission outside the CQRS catalog", () => {
+    assert.equal(API_PERMISSION_DEFINITIONS.length, 1);
+    assert.equal(API_PERMISSION_DEFINITIONS[0]?.code, "dam.assets.upload");
+    assert.equal(API_PERMISSION_DEFINITIONS[0]?.module, "dam");
+    assert.ok(!CANONICAL_PERMISSION_CODES.includes("dam.assets.upload"));
+    assert.ok(ALL_CANONICAL_PERMISSION_CODES.includes("dam.assets.upload"));
   });
 
   it("has unique canonical codes", () => {

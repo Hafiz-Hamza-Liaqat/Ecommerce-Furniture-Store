@@ -56,10 +56,22 @@ export function createCreateServiceRequestHandler(
   return {
     commandType: ServiceCommandTypes.CreateServiceRequest,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "service_request",
         ServicePolicyActions.ServiceRequestCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.requestedByUserId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            projectId: p.projectId ?? null,
+            salesOrderId: p.salesOrderId ?? null,
+            crmContactId: p.crmContactId ?? null,
+            crmAccountId: p.crmAccountId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -157,11 +169,21 @@ export function createUpdateServiceRequestHandler(
   return {
     commandType: ServiceCommandTypes.UpdateServiceRequest,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "service_request",
         ServicePolicyActions.ServiceRequestUpdate,
-        command.payload.companyId,
-        command.payload.serviceRequestId,
+        p.companyId,
+        p.serviceRequestId,
+        {
+          attributes: {
+            customerId: p.customerId ?? null,
+            projectId: p.projectId ?? null,
+            salesOrderId: p.salesOrderId ?? null,
+            crmContactId: p.crmContactId ?? null,
+            crmAccountId: p.crmAccountId ?? null,
+          },
+        },
       );
     },
     validate() {

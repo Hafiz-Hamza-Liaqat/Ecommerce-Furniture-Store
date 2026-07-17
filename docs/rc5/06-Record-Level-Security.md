@@ -3,7 +3,7 @@
 **Reuse only:** Policy Engine + `PolicyResource` + RBAC scopes (`company` | `branch` | `organization` | `own` | `global`).  
 **Do not** invent a separate RLS database engine or per-table security microservice.
 
-> **Audit correction (2026-07-17):** Company isolation is implemented and enforced. Branch/organization/own are Policy capabilities, but current application `companyResource` helpers set those fields to `null`. Workspace is UI-only. Department exists on employee profiles but is not a Policy scope. Customer/supplier/project ownership mappings are not populated. See `docs/rc5/audit/10-Record-Security-Audit.md`.
+> **Audit correction (2026-07-17):** Company isolation is implemented and enforced. Branch/organization/own are Policy capabilities. RC5.4 populates `ownerUserId` / `organizationId` / `branchId` / `attributes` on AuthorizationSpecs from command/query payloads when those fields are present; get-by-id and other payloads without ownership fields still leave them null. Persisted-record load-before-authorize and enforceable own/branch/org checks remain RC5.5. Workspace is UI-only. Department exists on employee profiles but is not a Policy scope. See `docs/rc5/audit/10-Record-Security-Audit.md` and `docs/release/RC5.4-api-authorization.md`.
 
 ---
 

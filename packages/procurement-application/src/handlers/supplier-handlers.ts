@@ -39,10 +39,16 @@ export function createCreateSupplierHandler(
   return {
     commandType: ProcurementCommandTypes.CreateSupplier,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "supplier",
         ProcurementPolicyActions.SupplierCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          organizationId: p.identityOrganizationId ?? null,
+          attributes: { categoryId: p.categoryId ?? null },
+        },
       );
     },
     validate() {
@@ -100,11 +106,16 @@ export function createUpdateSupplierHandler(
   return {
     commandType: ProcurementCommandTypes.UpdateSupplier,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "supplier",
         ProcurementPolicyActions.SupplierUpdate,
-        command.payload.companyId,
-        command.payload.supplierId,
+        p.companyId,
+        p.supplierId,
+        {
+          organizationId: p.identityOrganizationId ?? null,
+          attributes: { categoryId: p.categoryId ?? null },
+        },
       );
     },
     validate() {

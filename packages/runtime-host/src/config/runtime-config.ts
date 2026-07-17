@@ -38,6 +38,11 @@ export type ProductionRuntimeConfig = {
   readonly messagingPoisonThreshold: number;
   readonly messagingClaimLeaseMs: number;
   readonly integrityCheckOnStartup: boolean;
+  /**
+   * When true, registers GET /api/v1/openapi.json.
+   * Development/testing default true; staging/production default false (RC5.4).
+   */
+  readonly exposeOpenApi: boolean;
 };
 
 type ProfileDefaults = Omit<ProductionRuntimeConfig, "profile">;
@@ -56,6 +61,7 @@ const SHARED_HARDENING: Pick<
   | "messagingPoisonThreshold"
   | "messagingClaimLeaseMs"
   | "integrityCheckOnStartup"
+  | "exposeOpenApi"
 > = {
   busyTimeoutMs: 5_000,
   transactionTimeoutMs: 30_000,
@@ -69,6 +75,7 @@ const SHARED_HARDENING: Pick<
   messagingPoisonThreshold: 1,
   messagingClaimLeaseMs: 60_000,
   integrityCheckOnStartup: true,
+  exposeOpenApi: true,
 };
 
 const PROFILE_DEFAULTS: Record<RuntimeProfile, ProfileDefaults> = {
@@ -124,6 +131,7 @@ const PROFILE_DEFAULTS: Record<RuntimeProfile, ProfileDefaults> = {
     requireSecrets: true,
     validateOnStartup: true,
     ...SHARED_HARDENING,
+    exposeOpenApi: false,
   },
   production: {
     serviceName: "afh-api",
@@ -140,6 +148,7 @@ const PROFILE_DEFAULTS: Record<RuntimeProfile, ProfileDefaults> = {
     requireSecrets: true,
     validateOnStartup: true,
     ...SHARED_HARDENING,
+    exposeOpenApi: false,
   },
 };
 
@@ -271,6 +280,9 @@ export function loadProductionRuntimeConfig(
     integrityCheckOnStartup:
       overrides.integrityCheckOnStartup ??
       readBool("AFH_SQL_INTEGRITY_ON_STARTUP", base.integrityCheckOnStartup),
+    exposeOpenApi:
+      overrides.exposeOpenApi ??
+      readBool("AFH_EXPOSE_OPENAPI", base.exposeOpenApi),
   };
 }
 

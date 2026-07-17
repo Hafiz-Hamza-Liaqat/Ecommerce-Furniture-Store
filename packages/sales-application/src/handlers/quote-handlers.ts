@@ -119,10 +119,21 @@ export function createCreateQuoteHandler(
   return {
     commandType: SalesCommandTypes.CreateQuote,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "quote",
         SalesPolicyActions.QuoteCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.salesRepUserId ?? null,
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            opportunityId: p.opportunityId ?? null,
+            projectId: p.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

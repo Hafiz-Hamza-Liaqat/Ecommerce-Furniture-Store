@@ -124,10 +124,22 @@ export function createCreateSalesOrderHandler(
   return {
     commandType: SalesCommandTypes.CreateSalesOrder,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "order",
         SalesPolicyActions.OrderCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.salesRepUserId ?? null,
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            quoteId: p.quoteId ?? null,
+            opportunityId: p.opportunityId ?? null,
+            projectId: p.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

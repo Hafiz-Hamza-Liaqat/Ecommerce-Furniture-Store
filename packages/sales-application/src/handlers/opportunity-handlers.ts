@@ -48,10 +48,21 @@ export function createCreateOpportunityHandler(
   return {
     commandType: SalesCommandTypes.CreateOpportunity,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "opportunity",
         SalesPolicyActions.OpportunityCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.salesRepUserId ?? null,
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            projectId: p.projectId ?? null,
+            territoryId: p.territoryId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -130,11 +141,21 @@ export function createUpdateOpportunityHandler(
   return {
     commandType: SalesCommandTypes.UpdateOpportunity,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "opportunity",
         SalesPolicyActions.OpportunityUpdate,
-        command.payload.companyId,
-        command.payload.opportunityId,
+        p.companyId,
+        p.opportunityId,
+        {
+          ownerUserId: p.salesRepUserId ?? null,
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            projectId: p.projectId ?? null,
+            territoryId: p.territoryId ?? null,
+          },
+        },
       );
     },
     validate() {

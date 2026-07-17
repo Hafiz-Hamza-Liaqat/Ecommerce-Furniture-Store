@@ -7,7 +7,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { CatalogPermissionDefinition } from "./permission-catalog.js";
-import { PERMISSION_CATALOG } from "./permission-catalog.js";
+import {
+  API_PERMISSION_DEFINITIONS,
+  PERMISSION_CATALOG,
+} from "./permission-catalog.js";
 import type { CatalogRoleDefinition } from "./role-catalog.js";
 import { ROLE_CATALOG } from "./role-catalog.js";
 import {
@@ -106,7 +109,7 @@ describe("validateRbacCatalog", () => {
   it("accepts the frozen RC5.1 catalog", () => {
     assert.deepEqual(
       validateRbacCatalog(
-        PERMISSION_CATALOG,
+        [...PERMISSION_CATALOG, ...API_PERMISSION_DEFINITIONS],
         ROLE_CATALOG,
         ROUTE_PERMISSION_DEFINITIONS,
         ROUTE_ACCESS_CATALOG,
@@ -122,7 +125,7 @@ describe("validateRbacCatalog", () => {
       legacyKey: "another.key",
     };
     const errors = validateRbacCatalog(
-      [...PERMISSION_CATALOG, duplicate],
+      [...PERMISSION_CATALOG, ...API_PERMISSION_DEFINITIONS, duplicate],
       ROLE_CATALOG,
       ROUTE_PERMISSION_DEFINITIONS,
       ROUTE_ACCESS_CATALOG,
@@ -137,7 +140,7 @@ describe("validateRbacCatalog", () => {
       code: "sales.opportunities.delete",
     };
     const errors = validateRbacCatalog(
-      [...PERMISSION_CATALOG, duplicate],
+      [...PERMISSION_CATALOG, ...API_PERMISSION_DEFINITIONS, duplicate],
       ROLE_CATALOG,
       ROUTE_PERMISSION_DEFINITIONS,
       ROUTE_ACCESS_CATALOG,
@@ -168,7 +171,7 @@ describe("validateRbacCatalog", () => {
       permissions: [],
     };
     const errors = validateRbacCatalog(
-      PERMISSION_CATALOG,
+      [...PERMISSION_CATALOG, ...API_PERMISSION_DEFINITIONS],
       [...ROLE_CATALOG, orphan, cycleA, cycleB],
       ROUTE_PERMISSION_DEFINITIONS,
       ROUTE_ACCESS_CATALOG,
@@ -186,7 +189,7 @@ describe("validateRbacCatalog", () => {
       permissions: ["opportunity.create", "sales.orders.*"],
     };
     const errors = validateRbacCatalog(
-      PERMISSION_CATALOG,
+      [...PERMISSION_CATALOG, ...API_PERMISSION_DEFINITIONS],
       [...ROLE_CATALOG, badRole],
       ROUTE_PERMISSION_DEFINITIONS,
       ROUTE_ACCESS_CATALOG,

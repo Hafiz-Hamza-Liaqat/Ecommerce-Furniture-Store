@@ -49,13 +49,19 @@ export const InventoryRuleSetCodes = {
   TransferPolicy: "inventory.transfer_policy",
 } as const;
 
+/**
+ * Canonical RC5 permission codes (`<module>.<resource>.<action>`), normalized
+ * from legacy executable keys in RC5.3 per the frozen RC5.1 mapping. The seed
+ * keeps granting the legacy compatibility codes as the documented overlap
+ * window for rollback.
+ */
 export const InventoryPolicyActions = {
-  ItemCreate: "inventory.item.create",
-  ItemUpdate: "inventory.item.update",
-  ItemRead: "inventory.item.read",
-  WarehouseCreate: "inventory.warehouse.create",
-  WarehouseRead: "inventory.warehouse.read",
-  LocationCreate: "inventory.location.create",
+  ItemCreate: "inventory.items.create",
+  ItemUpdate: "inventory.items.update",
+  ItemRead: "inventory.items.read",
+  WarehouseCreate: "inventory.warehouses.create",
+  WarehouseRead: "inventory.warehouses.read",
+  LocationCreate: "inventory.locations.create",
   StockReceive: "inventory.stock.receive",
   StockAdjust: "inventory.stock.adjust",
   StockReserve: "inventory.stock.reserve",
@@ -63,9 +69,9 @@ export const InventoryPolicyActions = {
   StockTransfer: "inventory.stock.transfer",
   StockRead: "inventory.stock.read",
   LedgerRead: "inventory.ledger.read",
-  BatchRead: "inventory.batch.read",
-  LotRead: "inventory.lot.read",
-  SerialRead: "inventory.serial.read",
+  BatchRead: "inventory.batches.read",
+  LotRead: "inventory.lots.read",
+  SerialRead: "inventory.serials.read",
   SummaryRead: "inventory.summary.read",
 } as const;
 

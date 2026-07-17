@@ -15,6 +15,7 @@
 
 import {
   ALL_CANONICAL_PERMISSION_CODES,
+  API_PERMISSION_DEFINITIONS,
   PERMISSION_CATALOG,
 } from "./permission-catalog.js";
 import { RoutePermissions } from "./route-permission-catalog.js";
@@ -124,7 +125,11 @@ export const ROLE_CATALOG: readonly CatalogRoleDefinition[] = [
     name: "Admin / Company Admin",
     group: "governance",
     parentCode: null,
-    permissions: [...PERMISSION_CATALOG.map((p) => p.code), ...ADMIN_ROUTES],
+    permissions: [
+      ...PERMISSION_CATALOG.map((p) => p.code),
+      ...API_PERMISSION_DEFINITIONS.map((p) => p.code),
+      ...ADMIN_ROUTES,
+    ],
   },
   {
     code: "moderator",
@@ -138,7 +143,11 @@ export const ROLE_CATALOG: readonly CatalogRoleDefinition[] = [
     name: "Editor",
     group: "governance",
     parentCode: null,
-    permissions: [RoutePermissions.CmsDashboardRead],
+    permissions: [
+      "dam.assets.upload",
+      RoutePermissions.CmsDashboardRead,
+      RoutePermissions.DamDashboardRead,
+    ],
   },
   {
     code: "auditor",

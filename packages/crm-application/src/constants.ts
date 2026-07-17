@@ -50,25 +50,31 @@ export const CrmRuleSetCodes = {
   CampaignEvaluation: "crm.campaign_evaluation",
 } as const;
 
+/**
+ * Canonical RC5 permission codes (`<module>.<resource>.<action>`), normalized
+ * from legacy executable keys in RC5.3 per the frozen RC5.1 mapping. The seed
+ * keeps granting the legacy compatibility codes as the documented overlap
+ * window for rollback.
+ */
 export const CrmPolicyActions = {
-  LeadCreate: "lead.create",
-  LeadUpdate: "lead.update",
-  LeadQualify: "lead.qualify",
-  LeadConvert: "lead.convert",
-  LeadRead: "lead.read",
-  ContactCreate: "contact.create",
-  ContactUpdate: "contact.update",
-  ContactRead: "contact.read",
-  AccountCreate: "account.create",
-  AccountUpdate: "account.update",
-  AccountRead: "account.read",
-  ActivityLog: "activity.log",
-  ActivityRead: "activity.read",
-  CommunicationRecord: "communication.record",
-  CommunicationRead: "communication.read",
-  CampaignCreate: "campaign.create",
-  CampaignUpdate: "campaign.update",
-  CampaignRead: "campaign.read",
+  LeadCreate: "crm.leads.create",
+  LeadUpdate: "crm.leads.update",
+  LeadQualify: "crm.leads.qualify",
+  LeadConvert: "crm.leads.convert",
+  LeadRead: "crm.leads.read",
+  ContactCreate: "crm.contacts.create",
+  ContactUpdate: "crm.contacts.update",
+  ContactRead: "crm.contacts.read",
+  AccountCreate: "crm.accounts.create",
+  AccountUpdate: "crm.accounts.update",
+  AccountRead: "crm.accounts.read",
+  ActivityLog: "crm.activities.log",
+  ActivityRead: "crm.activities.read",
+  CommunicationRecord: "crm.communications.record",
+  CommunicationRead: "crm.communications.read",
+  CampaignCreate: "crm.campaigns.create",
+  CampaignUpdate: "crm.campaigns.update",
+  CampaignRead: "crm.campaigns.read",
   SummaryRead: "crm.summary.read",
 } as const;
 

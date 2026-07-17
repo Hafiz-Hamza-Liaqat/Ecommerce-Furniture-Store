@@ -30,11 +30,25 @@ export function newEntityId(): string {
   return crypto.randomUUID();
 }
 
+/** Optional scope fields populated from the command/query payload (RC5.4). */
+export type PolicyResourceScope = {
+  readonly ownerUserId?: string | null;
+  readonly organizationId?: string | null;
+  readonly branchId?: string | null;
+  readonly attributes?: Readonly<Record<string, unknown>>;
+};
+
+/**
+ * Build an AuthorizationSpec for a company-scoped resource.
+ * RC5.4: populate owner/org/branch/attributes from the payload when present.
+ * Persisted-record re-authorization remains RC5.5.
+ */
 export function companyResource(
   type: string,
   action: string,
   companyId: string,
   id: string | null = null,
+  scope: PolicyResourceScope = {},
 ): AuthorizationSpec {
   return {
     action,
@@ -42,9 +56,12 @@ export function companyResource(
       type,
       id,
       companyId,
-      ownerUserId: null,
-      organizationId: null,
-      branchId: null,
+      ownerUserId: scope.ownerUserId ?? null,
+      organizationId: scope.organizationId ?? null,
+      branchId: scope.branchId ?? null,
+      ...(scope.attributes !== undefined
+        ? { attributes: scope.attributes }
+        : {}),
     },
   };
 }

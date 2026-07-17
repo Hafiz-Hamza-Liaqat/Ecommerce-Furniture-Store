@@ -175,10 +175,17 @@ export function createCreateAccountHandler(
   return {
     commandType: CrmCommandTypes.CreateAccount,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "account",
         CrmPolicyActions.AccountCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          organizationId: p.identityOrganizationId ?? null,
+          attributes: { primaryContactId: p.primaryContactId ?? null },
+        },
       );
     },
     validate() {
@@ -237,11 +244,17 @@ export function createUpdateAccountHandler(
   return {
     commandType: CrmCommandTypes.UpdateAccount,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "account",
         CrmPolicyActions.AccountUpdate,
-        command.payload.companyId,
-        command.payload.accountId,
+        p.companyId,
+        p.accountId,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          organizationId: p.identityOrganizationId ?? null,
+          attributes: { primaryContactId: p.primaryContactId ?? null },
+        },
       );
     },
     validate() {

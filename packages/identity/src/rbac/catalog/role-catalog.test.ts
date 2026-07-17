@@ -86,11 +86,12 @@ describe("RC5.1 system role catalog", () => {
     );
   });
 
-  it("admin holds every backend permission without platform-admin or portal access", () => {
+  it("admin holds every CQRS and API permission without platform-admin or portal access", () => {
     const permissions = new Set(byCode.get("admin")?.permissions);
     for (const code of CANONICAL_PERMISSION_CODES) {
       assert.ok(permissions.has(code), `admin missing ${code}`);
     }
+    assert.ok(permissions.has("dam.assets.upload"));
     assert.ok(!permissions.has("platform.administration.read"));
     assert.ok(!permissions.has("portal.customer_portal.read"));
   });

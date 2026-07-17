@@ -61,6 +61,11 @@ export type RouteDeps = {
   readonly versionCatalog: ApiVersionCatalog;
   readonly startedAt: Date;
   readonly startupReady: () => boolean;
+  /**
+   * When false, GET /api/v1/openapi.json is not registered (RC5.4 prod lockdown).
+   * Defaults to true for development/test hosts.
+   */
+  readonly exposeOpenApi?: boolean;
 };
 
 async function applyRateLimit(
@@ -437,9 +442,58 @@ export function createUploadRoutes(deps: RouteDeps): RouteDefinition[] {
           );
         }
 
+        if (!auth.caller?.userId) {
+          return unauthorizedResponse(
+            auth.correlationId,
+            "Authenticated principal is required for uploads",
+          );
+        }
+
+        const principal = await deps.identity.policyEngine.buildPrincipal(
+          auth.caller.userId,
+        );
+        if (!principal) {
+          return platformErrorResponse(
+            new AuthorizationError("Active principal is required for uploads", {
+              code: "principal_unavailable",
+              correlationId: auth.correlationId,
+            }),
+            auth.correlationId,
+          );
+        }
+
+        const uploadDecision = await deps.identity.policyEngine.evaluate(
+          principal,
+          "dam.assets.upload",
+          {
+            type: "digital_asset",
+            id: null,
+            companyId: dto.companyId,
+            ownerUserId: auth.caller.userId,
+            organizationId: null,
+            branchId: null,
+            attributes: {
+              mimeType: dto.mimeType ?? null,
+              assetType: dto.assetType ?? null,
+              name: dto.name,
+              folderId: dto.folderId ?? null,
+            },
+          },
+          { correlationId: auth.correlationId },
+        );
+        if (!uploadDecision.allowed) {
+          return platformErrorResponse(
+            new AuthorizationError(uploadDecision.message, {
+              code: uploadDecision.reasonCode,
+              correlationId: auth.correlationId,
+            }),
+            auth.correlationId,
+          );
+        }
+
         const routed = await deps.uploadRouter.routeUpload({
           dto,
-          uploadedByUserId: auth.caller?.userId ?? null,
+          uploadedByUserId: auth.caller.userId,
           rawBody: request.rawBody,
         });
 
@@ -483,6 +537,8 @@ export function createAllRoutes(deps: RouteDeps): RouteDefinition[] {
     ...createDispatchRoutes(deps),
     ...createUploadRoutes(deps),
   ];
-  routes.push(createOpenApiRoute(deps, routes));
+  if (deps.exposeOpenApi !== false) {
+    routes.push(createOpenApiRoute(deps, routes));
+  }
   return routes;
 }

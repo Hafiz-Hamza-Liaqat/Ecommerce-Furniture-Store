@@ -51,10 +51,20 @@ export function createReceiveStockHandler(
   return {
     commandType: InventoryCommandTypes.ReceiveStock,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "stock",
         InventoryPolicyActions.StockReceive,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            inventoryItemId: p.inventoryItemId ?? null,
+            warehouseId: p.warehouseId ?? null,
+            locationId: p.locationId ?? null,
+            subjectId: p.subjectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -153,10 +163,20 @@ export function createAdjustStockHandler(
   return {
     commandType: InventoryCommandTypes.AdjustStock,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "stock",
         InventoryPolicyActions.StockAdjust,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            inventoryItemId: p.inventoryItemId ?? null,
+            warehouseId: p.warehouseId ?? null,
+            locationId: p.locationId ?? null,
+            subjectId: p.subjectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -313,10 +333,20 @@ export function createReserveStockHandler(
   return {
     commandType: InventoryCommandTypes.ReserveStock,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "stock",
         InventoryPolicyActions.StockReserve,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            inventoryItemId: p.inventoryItemId ?? null,
+            warehouseId: p.warehouseId ?? null,
+            locationId: p.locationId ?? null,
+            subjectId: p.subjectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -429,10 +459,20 @@ export function createReleaseReservationHandler(
   return {
     commandType: InventoryCommandTypes.ReleaseReservation,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "stock",
         InventoryPolicyActions.StockRelease,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            inventoryItemId: p.inventoryItemId ?? null,
+            warehouseId: p.warehouseId ?? null,
+            locationId: p.locationId ?? null,
+            subjectId: p.subjectId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -547,10 +587,22 @@ export function createTransferStockHandler(
   return {
     commandType: InventoryCommandTypes.TransferStock,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "stock",
         InventoryPolicyActions.StockTransfer,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            inventoryItemId: p.inventoryItemId ?? null,
+            fromWarehouseId: p.fromWarehouseId ?? null,
+            toWarehouseId: p.toWarehouseId ?? null,
+            fromLocationId: p.fromLocationId ?? null,
+            toLocationId: p.toLocationId ?? null,
+            subjectId: p.subjectId ?? null,
+          },
+        },
       );
     },
     validate() {

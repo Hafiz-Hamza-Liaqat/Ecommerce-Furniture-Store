@@ -28,8 +28,8 @@ Reuse: authentication middleware, rate limiting, company header binding, handler
 | POST | `/api/v1/auth/mfa/enable` | Yes | Authenticated (+ admin MFA policy) | Session | N/A | Own | Step-up later |
 | POST | `/api/v1/commands` | Yes | **Per commandType** via handler authorize | ✔ match header/session | company | Per payload resource | Fail-closed Policy |
 | POST | `/api/v1/queries` | Yes | **Per queryType** via handler authorize | ✔ | company | Per payload resource | Fail-closed Policy |
-| POST | `/api/v1/uploads` | Yes | **Current:** authenticated + company match only. **Required (RC5.4):** `dam.assets.upload` | ✔ match | company | Current: company only. Required: uploader + company | MIME allowlist RC4; **no Policy call today** |
-| GET | `/api/v1/openapi.json` | No | Public or lock down in prod | N/A | N/A | N/A | Consider auth in prod deploy (ops decision; no new API invent) |
+| POST | `/api/v1/uploads` | Yes | **`dam.assets.upload`** via Policy Engine (RC5.4) | ✔ match | company | uploader (`ownerUserId`) + company | MIME allowlist RC4; company match then Policy |
+| GET | `/api/v1/openapi.json` | No | Public in development/testing; **omitted by default in staging/production** (`exposeOpenApi` / `AFH_EXPOSE_OPENAPI`) | N/A | N/A | N/A | Config lockdown (RC5.4); no new API |
 
 \*Refresh uses refresh token, not session bearer.
 
@@ -73,6 +73,10 @@ Canonical permissions follow `13-Authorization-Governance-Specification.md`, e.g
 - `finance.invoices.create`
 
 > **Compatibility rule (2026-07-17):** Current handler strings are legacy executable action keys, not canonical permission codes. RC5.1 seeds 105 canonical backend permissions and an explicit mapping covering all 105 legacy keys used by 107 handlers. It does not rename handlers or change runtime enforcement. RC5.4 may normalize handler actions through the documented overlap window. Current AuthorizationSpecs populate company and leave owner/org/branch null.
+>
+> **Update (2026-07-17, RC5.3 — Module Permissions):** Handler action normalization is complete. All 107 handler `authorize()` actions now emit the canonical codes above via the frozen RC5.1 mapping; legacy compatibility permission records/grants remain seeded as the overlap window for rollback. AuthorizationSpecs still populate company only (owner/org/branch remain null until record security). Evidence: `docs/release/RC5.3-module-permissions.md`.
+>
+> **Update (2026-07-17, RC5.4 — API Authorization Completion):** Payload-available `ownerUserId` / `organizationId` / `branchId` / `attributes` are now populated on create/update-style AuthorizationSpecs. Upload enforces `dam.assets.upload`. OpenAPI is config-gated for staging/production. Persisted-record re-authorization and IDOR suites remain RC5.5. Evidence: `docs/release/RC5.4-api-authorization.md`.
 
 ---
 
@@ -136,9 +140,9 @@ Default deny, explicit-deny precedence, missing-resource behavior, multiple assi
 
 | Gap | RC5 action |
 |---|---|
-| Inconsistent legacy action strings across handlers | Map in RC5.1; normalize only in RC5.4; no new engine |
-| Missing resource attributes on some authorize() builders | Complete using PolicyResource fields |
-| OpenAPI public in production | Deploy/config policy |
+| Inconsistent legacy action strings across handlers | Mapped in RC5.1; normalized in RC5.3; overlap retained |
+| Missing resource attributes on some authorize() builders | Payload fields populated in RC5.4; persisted-record load remains RC5.5 |
+| OpenAPI public in production | Deploy/config policy delivered in RC5.4 (`exposeOpenApi`) |
 | No List* queries | Out of scope (RC7); cannot authorize lists that do not exist |
 | Workflow/Approval CQRS | Out of scope (RC6) |
 

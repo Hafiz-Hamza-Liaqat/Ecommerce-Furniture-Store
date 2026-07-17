@@ -37,18 +37,24 @@ export const ProcurementRuleSetCodes = {
   FinancialPolicy: "procurement.financial_policy",
 } as const;
 
+/**
+ * Canonical RC5 permission codes (`<module>.<resource>.<action>`), normalized
+ * from legacy executable keys in RC5.3 per the frozen RC5.1 mapping. The seed
+ * keeps granting the legacy compatibility codes as the documented overlap
+ * window for rollback.
+ */
 export const ProcurementPolicyActions = {
-  SupplierCreate: "supplier.create",
-  SupplierUpdate: "supplier.update",
-  SupplierRead: "supplier.read",
-  RequisitionCreate: "requisition.create",
-  RequisitionSubmit: "requisition.submit",
-  RequisitionRead: "requisition.read",
-  PurchaseOrderCreate: "po.create",
-  PurchaseOrderIssue: "po.issue",
-  PurchaseOrderCancel: "po.cancel",
-  PurchaseOrderRead: "po.read",
-  ProcurementSummaryRead: "po.read",
+  SupplierCreate: "procurement.suppliers.create",
+  SupplierUpdate: "procurement.suppliers.update",
+  SupplierRead: "procurement.suppliers.read",
+  RequisitionCreate: "procurement.requisitions.create",
+  RequisitionSubmit: "procurement.requisitions.submit",
+  RequisitionRead: "procurement.requisitions.read",
+  PurchaseOrderCreate: "procurement.purchase_orders.create",
+  PurchaseOrderIssue: "procurement.purchase_orders.issue",
+  PurchaseOrderCancel: "procurement.purchase_orders.cancel",
+  PurchaseOrderRead: "procurement.purchase_orders.read",
+  ProcurementSummaryRead: "procurement.purchase_orders.read",
 } as const;
 
 export const ProcurementApprovalTypes = {

@@ -57,10 +57,21 @@ export function createCreateLeadHandler(
   return {
     commandType: CrmCommandTypes.CreateLead,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "lead",
         CrmPolicyActions.LeadCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          attributes: {
+            contactId: p.contactId ?? null,
+            accountId: p.accountId ?? null,
+            salesCustomerId: p.salesCustomerId ?? null,
+            sourceId: p.sourceId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -160,11 +171,21 @@ export function createUpdateLeadHandler(
   return {
     commandType: CrmCommandTypes.UpdateLead,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "lead",
         CrmPolicyActions.LeadUpdate,
-        command.payload.companyId,
-        command.payload.leadId,
+        p.companyId,
+        p.leadId,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          attributes: {
+            contactId: p.contactId ?? null,
+            accountId: p.accountId ?? null,
+            salesCustomerId: p.salesCustomerId ?? null,
+            sourceId: p.sourceId ?? null,
+          },
+        },
       );
     },
     validate() {

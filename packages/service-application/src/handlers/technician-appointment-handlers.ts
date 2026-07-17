@@ -69,10 +69,21 @@ export function createAssignTechnicianHandler(
   return {
     commandType: ServiceCommandTypes.AssignTechnician,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "technician_assignment",
         ServicePolicyActions.TechnicianAssign,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.userId ?? null,
+          attributes: {
+            employeeId: p.employeeId ?? null,
+            workOrderId: p.workOrderId ?? null,
+            appointmentId: p.appointmentId ?? null,
+            teamId: p.teamId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -228,11 +239,19 @@ export function createReassignTechnicianHandler(
   return {
     commandType: ServiceCommandTypes.ReassignTechnician,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "technician_assignment",
         ServicePolicyActions.TechnicianReassign,
-        command.payload.companyId,
-        command.payload.assignmentId,
+        p.companyId,
+        p.assignmentId,
+        {
+          ownerUserId: p.userId ?? null,
+          attributes: {
+            employeeId: p.employeeId ?? null,
+            teamId: p.teamId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -343,10 +362,19 @@ export function createScheduleAppointmentHandler(
   return {
     commandType: ServiceCommandTypes.ScheduleAppointment,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "appointment",
         ServicePolicyActions.AppointmentSchedule,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            serviceRequestId: p.serviceRequestId ?? null,
+            workOrderId: p.workOrderId ?? null,
+            projectId: p.projectId ?? null,
+          },
+        },
       );
     },
     validate() {

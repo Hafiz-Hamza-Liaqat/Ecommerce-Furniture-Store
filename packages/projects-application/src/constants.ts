@@ -52,27 +52,33 @@ export const ProjectsRuleSetCodes = {
   ProjectCosting: "projects.costing",
 } as const;
 
+/**
+ * Canonical RC5 permission codes (`<module>.<resource>.<action>`), normalized
+ * from legacy executable keys in RC5.3 per the frozen RC5.1 mapping. The seed
+ * keeps granting the legacy compatibility codes as the documented overlap
+ * window for rollback.
+ */
 export const ProjectsPolicyActions = {
-  ProjectCreate: "project.create",
-  ProjectUpdate: "project.update",
-  ProjectArchive: "project.archive",
-  ProjectRead: "project.read",
-  TaskCreate: "task.create",
-  TaskUpdate: "task.update",
-  TaskAssign: "task.assign",
-  TaskComplete: "task.complete",
-  TaskRead: "task.read",
-  MilestoneCreate: "milestone.create",
-  MilestoneUpdate: "milestone.update",
-  MilestoneRead: "milestone.read",
-  ResourceAssign: "resource.assign",
-  ResourceRelease: "resource.release",
-  ResourceRead: "resource.read",
-  TeamRead: "team.read",
-  ScheduleUpdate: "schedule.update",
-  ScheduleRead: "schedule.read",
-  WorkItemRead: "work_item.read",
-  SummaryRead: "project.summary.read",
+  ProjectCreate: "projects.projects.create",
+  ProjectUpdate: "projects.projects.update",
+  ProjectArchive: "projects.projects.archive",
+  ProjectRead: "projects.projects.read",
+  TaskCreate: "projects.tasks.create",
+  TaskUpdate: "projects.tasks.update",
+  TaskAssign: "projects.tasks.assign",
+  TaskComplete: "projects.tasks.complete",
+  TaskRead: "projects.tasks.read",
+  MilestoneCreate: "projects.milestones.create",
+  MilestoneUpdate: "projects.milestones.update",
+  MilestoneRead: "projects.milestones.read",
+  ResourceAssign: "projects.resources.assign",
+  ResourceRelease: "projects.resources.release",
+  ResourceRead: "projects.resources.read",
+  TeamRead: "projects.teams.read",
+  ScheduleUpdate: "projects.schedules.update",
+  ScheduleRead: "projects.schedules.read",
+  WorkItemRead: "projects.work_items.read",
+  SummaryRead: "projects.summary.read",
 } as const;
 
 export const ProjectsApprovalTypes = {

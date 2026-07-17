@@ -87,6 +87,10 @@ Any pull request containing excluded work is not RC5.1 and must be split or reje
 | **Acceptance** | Matrix `05` verified; automated deny tests for cross-company Get/Update sample per module |
 | **Complexity** | High |
 
+**Implementation evidence (2026-07-17):** The action-taxonomy normalization portion of this milestone was delivered as the approved "RC5.3 — Module Permissions" slice (overlap after RC5.1 is permitted above). All 107 handler `authorize()` actions in the seven `*-application` packages now emit canonical catalog codes via the frozen RC5.1 mapping; the seed's legacy compatibility grants remain as the documented overlap window. Module allow/deny behavior is covered by `packages/api/src/authorization/module-permissions.test.ts`; see `docs/release/RC5.3-module-permissions.md`.
+
+**Implementation evidence (2026-07-17, RC5.4 completion):** Remaining milestone items are delivered — payload `PolicyResource` owner/org/branch/attributes population, upload Policy enforcement for `dam.assets.upload` (catalog v3), and OpenAPI production exposure lockdown via `exposeOpenApi` / `AFH_EXPOSE_OPENAPI`. Evidence: `docs/release/RC5.4-api-authorization.md` and `docs/release/RC5.4-api-authorization-audit.md`. Persisted-record load-before-authorize remains RC5.5.
+
 ---
 
 ## RC5.5 — Record-level authorization

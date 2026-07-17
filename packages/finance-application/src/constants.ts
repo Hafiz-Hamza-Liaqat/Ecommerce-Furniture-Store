@@ -47,20 +47,26 @@ export const FinanceRuleSetCodes = {
   PostingPolicy: "finance.posting_policy",
 } as const;
 
+/**
+ * Canonical RC5 permission codes (`<module>.<resource>.<action>`), normalized
+ * from legacy executable keys in RC5.3 per the frozen RC5.1 mapping. The seed
+ * keeps granting the legacy compatibility codes as the documented overlap
+ * window for rollback.
+ */
 export const FinancePolicyActions = {
-  AccountCreate: "finance.account.create",
-  AccountUpdate: "finance.account.update",
-  AccountRead: "finance.account.read",
-  InvoiceCreate: "finance.invoice.create",
-  InvoiceUpdate: "finance.invoice.update",
-  InvoiceRead: "finance.invoice.read",
-  PaymentRecord: "finance.payment.record",
-  PaymentRead: "finance.payment.read",
-  CreditAdjust: "finance.credit.adjust",
-  CreditRead: "finance.credit.read",
-  LedgerCreate: "finance.ledger.create",
-  LedgerAppend: "finance.ledger.append",
-  LedgerRead: "finance.ledger.read",
+  AccountCreate: "finance.accounts.create",
+  AccountUpdate: "finance.accounts.update",
+  AccountRead: "finance.accounts.read",
+  InvoiceCreate: "finance.invoices.create",
+  InvoiceUpdate: "finance.invoices.update",
+  InvoiceRead: "finance.invoices.read",
+  PaymentRecord: "finance.payments.record",
+  PaymentRead: "finance.payments.read",
+  CreditAdjust: "finance.credit_accounts.adjust",
+  CreditRead: "finance.credit_accounts.read",
+  LedgerCreate: "finance.ledgers.create",
+  LedgerAppend: "finance.ledgers.append",
+  LedgerRead: "finance.ledgers.read",
   SummaryRead: "finance.summary.read",
 } as const;
 

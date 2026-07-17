@@ -134,10 +134,19 @@ export function createGetStockHandler(
   return {
     queryType: InventoryQueryTypes.GetStock,
     authorize(query) {
+      const p = query.payload;
       return companyResource(
         "stock",
         InventoryPolicyActions.StockRead,
-        query.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            inventoryItemId: p.inventoryItemId ?? null,
+            warehouseId: p.warehouseId ?? null,
+            locationId: p.locationId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -340,10 +349,15 @@ export function createGetInventorySummaryHandler(
   return {
     queryType: InventoryQueryTypes.GetInventorySummary,
     authorize(query) {
+      const p = query.payload;
       return companyResource(
         "inventory",
         InventoryPolicyActions.SummaryRead,
-        query.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: { warehouseId: p.warehouseId ?? null },
+        },
       );
     },
     validate() {

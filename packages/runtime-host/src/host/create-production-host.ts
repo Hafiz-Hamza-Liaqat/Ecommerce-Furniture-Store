@@ -174,6 +174,7 @@ export async function createProductionHost(
     port: config.port,
     corsOrigin: config.corsOrigin,
     rateLimit: createInMemoryRateLimitHook(),
+    exposeOpenApi: config.exposeOpenApi,
   });
 
   const health = api.composition.infrastructure.health;

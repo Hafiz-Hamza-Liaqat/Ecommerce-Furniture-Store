@@ -33,6 +33,8 @@ export type CreateApiHostOptions = CreateEnterpriseCompositionOptions & {
   readonly rateLimit?: RateLimitHook;
   readonly versionCatalog?: ApiVersionCatalog;
   readonly streaming?: StreamingHook;
+  /** When false, OpenAPI document route is not registered (RC5.4). */
+  readonly exposeOpenApi?: boolean;
 };
 
 export type ApiHost = {
@@ -71,6 +73,7 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
     versionCatalog: options.versionCatalog ?? DEFAULT_VERSION_CATALOG,
     startedAt: composition.infrastructure.clock.now(),
     startupReady: () => started,
+    exposeOpenApi: options.exposeOpenApi ?? true,
   };
 
   // Optional streaming hook reserved for future stream routes.

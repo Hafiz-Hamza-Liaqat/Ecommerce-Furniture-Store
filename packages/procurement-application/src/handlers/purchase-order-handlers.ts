@@ -127,10 +127,20 @@ export function createCreatePurchaseOrderHandler(
   return {
     commandType: ProcurementCommandTypes.CreatePurchaseOrder,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "purchase_order",
         ProcurementPolicyActions.PurchaseOrderCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            supplierId: p.supplierId ?? null,
+            requisitionId: p.requisitionId ?? null,
+            projectId: p.projectId ?? null,
+            warehouseId: p.warehouseId ?? null,
+          },
+        },
       );
     },
     validate() {

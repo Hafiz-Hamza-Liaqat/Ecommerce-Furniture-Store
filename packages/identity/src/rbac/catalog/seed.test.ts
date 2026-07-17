@@ -14,6 +14,7 @@ import {
   LEGACY_ACTION_MAP,
   PERMISSION_CATALOG,
   RBAC_CATALOG_VERSION,
+  API_PERMISSION_DEFINITIONS,
 } from "./permission-catalog.js";
 import { ROLE_CATALOG } from "./role-catalog.js";
 import { ROUTE_PERMISSION_DEFINITIONS } from "./route-permission-catalog.js";
@@ -36,6 +37,11 @@ describe("seedRbacCatalog", () => {
     assert.equal(report.canonicalPermissions.created, 105);
     assert.equal(report.canonicalPermissions.existing, 0);
     assert.equal(
+      report.apiPermissions.created,
+      API_PERMISSION_DEFINITIONS.length,
+    );
+    assert.equal(report.apiPermissions.existing, 0);
+    assert.equal(
       report.routePermissions.created,
       ROUTE_PERMISSION_DEFINITIONS.length,
     );
@@ -48,7 +54,10 @@ describe("seedRbacCatalog", () => {
 
     assert.equal(
       store.permissions.size,
-      105 + ROUTE_PERMISSION_DEFINITIONS.length + compatCount,
+      105 +
+        API_PERMISSION_DEFINITIONS.length +
+        ROUTE_PERMISSION_DEFINITIONS.length +
+        compatCount,
     );
     assert.equal(store.roles.size, 33);
   });
@@ -70,6 +79,11 @@ describe("seedRbacCatalog", () => {
     const report = second.value;
     assert.equal(report.canonicalPermissions.created, 0);
     assert.equal(report.canonicalPermissions.existing, 105);
+    assert.equal(report.apiPermissions.created, 0);
+    assert.equal(
+      report.apiPermissions.existing,
+      API_PERMISSION_DEFINITIONS.length,
+    );
     assert.equal(report.routePermissions.created, 0);
     assert.equal(
       report.routePermissions.existing,
@@ -162,6 +176,43 @@ describe("seedRbacCatalog", () => {
     // No cross-module leakage.
     assert.ok(!grantedCodes.has("finance.invoices.read"));
     assert.ok(!grantedCodes.has("finance.invoice.read"));
+  });
+
+  it("seeds and grants dam.assets.upload to admin and editor", async () => {
+    const store = new InMemoryIdentityStore();
+    const result = await seedRbacCatalog({ store });
+    assert.ok(result.ok);
+
+    const upload = await store.getPermissionByCode("dam.assets.upload");
+    assert.ok(upload);
+    assert.equal(upload.module, "dam");
+
+    for (const roleCode of ["admin", "editor", "super_admin"]) {
+      const role = await store.getRoleByCode(null, roleCode);
+      assert.ok(role);
+      const links = await store.listRolePermissions(role.id);
+      const granted = new Set<string>();
+      for (const link of links) {
+        const permission = await store.getPermissionById(link.permissionId);
+        assert.ok(permission);
+        granted.add(permission.code);
+      }
+      assert.ok(
+        granted.has("dam.assets.upload"),
+        `${roleCode} must receive dam.assets.upload`,
+      );
+    }
+
+    const readOnly = await store.getRoleByCode(null, "read_only");
+    assert.ok(readOnly);
+    const readLinks = await store.listRolePermissions(readOnly.id);
+    const readGranted = new Set<string>();
+    for (const link of readLinks) {
+      const permission = await store.getPermissionById(link.permissionId);
+      assert.ok(permission);
+      readGranted.add(permission.code);
+    }
+    assert.ok(!readGranted.has("dam.assets.upload"));
   });
 
   it("super_admin and admin cover all 105 legacy executable keys", async () => {

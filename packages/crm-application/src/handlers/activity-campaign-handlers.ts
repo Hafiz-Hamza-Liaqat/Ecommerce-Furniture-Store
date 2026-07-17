@@ -59,10 +59,21 @@ export function createLogActivityHandler(
   return {
     commandType: CrmCommandTypes.LogActivity,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "activity",
         CrmPolicyActions.ActivityLog,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          attributes: {
+            leadId: p.leadId ?? null,
+            contactId: p.contactId ?? null,
+            accountId: p.accountId ?? null,
+            opportunityId: p.opportunityId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -189,10 +200,16 @@ export function createCreateCampaignHandler(
   return {
     commandType: CrmCommandTypes.CreateCampaign,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "campaign",
         CrmPolicyActions.CampaignCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          attributes: { audienceId: p.audienceId ?? null },
+        },
       );
     },
     validate() {
@@ -295,11 +312,16 @@ export function createUpdateCampaignHandler(
   return {
     commandType: CrmCommandTypes.UpdateCampaign,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "campaign",
         CrmPolicyActions.CampaignUpdate,
-        command.payload.companyId,
-        command.payload.campaignId,
+        p.companyId,
+        p.campaignId,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          attributes: { audienceId: p.audienceId ?? null },
+        },
       );
     },
     validate() {

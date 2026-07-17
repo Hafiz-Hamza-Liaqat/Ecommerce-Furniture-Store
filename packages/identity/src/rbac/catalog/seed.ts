@@ -27,6 +27,7 @@ import type {
 import type { IdentityStore } from "../../stores/identity-store.js";
 import { newId } from "../../util/ids.js";
 import {
+  API_PERMISSION_DEFINITIONS,
   PERMISSION_CATALOG,
   RBAC_CATALOG_VERSION,
   type CatalogPermissionDefinition,
@@ -47,6 +48,7 @@ export type RbacCatalogSeedReport = {
   readonly catalogVersion: string;
   readonly checksum: string;
   readonly canonicalPermissions: SeedCounts;
+  readonly apiPermissions: SeedCounts;
   readonly routePermissions: SeedCounts;
   readonly legacyCompatibilityPermissions: SeedCounts;
   readonly systemRoles: SeedCounts;
@@ -68,6 +70,11 @@ export function computeCatalogChecksum(
   const payload = JSON.stringify({
     version: RBAC_CATALOG_VERSION,
     permissions: permissions.map((p) => ({
+      code: p.code,
+      module: p.module,
+      legacyKey: p.legacyKey,
+    })),
+    apiPermissions: API_PERMISSION_DEFINITIONS.map((p) => ({
       code: p.code,
       module: p.module,
       legacyKey: p.legacyKey,
@@ -125,7 +132,7 @@ export async function seedRbacCatalog(
   const { store, audit, actorUserId = null } = deps;
 
   const violations = validateRbacCatalog(
-    PERMISSION_CATALOG,
+    [...PERMISSION_CATALOG, ...API_PERMISSION_DEFINITIONS],
     ROLE_CATALOG,
     ROUTE_PERMISSION_DEFINITIONS,
     ROUTE_ACCESS_CATALOG,
@@ -152,8 +159,12 @@ export async function seedRbacCatalog(
 
   const checksum = computeCatalogChecksum();
 
-  // 1. Canonical permissions, then legacy compatibility permissions.
+  // 1. Canonical CQRS permissions, API-route permissions, then legacy compatibility.
   const canonical: SeedCounts & { created: number; existing: number } = {
+    created: 0,
+    existing: 0,
+  };
+  const api: SeedCounts & { created: number; existing: number } = {
     created: 0,
     existing: 0,
   };
@@ -196,6 +207,14 @@ export async function seedRbacCatalog(
       permission.module,
       `${permission.description} (${RBAC_CATALOG_VERSION})`,
       canonical,
+    );
+  }
+  for (const permission of API_PERMISSION_DEFINITIONS) {
+    await upsertPermission(
+      permission.code,
+      permission.module,
+      `${permission.description} (${RBAC_CATALOG_VERSION})`,
+      api,
     );
   }
   for (const permission of ROUTE_PERMISSION_DEFINITIONS) {
@@ -303,6 +322,7 @@ export async function seedRbacCatalog(
     catalogVersion: RBAC_CATALOG_VERSION,
     checksum,
     canonicalPermissions: canonical,
+    apiPermissions: api,
     routePermissions: route,
     legacyCompatibilityPermissions: compat,
     systemRoles: roleCounts,

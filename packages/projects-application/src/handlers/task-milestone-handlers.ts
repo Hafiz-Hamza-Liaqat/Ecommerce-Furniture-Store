@@ -71,10 +71,18 @@ export function createCreateTaskHandler(
   return {
     commandType: ProjectsCommandTypes.CreateTask,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "task",
         ProjectsPolicyActions.TaskCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            projectId: p.projectId ?? null,
+            parentTaskId: p.parentTaskId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -241,11 +249,16 @@ export function createAssignTaskHandler(
   return {
     commandType: ProjectsCommandTypes.AssignTask,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "task",
         ProjectsPolicyActions.TaskAssign,
-        command.payload.companyId,
-        command.payload.taskId,
+        p.companyId,
+        p.taskId,
+        {
+          ownerUserId: p.assigneeUserId ?? null,
+          attributes: { assigneeTeamId: p.assigneeTeamId ?? null },
+        },
       );
     },
     validate() {
@@ -401,10 +414,15 @@ export function createCreateMilestoneHandler(
   return {
     commandType: ProjectsCommandTypes.CreateMilestone,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "milestone",
         ProjectsPolicyActions.MilestoneCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: { projectId: p.projectId ?? null },
+        },
       );
     },
     validate() {

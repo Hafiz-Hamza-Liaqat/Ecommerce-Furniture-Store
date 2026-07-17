@@ -54,10 +54,19 @@ export function createCreateWorkOrderHandler(
   return {
     commandType: ServiceCommandTypes.CreateWorkOrder,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "work_order",
         ServicePolicyActions.WorkOrderCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            serviceRequestId: p.serviceRequestId ?? null,
+            projectId: p.projectId ?? null,
+            workTypeId: p.workTypeId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -170,11 +179,18 @@ export function createUpdateWorkOrderHandler(
   return {
     commandType: ServiceCommandTypes.UpdateWorkOrder,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "work_order",
         ServicePolicyActions.WorkOrderUpdate,
-        command.payload.companyId,
-        command.payload.workOrderId,
+        p.companyId,
+        p.workOrderId,
+        {
+          attributes: {
+            projectId: p.projectId ?? null,
+            workTypeId: p.workTypeId ?? null,
+          },
+        },
       );
     },
     validate() {

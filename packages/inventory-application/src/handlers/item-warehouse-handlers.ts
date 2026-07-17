@@ -236,10 +236,16 @@ export function createCreateWarehouseHandler(
   return {
     commandType: InventoryCommandTypes.CreateWarehouse,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "warehouse",
         InventoryPolicyActions.WarehouseCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          branchId: p.branchId ?? null,
+          attributes: { addressId: p.addressId ?? null },
+        },
       );
     },
     validate() {
@@ -313,10 +319,18 @@ export function createCreateStorageLocationHandler(
   return {
     commandType: InventoryCommandTypes.CreateStorageLocation,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "storage_location",
         InventoryPolicyActions.LocationCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          attributes: {
+            warehouseId: p.warehouseId ?? null,
+            parentId: p.parentId ?? null,
+          },
+        },
       );
     },
     validate() {

@@ -4,11 +4,12 @@
  * Source of truth: docs/rc5/13-Authorization-Governance-Specification.md.
  * Canonical grammar: `<module>.<resource>.<action>`.
  *
- * Every entry maps exactly one current executable ("legacy") Policy action
- * key emitted by the 107 registered CQRS handlers (105 unique keys; the
+ * Every entry maps exactly one legacy executable Policy action key that the
+ * 107 registered CQRS handlers emitted before RC5.3 (105 unique keys; the
  * sales and procurement summary queries reuse `order.read` / `po.read`).
- * Legacy keys are never renamed here; compatibility is provided by the
- * seed layer (see seed.ts) so current handlers keep working unchanged.
+ * RC5.3 normalized handler actions to the canonical codes; the mapping and
+ * the seed-layer compatibility grants (see seed.ts) remain unchanged as the
+ * documented overlap window for rollback.
  */
 
 import {
@@ -16,14 +17,14 @@ import {
   ROUTE_PERMISSION_DEFINITIONS,
 } from "./route-permission-catalog.js";
 
-export const RBAC_CATALOG_VERSION = "rc5.rbac-catalog.v2";
+export const RBAC_CATALOG_VERSION = "rc5.rbac-catalog.v3";
 
 export type CatalogPermissionDefinition = {
   /** Canonical permission code (`<module>.<resource>.<action>`). */
   readonly code: string;
   /** Owning module (reserved prefix from the governance specification). */
   readonly module: string;
-  /** Current executable Policy action key used by handlers today. */
+  /** Legacy executable Policy action key used by handlers before RC5.3. */
   readonly legacyKey: string;
   readonly description: string;
 };
@@ -168,7 +169,7 @@ const SERVICE: readonly Entry[] = [
   ["service.summary.read", "service.summary.read", "Read the service summary"],
 ];
 
-/** The complete RC5.1 canonical backend permission catalog (105 entries). */
+/** The complete RC5.1 canonical CQRS backend permission catalog (105 entries). */
 export const PERMISSION_CATALOG: readonly CatalogPermissionDefinition[] = [
   ...moduleEntries("sales", SALES),
   ...moduleEntries("procurement", PROCUREMENT),
@@ -179,19 +180,36 @@ export const PERMISSION_CATALOG: readonly CatalogPermissionDefinition[] = [
   ...moduleEntries("service", SERVICE),
 ];
 
-/** All canonical permission codes in catalog order. */
+/**
+ * RC5.4 API-route permissions (not CQRS handler actions).
+ * `legacyKey` equals `code` because these never existed as pre-RC5.3
+ * executable handler keys; the seed still treats them as canonical records.
+ */
+export const API_PERMISSION_DEFINITIONS: readonly CatalogPermissionDefinition[] =
+  [
+    {
+      code: "dam.assets.upload",
+      module: "dam",
+      legacyKey: "dam.assets.upload",
+      description: "Upload digital asset metadata via POST /api/v1/uploads",
+    },
+  ];
+
+/** All CQRS backend permission codes in catalog order (105). */
 export const CANONICAL_PERMISSION_CODES: readonly string[] =
   PERMISSION_CATALOG.map((entry) => entry.code);
 
-/** All backend and inactive route permission codes in catalog order. */
+/** All CQRS, API-route, and inactive route permission codes in catalog order. */
 export const ALL_CANONICAL_PERMISSION_CODES: readonly string[] = [
   ...CANONICAL_PERMISSION_CODES,
+  ...API_PERMISSION_DEFINITIONS.map((entry) => entry.code),
   ...ROUTE_PERMISSION_CODES,
 ];
 
-/** All canonical permission definitions seeded by catalog v2. */
+/** All canonical permission definitions seeded by catalog v3. */
 export const ALL_PERMISSION_DEFINITIONS = [
   ...PERMISSION_CATALOG,
+  ...API_PERMISSION_DEFINITIONS,
   ...ROUTE_PERMISSION_DEFINITIONS,
 ] as const;
 

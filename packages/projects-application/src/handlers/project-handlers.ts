@@ -55,10 +55,20 @@ export function createCreateProjectHandler(
   return {
     commandType: ProjectsCommandTypes.CreateProject,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "project",
         ProjectsPolicyActions.ProjectCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            siteAddressId: p.siteAddressId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -142,11 +152,20 @@ export function createUpdateProjectHandler(
   return {
     commandType: ProjectsCommandTypes.UpdateProject,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "project",
         ProjectsPolicyActions.ProjectUpdate,
-        command.payload.companyId,
-        command.payload.projectId,
+        p.companyId,
+        p.projectId,
+        {
+          ownerUserId: p.ownerUserId ?? null,
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            siteAddressId: p.siteAddressId ?? null,
+          },
+        },
       );
     },
     validate() {

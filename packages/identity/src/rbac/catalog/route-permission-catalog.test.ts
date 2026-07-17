@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ALL_CANONICAL_PERMISSION_CODES } from "./permission-catalog.js";
+import { ALL_CANONICAL_PERMISSION_CODES, API_PERMISSION_DEFINITIONS, PERMISSION_CATALOG } from "./permission-catalog.js";
 import {
   ROUTE_ACCESS_CATALOG,
   ROUTE_PERMISSION_CATALOG_VERSION,
@@ -9,7 +9,6 @@ import {
   RoutePermissions,
 } from "./route-permission-catalog.js";
 import { validatePermissionCode, validateRbacCatalog } from "./validation.js";
-import { PERMISSION_CATALOG } from "./permission-catalog.js";
 import { ROLE_CATALOG } from "./role-catalog.js";
 
 describe("RC5.2 prerequisite route-permission catalog", () => {
@@ -99,7 +98,7 @@ describe("RC5.2 prerequisite route-permission catalog", () => {
   it("passes complete RBAC and route catalog validation", () => {
     assert.deepEqual(
       validateRbacCatalog(
-        PERMISSION_CATALOG,
+        [...PERMISSION_CATALOG, ...API_PERMISSION_DEFINITIONS],
         ROLE_CATALOG,
         ROUTE_PERMISSION_DEFINITIONS,
         ROUTE_ACCESS_CATALOG,

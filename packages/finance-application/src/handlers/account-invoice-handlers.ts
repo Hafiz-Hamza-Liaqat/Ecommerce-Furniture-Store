@@ -243,10 +243,19 @@ export function createCreateInvoiceHandler(
   return {
     commandType: FinanceCommandTypes.CreateInvoice,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "invoice",
         FinancePolicyActions.InvoiceCreate,
-        command.payload.companyId,
+        p.companyId,
+        null,
+        {
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            billToAddressId: p.billToAddressId ?? null,
+          },
+        },
       );
     },
     validate() {
@@ -391,11 +400,19 @@ export function createUpdateInvoiceHandler(
   return {
     commandType: FinanceCommandTypes.UpdateInvoice,
     authorize(command) {
+      const p = command.payload;
       return companyResource(
         "invoice",
         FinancePolicyActions.InvoiceUpdate,
-        command.payload.companyId,
-        command.payload.invoiceId,
+        p.companyId,
+        p.invoiceId,
+        {
+          organizationId: p.organizationId ?? null,
+          attributes: {
+            customerId: p.customerId ?? null,
+            billToAddressId: p.billToAddressId ?? null,
+          },
+        },
       );
     },
     validate() {
