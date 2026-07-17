@@ -155,6 +155,7 @@ export function createEnterpriseComposition(
       ...(options.identity ?? {}),
       clock: options.identity?.clock ?? infrastructure.clock,
       persistence: infrastructure.persistence,
+      metrics: infrastructure.metrics,
     });
   }
 

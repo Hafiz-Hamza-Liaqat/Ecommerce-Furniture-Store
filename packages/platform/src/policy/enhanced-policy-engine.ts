@@ -11,6 +11,10 @@ import type {
   PolicyResource,
   SecurityAuditService,
 } from "@afh/identity";
+import {
+  POLICY_ENGINE_VERSION,
+  RBAC_CATALOG_VERSION,
+} from "@afh/identity";
 
 export type AttributePredicate = {
   readonly attribute: string;
@@ -68,7 +72,16 @@ export class EnhancedPolicyEngine implements PolicyEngine {
         entityType: resource.type,
         entityId: resource.id,
         outcome: "failure",
-        details: { reasonCode: "approval_pending", permission: action },
+        details: {
+          reasonCode: "approval_pending",
+          permission: action,
+          decision: "deny",
+          engine: "EnhancedPolicyEngine",
+          engineVersion: POLICY_ENGINE_VERSION,
+          catalogVersion: RBAC_CATALOG_VERSION,
+          scopeBinding: "enhanced_precheck",
+          contributingRoles: [],
+        },
         correlationId: enriched.correlationId,
       });
       return deny;
@@ -103,6 +116,12 @@ export class EnhancedPolicyEngine implements PolicyEngine {
             reasonCode: "attribute_mismatch",
             attribute: predicate.attribute,
             permission: action,
+            decision: "deny",
+            engine: "EnhancedPolicyEngine",
+            engineVersion: POLICY_ENGINE_VERSION,
+            catalogVersion: RBAC_CATALOG_VERSION,
+            scopeBinding: "enhanced_precheck",
+            contributingRoles: [],
           },
           correlationId: enriched.correlationId,
         });

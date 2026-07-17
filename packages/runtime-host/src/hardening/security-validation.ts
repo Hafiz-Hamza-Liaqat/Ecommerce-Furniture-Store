@@ -26,6 +26,7 @@ export type SecurityValidationReport = {
   readonly auditStorePresent: boolean;
   readonly sessionProbePresent: boolean;
   readonly signingProbePresent: boolean;
+  readonly authzPolicySmokeOk: boolean;
 };
 
 /**
@@ -112,6 +113,12 @@ export async function validateSecurityHardening(options: {
   }
   checked.push("mfa_provider");
 
+  // RC5.9 — authorization observability smoke: Policy Engine evaluates
+  // deny/allow AND SecurityAuditService emits policy.deny / policy.allow.
+  const authzSmoke = await smokeAuthorizationObservability(options.host);
+  if (!authzSmoke.ok) return authzSmoke;
+  checked.push("authz_policy_smoke");
+
   return ok({
     checked,
     jwtPresent: true,
@@ -120,5 +127,111 @@ export async function validateSecurityHardening(options: {
     auditStorePresent: true,
     sessionProbePresent: true,
     signingProbePresent: true,
+    authzPolicySmokeOk: true,
   });
+}
+
+async function smokeAuthorizationObservability(
+  host: ApiHost,
+): Promise<Result<true, PlatformError>> {
+  const identityEngine = host.composition.identity.policyEngine;
+  const platformEngine = host.composition.platform.policyEngine;
+  const audit = host.composition.identity.audit;
+  if (!identityEngine || !platformEngine || !audit) {
+    return fail(
+      new InfrastructureError("Policy Engine or audit missing on composition", {
+        code: "security_authz_engine_missing",
+      }),
+    );
+  }
+
+  const companyId = "harden-authz-company";
+  const permission = "harden.observability.probe";
+  const resource = {
+    type: "harden_probe",
+    id: "probe-1",
+    companyId,
+    ownerUserId: null,
+    organizationId: null,
+    branchId: null,
+  };
+
+  const allowedPrincipal = {
+    userId: "harden-authz-user",
+    companyId,
+    roles: [
+      {
+        roleCode: "harden_probe_role",
+        scopeType: "company" as const,
+        scopeId: null,
+        permissionCodes: [permission],
+      },
+    ],
+    permissionCodes: [permission],
+  };
+
+  const before = audit.recentRecords().length;
+
+  const denyDecision = await identityEngine.evaluate(
+    { ...allowedPrincipal, permissionCodes: [] },
+    permission,
+    resource,
+    { correlationId: "harden-authz-deny" },
+  );
+  if (denyDecision.allowed || denyDecision.reasonCode !== "permission_missing") {
+    return fail(
+      new InfrastructureError("Policy deny smoke failed", {
+        code: "security_authz_deny_smoke_failed",
+        details: {
+          allowed: denyDecision.allowed,
+          reasonCode: denyDecision.allowed ? null : denyDecision.reasonCode,
+        },
+      }),
+    );
+  }
+
+  const allowDecision = await platformEngine.evaluate(
+    allowedPrincipal,
+    permission,
+    resource,
+    { correlationId: "harden-authz-allow" },
+  );
+  if (!allowDecision.allowed) {
+    return fail(
+      new InfrastructureError("Policy allow smoke failed", {
+        code: "security_authz_allow_smoke_failed",
+        details: {
+          reasonCode: allowDecision.reasonCode,
+        },
+      }),
+    );
+  }
+
+  const recent = audit.recentRecords().slice(before);
+  const denyAudit = recent.find(
+    (r) =>
+      r.action === "policy.deny" &&
+      r.correlationId === "harden-authz-deny" &&
+      r.details["reasonCode"] === "permission_missing",
+  );
+  const allowAudit = recent.find(
+    (r) =>
+      r.action === "policy.allow" &&
+      r.correlationId === "harden-authz-allow" &&
+      r.details["decision"] === "allow",
+  );
+  if (!denyAudit || !allowAudit) {
+    return fail(
+      new InfrastructureError("Policy audit emission smoke failed", {
+        code: "security_authz_audit_smoke_failed",
+        details: {
+          denyAuditPresent: denyAudit != null,
+          allowAuditPresent: allowAudit != null,
+          recentCount: recent.length,
+        },
+      }),
+    );
+  }
+
+  return ok(true);
 }

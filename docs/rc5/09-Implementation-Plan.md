@@ -164,6 +164,8 @@ Any pull request containing excluded work is not RC5.1 and must be split or reje
 | **Acceptance** | All `12-RC5-Signoff.md` items checked or waived with owner |
 | **Complexity** | Medium |
 
+**Implementation evidence (2026-07-18, RC5.9 completion — approved scope: authorization observability and operational hardening):** The approved RC5.9 slice closed the documented Policy allow-audit gap and operational hardening items without changing the authorization model (ADR D48). `RbacPolicyEngine` now records both `policy.allow` and `policy.deny` via `SecurityAuditService` with engine/catalog/scope-binding/contributing-role details; a frozen reason-code catalog is exported; optional `authz.policy.*` metrics are wired through identity composition; runtime `validateSecurityHardening` adds `authz_policy_smoke`; in-process Policy p95/p99 goals are measured and dispositioned. RBAC catalog, routes, authentication/session, and frontend are unchanged. Tests: `packages/identity/src/policy/authorization-observability.test.ts`, `packages/api/src/authorization/authorization-observability.test.ts`. Reports: `docs/release/RC5.9-authorization-observability.md`, `docs/release/RC5.9-verification-report.md`, `docs/release/RC5.9-authorization-observability-audit.md`.
+
 ---
 
 ## Dependency graph

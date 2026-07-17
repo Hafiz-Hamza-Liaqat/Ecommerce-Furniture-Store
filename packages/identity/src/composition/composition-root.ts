@@ -5,6 +5,7 @@
 import {
   SystemUtcClock,
   type Clock,
+  type Metrics,
 } from "@afh/shared-kernel";
 import type { PersistenceFoundation } from "@afh/persistence";
 import {
@@ -58,6 +59,11 @@ export type CreateIdentityFoundationOptions = {
   readonly auditStore?: SecurityAuditStore;
   /** Optional persistence handle reserved for future transactional identity writes */
   readonly persistence?: PersistenceFoundation;
+  /**
+   * RC5.9 — optional Metrics for authorization decision counters/histograms.
+   * Operational signals only; never replace SecurityAuditService records.
+   */
+  readonly metrics?: Metrics;
 };
 
 export function createIdentityFoundation(
@@ -81,7 +87,12 @@ export function createIdentityFoundation(
     audit,
   );
   const rbac = new RbacService(store, clock, audit);
-  const policyEngine = new RbacPolicyEngine(store, clock, audit);
+  const policyEngine = new RbacPolicyEngine(
+    store,
+    clock,
+    audit,
+    options.metrics,
+  );
   const organizations = new OrganizationService(store, clock, audit);
   const serviceAccounts = new ServiceAccountService(
     store,

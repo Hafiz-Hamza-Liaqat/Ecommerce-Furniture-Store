@@ -128,7 +128,7 @@ Until E2E exists, manual checklist acceptable for RC5.9 with recorded evidence.
 | Read-only enforcement | Read-only/auditor calls create/update/delete/lifecycle or submits forbidden fields | Deny without partial mutation |
 | Permission inheritance | Parent permission inherited once; deep hierarchy deterministic; cycle rejected | Correct effective set with no scope widening |
 | Multiple assignments | Narrow role + broad role; active + expired role; allow + explicit Policy deny | Only applicable active scopes contribute; explicit deny wins |
-| Deny precedence | Permission allow combined with company/feature/approval/resource/record/field deny | Final decision is deny with stable reason |
+| Deny precedence | Permission allow combined with company/feature/approval/resource/record/field deny | Final decision is deny with stable reason. **RC5.9 (ADR D48):** reason codes frozen in `packages/identity/src/policy/reason-codes.ts`; every allow and deny audited |
 | Missing data | Unknown permission, unmapped legacy key, missing required resource/scope attribute | Deny and emit configuration/security audit |
 | Super Admin | Company ERP without company assignment; missing permission; cross-company resource; approval bypass attempt; platform scope-only case | Missing permission and cross-company deny; scope shortcut alone never grants permission; all audited |
 | Empty catalog / zero roles | Active user with no role/permission seed | Every protected command/query denies `permission_missing` |
@@ -143,7 +143,7 @@ These cases are milestone-aware: RC5.1 executes catalog/mapping/seed tests only.
 
 | Case | Evidence |
 |---|---|
-| Representative allow/deny mix | p50/p95/p99 Policy evaluation overhead and end-to-end contribution |
+| Representative allow/deny mix | p50/p95/p99 Policy evaluation overhead and end-to-end contribution. **RC5.9 disposition:** in-process evaluate p95 ≤ 10 ms and p99 ≤ 25 ms proven by `packages/identity/src/policy/authorization-observability.test.ts` (audit sink excluded from the timed path when metrics-only); see `docs/release/RC5.9-verification-report.md` |
 | Role depth and permission growth | Evaluation cost across shallow/deep inheritance and realistic permission counts |
 | Evaluation frequency | One pre-handler evaluation per protected dispatch; documented post-load evaluation only where required |
 | Request-local reuse | No repeated principal/catalog lookup in one request; no cross-resource final-decision reuse |

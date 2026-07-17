@@ -57,26 +57,26 @@
 
 ## H. Quality
 
-- [ ] Unit/integration auth suites green  
-- [ ] Typecheck/lint/build green  
-- [ ] Harden/accept green  
-- [ ] Regression auth/ERP smoke green  
-- [ ] Known Medium/Low issues listed with owners  
-- [ ] Authorization performance goals measured and dispositioned  
+- [x] Unit/integration auth suites green — evidence: `docs/release/RC5.9-verification-report.md`
+- [x] Typecheck/lint/build green — evidence: same
+- [x] Harden/accept green — evidence: same (`authz_policy_smoke` added)
+- [x] Regression auth/ERP smoke green — Identity/API/Web suites in verification report
+- [x] Known Medium/Low issues listed with owners — residual register below + RC5.9 release report
+- [x] Authorization performance goals measured and dispositioned — identity observability suite + verification report
 
 ## I. Docs & ops
 
-- [ ] `docs/rc5/*` matches shipped behavior  
-- [ ] Operator role assignment runbook published  
-- [ ] Migration/rollback rehearsed in staging  
-- [ ] Feature flag defaults documented  
+- [x] `docs/rc5/*` matches shipped behavior — governance §5.2/§5.3, implementation plan RC5.9 evidence
+- [ ] Operator role assignment runbook published — partial: correlationId + reason-code troubleshooting in `docs/release/RC5.9-authorization-observability.md` §Operator notes; full assignment runbook remains ops-owned
+- [ ] Migration/rollback rehearsed in staging — ops-owned; rollback = revert RC5.9 commit / prior build
+- [ ] Feature flag defaults documented — N/A for RC5.9 (no new flags)
 
 ## J. Release decision
 
-- [ ] RC5 scope complete (authorization only)  
-- [ ] No go-live claim beyond RC5 charter  
-- [ ] RC6 entry criteria acknowledged (workflow definitions / operator APIs)  
-- [ ] Signoff: Engineering ________  Security ________  Product ________  Date ________  
+- [x] RC5 scope complete (authorization only) — RC5.1–5.9 evidence packets delivered; human charter signoff still required below
+- [x] No go-live claim beyond RC5 charter
+- [x] RC6 entry criteria acknowledged (workflow definitions / operator APIs)
+- [ ] Signoff: Engineering ________  Security ________  Product ________  Date ________
 
 ## K. Objective evidence required for every milestone
 
@@ -107,7 +107,7 @@ Each RC5.1–RC5.9 milestone must attach an evidence packet. “Not applicable�
 | RC5.6 | [ ] | [ ] | [ ] | [ ] | [ ] Field authorization only | ______ |
 | RC5.7 | [ ] | [ ] | [ ] | [ ] | [ ] Verification only | ______ |
 | RC5.8 | [ ] | [ ] | [ ] | [ ] | [ ] Documentation/operations only | ______ |
-| RC5.9 | [ ] | [ ] | [ ] | [ ] | [ ] Candidate hardening only | ______ |
+| RC5.9 | [x] RC5.1–5.8 *implementation* evidence packets in `docs/release/RC5.*` (human register rows above remain open) | [x] Observability/hardening code + verification + audit packets | [x] Revert RC5.9 commit | [x] | [x] Authorization observability/hardening only (ADR D48) | ______ |
 
 The entry/completion/rollback definitions and verification checklists are normative in `11-Migration-Plan.md`. A milestone cannot be marked complete from narrative assurance alone.
 
@@ -138,6 +138,9 @@ A waived item is not a pass. Expired waivers reopen the milestone.
 | Session localStorage | Critical | Security | Cookie migration track |
 | In-memory rate limit | Medium | Ops | Edge controls |
 | Presentation AI/SaaS | Medium | Product | RC8–RC9 |
+| Policy allow audit volume on filtered lists | Low | Ops | Accepted (governance forbids sampling); monitor `policy.allow` rate |
+| Legacy principal fallback (pre-RC5.8 shape) | Low | Platform | Production uses `buildPrincipal` only; metric `authz.policy.legacy_principal` |
+| Allow-path audit availability coupling | Medium | Ops | Audit store outage fails evaluate closed (including list-row allows); monitor audit health |
 
 ---
 

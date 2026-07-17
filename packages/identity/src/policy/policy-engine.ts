@@ -3,7 +3,7 @@
  * RBAC data feeds this engine; services must not implement parallel allow/deny.
  */
 
-import type { Clock } from "@afh/shared-kernel";
+import type { Clock, Metrics } from "@afh/shared-kernel";
 import type { IdentityStore } from "../stores/identity-store.js";
 import type {
   RoleRecord,
@@ -11,6 +11,12 @@ import type {
   UserRoleRecord,
 } from "../models/models.js";
 import type { SecurityAuditService } from "../audit/security-audit.js";
+import { RBAC_CATALOG_VERSION } from "../rbac/catalog/permission-catalog.js";
+import { AuthorizationMetrics } from "./authorization-metrics.js";
+import {
+  POLICY_ENGINE_NAME,
+  POLICY_ENGINE_VERSION,
+} from "./reason-codes.js";
 
 export type PolicyPrincipalRole = {
   readonly roleCode: string;
@@ -68,11 +74,16 @@ export interface PolicyEngine {
 }
 
 export class RbacPolicyEngine implements PolicyEngine {
+  private readonly authzMetrics: AuthorizationMetrics | null;
+
   constructor(
     private readonly store: IdentityStore,
     private readonly clock: Clock,
     private readonly audit?: SecurityAuditService,
-  ) {}
+    metrics?: Metrics,
+  ) {
+    this.authzMetrics = metrics ? new AuthorizationMetrics(metrics) : null;
+  }
 
   async buildPrincipal(userId: string): Promise<PolicyPrincipal | null> {
     const user = await this.store.getUserById(userId);
@@ -126,59 +137,69 @@ export class RbacPolicyEngine implements PolicyEngine {
     resource: PolicyResource,
     context: PolicyContext = { correlationId: null },
   ): Promise<PolicyDecision> {
-    if (!principal.permissionCodes.includes(action)) {
-      const deny = {
-        allowed: false as const,
-        reasonCode: "permission_missing",
-        message: `Permission '${action}' not granted`,
-      };
-      await this.#auditDeny(
-        principal,
-        action,
-        resource,
-        context,
-        deny.reasonCode,
-      );
-      return deny;
-    }
+    const started = Date.now();
+    try {
+      if (!principal.permissionCodes.includes(action)) {
+        const deny = {
+          allowed: false as const,
+          reasonCode: "permission_missing",
+          message: `Permission '${action}' not granted`,
+        };
+        await this.#recordDecision(
+          principal,
+          action,
+          resource,
+          context,
+          deny,
+        );
+        return deny;
+      }
 
-    if (
-      resource.companyId !== null &&
-      principal.companyId !== null &&
-      resource.companyId !== principal.companyId
-    ) {
-      const deny = {
-        allowed: false as const,
-        reasonCode: "company_isolation",
-        message: "Cross-company access denied",
-      };
-      await this.#auditDeny(
-        principal,
-        action,
-        resource,
-        context,
-        deny.reasonCode,
-      );
-      return deny;
-    }
+      if (
+        resource.companyId !== null &&
+        principal.companyId !== null &&
+        resource.companyId !== principal.companyId
+      ) {
+        const deny = {
+          allowed: false as const,
+          reasonCode: "company_isolation",
+          message: "Cross-company access denied",
+        };
+        await this.#recordDecision(
+          principal,
+          action,
+          resource,
+          context,
+          deny,
+        );
+        return deny;
+      }
 
-    if (!this.#scopeAllows(principal, action, resource)) {
-      const deny = {
-        allowed: false as const,
-        reasonCode: "scope_mismatch",
-        message: "Resource outside assigned scopes",
-      };
-      await this.#auditDeny(
-        principal,
-        action,
-        resource,
-        context,
-        deny.reasonCode,
-      );
-      return deny;
-    }
+      if (!this.#scopeAllows(principal, action, resource)) {
+        const deny = {
+          allowed: false as const,
+          reasonCode: "scope_mismatch",
+          message: "Resource outside assigned scopes",
+        };
+        await this.#recordDecision(
+          principal,
+          action,
+          resource,
+          context,
+          deny,
+        );
+        return deny;
+      }
 
-    return { allowed: true };
+      const allow = { allowed: true as const };
+      await this.#recordDecision(principal, action, resource, context, allow);
+      return allow;
+    } finally {
+      this.authzMetrics?.evaluateDurationMs(
+        POLICY_ENGINE_NAME,
+        Date.now() - started,
+      );
+    }
   }
 
   /**
@@ -198,12 +219,7 @@ export class RbacPolicyEngine implements PolicyEngine {
     action: string,
     resource: PolicyResource,
   ): boolean {
-    const bound = principal.roles.some((r) => r.permissionCodes !== undefined);
-    const granting = bound
-      ? principal.roles.filter((r) =>
-          r.permissionCodes?.includes(action) ?? false,
-        )
-      : principal.roles;
+    const granting = grantingEntries(principal, action);
 
     if (granting.some((r) => r.roleCode === "super_admin")) {
       return true;
@@ -264,13 +280,52 @@ export class RbacPolicyEngine implements PolicyEngine {
     return chain;
   }
 
-  async #auditDeny(
+  /**
+   * RC5.9 — every allow and deny is recorded through SecurityAuditService
+   * (governance §5.2). Metrics are operational signals only and never replace
+   * the audit record.
+   */
+  async #recordDecision(
     principal: PolicyPrincipal,
     action: string,
     resource: PolicyResource,
     context: PolicyContext,
-    reasonCode: string,
+    decision: PolicyDecision,
   ): Promise<void> {
+    const bindingMode = scopeBindingMode(principal);
+    if (bindingMode === "legacy") {
+      this.authzMetrics?.legacyPrincipal();
+    }
+
+    const contributingRoles = grantingEntries(principal, action).map((r) => ({
+      roleCode: r.roleCode,
+      scopeType: r.scopeType,
+      scopeId: r.scopeId,
+    }));
+
+    if (decision.allowed) {
+      await this.audit?.record({
+        companyId: principal.companyId,
+        actorUserId: principal.userId,
+        action: "policy.allow",
+        entityType: resource.type,
+        entityId: resource.id,
+        outcome: "success",
+        details: {
+          permission: action,
+          decision: "allow",
+          engine: POLICY_ENGINE_NAME,
+          engineVersion: POLICY_ENGINE_VERSION,
+          catalogVersion: RBAC_CATALOG_VERSION,
+          scopeBinding: bindingMode,
+          contributingRoles,
+        },
+        correlationId: context.correlationId,
+      });
+      this.authzMetrics?.decisionAllow(POLICY_ENGINE_NAME);
+      return;
+    }
+
     await this.audit?.record({
       companyId: principal.companyId,
       actorUserId: principal.userId,
@@ -278,10 +333,40 @@ export class RbacPolicyEngine implements PolicyEngine {
       entityType: resource.type,
       entityId: resource.id,
       outcome: "failure",
-      details: { permission: action, reasonCode },
+      details: {
+        permission: action,
+        decision: "deny",
+        reasonCode: decision.reasonCode,
+        engine: POLICY_ENGINE_NAME,
+        engineVersion: POLICY_ENGINE_VERSION,
+        catalogVersion: RBAC_CATALOG_VERSION,
+        scopeBinding: bindingMode,
+        contributingRoles,
+      },
       correlationId: context.correlationId,
     });
+    this.authzMetrics?.decisionDeny(POLICY_ENGINE_NAME, decision.reasonCode);
   }
+}
+
+function scopeBindingMode(
+  principal: PolicyPrincipal,
+): "bound" | "legacy" {
+  return principal.roles.some((r) => r.permissionCodes !== undefined)
+    ? "bound"
+    : "legacy";
+}
+
+function grantingEntries(
+  principal: PolicyPrincipal,
+  action: string,
+): readonly PolicyPrincipalRole[] {
+  const bound = principal.roles.some((r) => r.permissionCodes !== undefined);
+  return bound
+    ? principal.roles.filter(
+        (r) => r.permissionCodes?.includes(action) ?? false,
+      )
+    : principal.roles;
 }
 
 function isAssignmentActive(assignment: UserRoleRecord, now: Date): boolean {

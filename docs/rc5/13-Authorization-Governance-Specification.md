@@ -286,7 +286,19 @@ Always log:
 6. approval, delegation, escalation, and privileged lifecycle decisions;
 7. unknown permission codes, unknown legacy mappings, malformed/missing required resources, and Policy evaluation failures.
 
-Decision records are not sampled away. Metrics and traces may be sampled independently but do not replace the audit record. Current Policy logs denies only; logging allows with the required fields is an RC5 hardening gap implemented through the existing `SecurityAuditService`, not a second authorizer. Audit write failure must be surfaced through existing observability and the approved operational failure policy.
+Decision records are not sampled away. Metrics and traces may be sampled independently but do not replace the audit record. **RC5.9 (ADR D48):** both allows (`policy.allow`) and denies (`policy.deny`) are recorded through the existing `SecurityAuditService` with engine name/version, catalog version, scope-binding mode, contributing role scopes, and correlation id. Audit write failure propagates (fail closed for the evaluate path). Operational counters (`authz.policy.*`) are additive signals only.
+
+### 5.3 Stable reason codes — [RC5.9 delivered — ADR D48]
+
+Frozen catalog artifact: `packages/identity/src/policy/reason-codes.ts`.
+
+| Source | Codes |
+|---|---|
+| `RbacPolicyEngine` | `permission_missing`, `company_isolation`, `scope_mismatch` |
+| `EnhancedPolicyEngine` | `approval_pending`, `attribute_mismatch` |
+| Application helpers | `unauthenticated`, `principal_missing`, `policy_evaluation_failed`, `field_read_denied`, `field_update_denied` |
+
+Changing a listed code is a breaking observability change and requires an ADR. Troubleshoot denials with the request `correlationId` plus `details.reasonCode` on the matching `policy.deny` / `field.*` audit record.
 
 ---
 

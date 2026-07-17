@@ -104,6 +104,7 @@ export function createIdentitySecurityProviders(
     clock,
     securityConfig: config,
     passwordHasher,
+    metrics: options.metrics,
   });
 
   const configProvider = new StaticSecurityConfigProvider(config);

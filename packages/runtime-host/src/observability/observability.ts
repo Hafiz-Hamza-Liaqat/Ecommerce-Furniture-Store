@@ -36,6 +36,10 @@ export function createProductionObservability(
   metrics.gauge("runtime.ready").set(0);
   metrics.counter("messaging.outbox.published");
   metrics.counter("security.auth.login.success");
+  // RC5.9 — authorization decision signals (operational; never replace audit)
+  metrics.counter("authz.policy.decision");
+  metrics.counter("authz.policy.legacy_principal");
+  metrics.histogram("authz.policy.duration_ms");
 
   logger.info("Production observability registered", {
     logLevel: config.logLevel,
