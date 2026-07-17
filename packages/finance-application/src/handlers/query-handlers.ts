@@ -2,14 +2,11 @@ import type { QueryHandler } from "@afh/application";
 import type { PageRequest } from "@afh/shared-kernel";
 import { NotFoundError, fail, ok } from "@afh/shared-kernel";
 import type {
-  CreditAccount,
   CreditAdjustment,
   FinancialAccount,
   FinancialLedger,
   FinancialLedgerEntry,
-  Invoice,
   InvoiceLine,
-  Payment,
 } from "@afh/finance";
 import { FinancePolicyActions, FinanceQueryTypes } from "../constants.js";
 import type {
@@ -35,6 +32,15 @@ import {
   loadRecordForAuthorization,
   requireCompanyId,
 } from "../support/support.js";
+import {
+  projectCreditAccountFields,
+  projectInvoiceFields,
+  projectPaymentFields,
+  type CreditAccountFieldView,
+  type InvoiceFieldView,
+  type InvoiceLineFieldView,
+  type PaymentFieldView,
+} from "../security/field-security.js";
 
 export function createGetFinancialAccountHandler(
   deps: FinanceHandlerDeps,
@@ -76,7 +82,10 @@ export function createGetInvoiceHandler(
   deps: FinanceHandlerDeps,
 ): QueryHandler<
   GetInvoicePayload,
-  { invoice: Invoice; lines: readonly InvoiceLine[] }
+  {
+    invoice: InvoiceFieldView;
+    lines: readonly InvoiceLineFieldView[];
+  }
 > {
   return {
     queryType: FinanceQueryTypes.GetInvoice,
@@ -126,14 +135,33 @@ export function createGetInvoiceHandler(
         lines = listed.value;
       }
 
-      return ok({ invoice: found.value, lines });
+      const resource = companyResource(
+        "invoice",
+        FinancePolicyActions.InvoiceRead,
+        scope.value,
+        found.value.id,
+        {
+          organizationId: found.value.organizationId,
+          attributes: {
+            customerId: found.value.customerId,
+            billToAddressId: found.value.billToAddressId,
+          },
+        },
+      ).resource;
+      return projectInvoiceFields(
+        ctx,
+        deps.audit,
+        resource,
+        found.value,
+        lines,
+      );
     },
   };
 }
 
 export function createGetPaymentHandler(
   deps: FinanceHandlerDeps,
-): QueryHandler<GetPaymentPayload, Payment> {
+): QueryHandler<GetPaymentPayload, PaymentFieldView> {
   return {
     queryType: FinanceQueryTypes.GetPayment,
     async authorize(query) {
@@ -171,7 +199,20 @@ export function createGetPaymentHandler(
           new NotFoundError("Payment not found", { code: "payment_not_found" }),
         );
       }
-      return ok(found.value);
+      const resource = companyResource(
+        "payment",
+        FinancePolicyActions.PaymentRead,
+        scope.value,
+        found.value.id,
+        {
+          organizationId: found.value.payerOrganizationId,
+          attributes: {
+            invoiceId: found.value.invoiceId,
+            payerCustomerId: found.value.payerCustomerId,
+          },
+        },
+      ).resource;
+      return projectPaymentFields(ctx, deps.audit, resource, found.value);
     },
   };
 }
@@ -230,10 +271,7 @@ export function createGetLedgerHandler(
 
 export function createGetCreditAccountHandler(
   deps: FinanceHandlerDeps,
-): QueryHandler<
-  GetCreditAccountPayload,
-  { account: CreditAccount; adjustments: readonly CreditAdjustment[] }
-> {
+): QueryHandler<GetCreditAccountPayload, CreditAccountFieldView> {
   return {
     queryType: FinanceQueryTypes.GetCreditAccount,
     async authorize(query) {
@@ -290,7 +328,29 @@ export function createGetCreditAccountHandler(
         adjustments = listed.value.items;
       }
 
-      return ok({ account: found.value, adjustments });
+      const resource = companyResource(
+        "credit_account",
+        FinancePolicyActions.CreditRead,
+        scope.value,
+        found.value.id,
+        {
+          organizationId:
+            found.value.ownerType === "organization"
+              ? found.value.ownerId
+              : null,
+          attributes: {
+            ownerType: found.value.ownerType,
+            ownerId: found.value.ownerId,
+          },
+        },
+      ).resource;
+      return projectCreditAccountFields(
+        ctx,
+        deps.audit,
+        resource,
+        found.value,
+        adjustments,
+      );
     },
   };
 }

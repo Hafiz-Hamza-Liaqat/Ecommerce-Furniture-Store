@@ -1,6 +1,11 @@
 import type { EntityDef, ModuleDefinition } from "../erp/types";
 import { makeRows, row } from "../erp/fixtures";
 
+const FIELD_PERMISSIONS = {
+  costsRead: "finance.costs.read",
+  bankAccountsRead: "finance.bank_accounts.read",
+} as const;
+
 const filters = [
   { key: "account", label: "Account" },
   { key: "branch", label: "Branch", options: ["Lahore HQ", "Karachi Showroom", "Factory"] },
@@ -201,7 +206,15 @@ export const FINANCE_MODULE: ModuleDefinition = {
         { name: "currencyCode", label: "Currency", type: "text", required: true },
         { name: "lineDescription", label: "Line description", type: "text", required: true },
         { name: "quantity", label: "Quantity", type: "number", required: true },
-        { name: "unitMajor", label: "Unit amount (PKR)", type: "number", required: true },
+        {
+          name: "unitMajor",
+          label: "Unit amount (PKR)",
+          type: "number",
+          required: true,
+          permissionView: FIELD_PERMISSIONS.costsRead,
+          permissionEdit: FIELD_PERMISSIONS.costsRead,
+          sensitivity: "financial",
+        },
       ],
       records: makeRows("INV", ["INV-9001", "INV-9014", "INV-9022", "INV-9031"], (i) => ({
         Customer: ["Indus Group", "Marina Hospitality", "Cedar Club", "Horizon Hotels"][i]!,
@@ -269,6 +282,30 @@ export const FINANCE_MODULE: ModuleDefinition = {
       fields: [
         { name: "invoiceId", label: "Invoice ID", type: "text", required: true },
         { name: "amountMajor", label: "Amount (PKR)", type: "number", required: true },
+        {
+          name: "methodId",
+          label: "Payment method ID",
+          type: "text",
+          permissionView: FIELD_PERMISSIONS.bankAccountsRead,
+          permissionEdit: FIELD_PERMISSIONS.bankAccountsRead,
+          sensitivity: "restricted",
+        },
+        {
+          name: "methodLabel",
+          label: "Payment method label",
+          type: "text",
+          permissionView: FIELD_PERMISSIONS.bankAccountsRead,
+          permissionEdit: FIELD_PERMISSIONS.bankAccountsRead,
+          sensitivity: "restricted",
+        },
+        {
+          name: "externalRef",
+          label: "External payment reference",
+          type: "text",
+          permissionView: FIELD_PERMISSIONS.bankAccountsRead,
+          permissionEdit: FIELD_PERMISSIONS.bankAccountsRead,
+          sensitivity: "restricted",
+        },
       ],
       records: makeRows("PAY", ["PAY-7701", "PAY-7712"], (i) => ({
         Invoice: `INV-90${14 + i}`,
@@ -281,6 +318,9 @@ export const FINANCE_MODULE: ModuleDefinition = {
           companyId,
           invoiceId: v.invoiceId,
           amount: moneyMinor(Number(v.amountMajor || 0)),
+          methodId: v.methodId || null,
+          methodLabel: v.methodLabel || null,
+          externalRef: v.externalRef || null,
         }),
         buildGetPayload: (companyId, id) => ({ companyId, paymentId: id }),
         extractCreateId: (data) => (data as { paymentId?: string }).paymentId ?? null,

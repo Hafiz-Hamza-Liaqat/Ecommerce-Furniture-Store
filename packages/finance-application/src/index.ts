@@ -12,3 +12,4 @@ export * from "./validators/index.js";
 export * from "./handlers/index.js";
 export * from "./support/index.js";
 export * from "./composition/index.js";
+export * from "./security/index.js";

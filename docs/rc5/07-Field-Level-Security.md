@@ -4,7 +4,17 @@
 **Target:** Sensitive reads that must not leak go through queries that omit fields or deny (`dam.kyc_assets.read`, finance exports).  
 **Target:** UI hides/disables fields using permission codes; API remains authoritative.
 
-> **Audit correction (2026-07-17):** No permission-aware DTO omit/mask/restricted-edit path exists today. Allowed queries return normal result shapes. Canonical codes such as `finance.costs.read`, `finance.bank_accounts.read`, `finance.credit_accounts.update`, and `dam.kyc_assets.read` are proposed for RC5.6, not implemented. See `audit/11-Field-Security-Audit.md`.
+> **Implementation evidence (2026-07-18, RC5.6):** Policy-driven DTO
+> projection, masking, restricted-patch rejection, audit evidence, and
+> presentation metadata are implemented. The four RC5.6 field permissions
+> remain field metadata outside the immutable system RBAC seed catalog, as
+> required by the RC5.6 constraint. Missing grants therefore fail closed.
+> Finance invoice/payment/credit query DTOs are protected; KYC omission is
+> proven through the shared projection contract because no KYC CQRS read API
+> exists. HR remains UI metadata/domain-only until an HR CQRS API exists.
+> Evidence: `docs/release/RC5.6-field-level-security.md`,
+> `docs/release/RC5.6-verification-report.md`, and
+> `docs/release/RC5.6-field-level-security-audit.md`.
 
 ---
 
@@ -98,7 +108,44 @@ All field permission metadata uses the canonical grammar from `13-Authorization-
 
 ---
 
-## 8. RC5.6 acceptance
+## 8. RC5.6 field metadata catalog
+
+| Live surface / field | Permission | Sensitivity | Read deny | Write deny | Audit |
+|---|---|---|---|---|---|
+| Finance invoice `subtotal`, `taxTotal`, `total` | `finance.costs.read` | Financial | Omit | N/A (not patchable) | `field.read` |
+| Finance invoice line `unitAmount`, `lineAmount` | `finance.costs.read` | Financial | Omit | Reject entire create before mutation | `field.read` / `field.update` |
+| Finance payment `method`, `externalRef` | `finance.bank_accounts.read` | Restricted | Mask identifiers | Reject entire record command before mutation | `field.read` / `field.update` |
+| Finance credit account `adjustments` | `finance.credit_accounts.update` | Financial | Omit | Existing adjustment command remains Policy-gated | `field.read` |
+| KYC DTO `nationalId` / restricted metadata | `dam.kyc_assets.read` | Restricted | Omit | Reject through shared patch contract | `field.read` / `field.update` |
+
+The field codes above are deliberately **not** added to the frozen system RBAC
+catalog or system-role seeds. They are evaluated as exact canonical strings by
+the existing Policy Engine. A tenant permission assignment may supply them;
+otherwise omission/masking/rejection is the mandatory fail-closed result.
+
+`packages/application/src/security/field-security.ts` is the shared application
+contract. It does not decide access: it calls `PolicyEngine.evaluate` for every
+field permission and only applies that decision to DTO/patch behavior. It also
+records field name, permission, sensitivity, and outcome without field values.
+
+`EntityDef.fields` has presentation-only `permissionView`, `permissionEdit`,
+and `sensitivity` metadata. The UI hides denied fields and disables view-only
+fields, but backend projection and patch rejection remain authoritative.
+
+The planning-table `field_security_v1` rollback flag is not wired because
+turning field security off would expose protected values. Operational rollback
+follows `11-Migration-Plan.md`: stop the affected endpoint/export and redeploy
+the prior secure projection while retaining fail-closed omission. UI metadata
+may be disabled only when doing so cannot disclose server data.
+
+HR salary/KYC domain objects and manufacturing fields do not currently have
+live CQRS read/update DTOs. RC5.6 does not invent endpoints or secure fixture
+rows as if they were authoritative APIs; the shared contract must be applied
+when those APIs become live.
+
+---
+
+## 9. RC5.6 acceptance
 
 - Field metadata catalog documented for V1 entities with live APIs.  
 - At least finance cost/margin and KYC fields proven omitted under deny tests.  
@@ -107,7 +154,7 @@ All field permission metadata uses the canonical grammar from `13-Authorization-
 
 ---
 
-## 9. Gaps
+## 10. Gaps
 
 | Gap | Disposition |
 |---|---|

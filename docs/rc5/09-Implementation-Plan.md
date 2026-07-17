@@ -119,6 +119,8 @@ Any pull request containing excluded work is not RC5.1 and must be split or reje
 | **Acceptance** | Tests prove cost/KYC fields absent under deny; update rejects forbidden patches |
 | **Complexity** | Medium–High |
 
+**Implementation evidence (2026-07-18, RC5.6 completion):** Shared application-layer field projection and patch validation delegate every field decision to the existing Policy Engine. Live finance invoice/payment/credit DTOs omit or mask sensitive values; invoice-line and payment restricted fields reject the complete write before persistence; sensitive read/write outcomes are audited without values. `EntityDef.fields` carries presentation-only view/edit/sensitivity metadata. Tests prove finance allow/deny, KYC omission, payment masking, missing-principal and Policy-failure fail-closed behavior, no-partial-mutation, and UI hide/disable behavior. The frozen RBAC catalog, role seeds, routes, sessions, authentication, and Policy Engine algorithm are unchanged. HR/KYC have no live CQRS DTO endpoint, so RC5.6 supplies and tests the shared contract without inventing APIs. Evidence: `docs/release/RC5.6-field-level-security.md`, `docs/release/RC5.6-verification-report.md`, and `docs/release/RC5.6-field-level-security-audit.md`.
+
 ---
 
 ## RC5.7 — Testing

@@ -11,7 +11,32 @@ export type FormField = {
   readonly required?: boolean;
   readonly options?: readonly string[];
   readonly placeholder?: string;
+  /** Presentation-only metadata; backend Policy remains authoritative. */
+  readonly permissionView?: string;
+  readonly permissionEdit?: string;
+  readonly sensitivity?: "internal" | "financial" | "pii" | "restricted";
 };
+
+export function canPresentField(
+  field: FormField,
+  permissionCodes: readonly string[] | null,
+): boolean {
+  return (
+    field.permissionView === undefined ||
+    permissionCodes?.includes(field.permissionView) === true
+  );
+}
+
+export function canEditPresentedField(
+  field: FormField,
+  permissionCodes: readonly string[] | null,
+): boolean {
+  return (
+    canPresentField(field, permissionCodes) &&
+    (field.permissionEdit === undefined ||
+      permissionCodes?.includes(field.permissionEdit) === true)
+  );
+}
 
 export type ColumnDef = {
   readonly key: string;

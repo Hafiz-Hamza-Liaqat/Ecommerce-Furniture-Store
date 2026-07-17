@@ -28,7 +28,14 @@ import {
 import { LineChart, BarChart } from "../../workspace/charts";
 import { useWorkspaceUi } from "../../workspace/context";
 import { SERIES } from "../../workspace/data";
-import type { EntityDef, LifecycleAction, ModuleDefinition, RecordRow } from "./types";
+import {
+  canEditPresentedField,
+  canPresentField,
+  type EntityDef,
+  type LifecycleAction,
+  type ModuleDefinition,
+  type RecordRow,
+} from "./types";
 import { addCollab, getCollab, loadLocalRecords, saveLocalRecord } from "./store";
 import { AdvancedDataTable } from "../../productivity/AdvancedTable";
 import { EnterpriseCalendar } from "../../productivity/EnterpriseCalendar";
@@ -991,11 +998,18 @@ function EntityFormPage({
   const { entityKey, recordId } = useParams();
   const entity = useEntity(module, entityKey);
   const navigate = useNavigate();
-  const { api, user, setLastCorrelationId } = useSession();
+  const { api, user, permissionCodes, setLastCorrelationId } = useSession();
   const { toast } = useWorkspaceUi();
   const [values, setValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const visibleFields = useMemo(
+    () =>
+      entity?.fields.filter((field) =>
+        canPresentField(field, permissionCodes),
+      ) ?? [],
+    [entity, permissionCodes],
+  );
 
   useEffect(() => {
     if (!entity) return;
@@ -1003,13 +1017,13 @@ function EntityFormPage({
       ? mergeRecords(module, entity).find((r) => r.id === recordId)
       : null;
     const init: Record<string, string> = {};
-    for (const f of entity.fields) {
+    for (const f of visibleFields) {
       if (f.name === "title" && existing) init[f.name] = existing.title;
       else if (existing?.meta[f.name] != null) init[f.name] = String(existing.meta[f.name]);
       else init[f.name] = "";
     }
     setValues(init);
-  }, [entity, module, recordId]);
+  }, [entity, module, recordId, visibleFields]);
 
   if (!entity) {
     return <EmptyState title="Unknown entity" body="Cannot open form." />;
@@ -1018,6 +1032,11 @@ function EntityFormPage({
   async function onSubmit() {
     setSubmitting(true);
     setError(null);
+    const permittedValues = Object.fromEntries(
+      visibleFields
+        .filter((field) => canEditPresentedField(field, permissionCodes))
+        .map((field) => [field.name, values[field.name] ?? ""]),
+    );
     try {
       if (entity!.api?.uploadAsset && mode === "create") {
         if (!user?.companyId) {
@@ -1026,9 +1045,9 @@ function EntityFormPage({
         }
         const res = await api.upload({
           companyId: user.companyId,
-          name: values.name || values.title || "asset",
-          mimeType: values.mimeType || "application/octet-stream",
-          assetType: values.assetType || "document",
+          name: permittedValues.name || permittedValues.title || "asset",
+          mimeType: permittedValues.mimeType || "application/octet-stream",
+          assetType: permittedValues.assetType || "document",
         });
         setLastCorrelationId(res.correlationId);
         const id =
@@ -1038,9 +1057,12 @@ function EntityFormPage({
           entity!.api.mapEntity?.(res.data) ??
           ({
             id,
-            title: values.name || values.title || id,
+            title: permittedValues.name || permittedValues.title || id,
             status: "Draft",
-            meta: { ...values, Type: values.assetType || "document" },
+            meta: {
+              ...permittedValues,
+              Type: permittedValues.assetType || "document",
+            },
             source: "api" as const,
           } satisfies RecordRow);
         saveLocalRecord(module.id, entity!.key, mapped);
@@ -1054,7 +1076,10 @@ function EntityFormPage({
           setError("Signed-in user is missing companyId — required for API commands.");
           return;
         }
-        const payload = entity!.api.buildCreatePayload(user.companyId, values);
+        const payload = entity!.api.buildCreatePayload(
+          user.companyId,
+          permittedValues,
+        );
         const res = await api.dispatchCommand({
           commandType: entity!.api.createCommandType,
           payload,
@@ -1068,9 +1093,13 @@ function EntityFormPage({
           entity!.api.mapEntity?.(res.data) ??
           ({
             id,
-            title: values.title || values.name || values.number || id,
+            title:
+              permittedValues.title ||
+              permittedValues.name ||
+              permittedValues.number ||
+              id,
             status: "Open",
-            meta: { ...values },
+            meta: { ...permittedValues },
             source: "api" as const,
           } satisfies RecordRow);
         saveLocalRecord(module.id, entity!.key, mapped);
@@ -1089,7 +1118,11 @@ function EntityFormPage({
           setError("Signed-in user is missing companyId — required for API commands.");
           return;
         }
-        const payload = entity!.api.buildUpdatePayload(user.companyId, recordId, values);
+        const payload = entity!.api.buildUpdatePayload(
+          user.companyId,
+          recordId,
+          permittedValues,
+        );
         const res = await api.dispatchCommand({
           commandType: entity!.api.updateCommandType,
           payload,
@@ -1100,9 +1133,13 @@ function EntityFormPage({
           entity!.api.mapEntity?.(res.data) ??
           ({
             id: recordId,
-            title: values.title || values.name || values.number || recordId,
+            title:
+              permittedValues.title ||
+              permittedValues.name ||
+              permittedValues.number ||
+              recordId,
             status: "Open",
-            meta: { ...values },
+            meta: { ...permittedValues },
             source: "api" as const,
           } satisfies RecordRow);
         saveLocalRecord(module.id, entity!.key, mapped);
@@ -1114,10 +1151,17 @@ function EntityFormPage({
       const id = recordId ?? `${entity!.key.slice(0, 3).toUpperCase()}-${Date.now()}`;
       const row: RecordRow = {
         id,
-        title: values.title || values.name || values.number || `${entity!.label} ${id}`,
+        title:
+          permittedValues.title ||
+          permittedValues.name ||
+          permittedValues.number ||
+          `${entity!.label} ${id}`,
         status: mode === "create" ? "Draft" : "Open",
-        meta: { ...values },
-        description: values.notes || values.memo || entity!.description,
+        meta: { ...permittedValues },
+        description:
+          permittedValues.notes ||
+          permittedValues.memo ||
+          entity!.description,
         source: "local",
       };
       saveLocalRecord(module.id, entity!.key, row);
@@ -1176,7 +1220,7 @@ function EntityFormPage({
             }
           >
             <div className="erp-form-grid">
-              {entity.fields.map((f) => (
+              {visibleFields.map((f) => (
                 <label key={f.name} className="field">
                   <span className="field__label">
                     {f.label}
@@ -1185,7 +1229,11 @@ function EntityFormPage({
                   {f.type === "textarea" ? (
                     <textarea
                       className="field__input"
-                      required={f.required}
+                      required={
+                        f.required &&
+                        canEditPresentedField(f, permissionCodes)
+                      }
+                      disabled={!canEditPresentedField(f, permissionCodes)}
                       value={values[f.name] ?? ""}
                       onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
                       rows={3}
@@ -1193,7 +1241,11 @@ function EntityFormPage({
                   ) : f.type === "select" ? (
                     <select
                       className="field__input"
-                      required={f.required}
+                      required={
+                        f.required &&
+                        canEditPresentedField(f, permissionCodes)
+                      }
+                      disabled={!canEditPresentedField(f, permissionCodes)}
                       value={values[f.name] ?? ""}
                       onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
                     >
@@ -1208,7 +1260,11 @@ function EntityFormPage({
                     <input
                       className="field__input"
                       type={f.type === "number" || f.type === "currency" ? "number" : f.type === "date" ? "date" : "text"}
-                      required={f.required}
+                      required={
+                        f.required &&
+                        canEditPresentedField(f, permissionCodes)
+                      }
+                      disabled={!canEditPresentedField(f, permissionCodes)}
                       placeholder={f.placeholder}
                       value={values[f.name] ?? ""}
                       onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}

@@ -23,6 +23,7 @@ import type {
   UpdateFinancialAccountPayload,
   UpdateInvoicePayload,
 } from "../commands/commands.js";
+import { authorizeInvoiceLineFields } from "../security/field-security.js";
 import {
   createFinancialAccountCommandValidator,
   createInvoiceCommandValidator,
@@ -266,10 +267,29 @@ export function createCreateInvoiceHandler(
       const scope = requireCompanyId(ctx, command.payload.companyId);
       if (!scope.ok) return scope;
 
+      const p = command.payload;
+      const fieldAccess = await authorizeInvoiceLineFields(
+        ctx,
+        deps.audit,
+        companyResource(
+          "invoice",
+          FinancePolicyActions.InvoiceCreate,
+          scope.value,
+          null,
+          {
+            organizationId: p.organizationId ?? null,
+            attributes: {
+              customerId: p.customerId ?? null,
+              billToAddressId: p.billToAddressId ?? null,
+            },
+          },
+        ).resource,
+        p.lines,
+      );
+      if (!fieldAccess.ok) return fieldAccess;
+
       const wf = workflowOrFail(ctx);
       if (!wf.ok) return wf;
-
-      const p = command.payload;
 
       const taxRules = await invokeFinanceRules(ctx, FinanceRuleSetCodes.Tax, {
         companyId: scope.value,

@@ -27,6 +27,7 @@ import {
   recordCreditAdjustmentCommandValidator,
   recordPaymentCommandValidator,
 } from "../validators/validators.js";
+import { authorizePaymentFields } from "../security/field-security.js";
 import type { FinanceHandlerDeps } from "./deps.js";
 import {
   approvalOrNull,
@@ -81,6 +82,26 @@ export function createRecordPaymentHandler(
       if (!scope.ok) return scope;
 
       const p = command.payload;
+      const fieldAccess = await authorizePaymentFields(
+        ctx,
+        deps.audit,
+        companyResource(
+          "payment",
+          FinancePolicyActions.PaymentRecord,
+          scope.value,
+          null,
+          {
+            organizationId: p.payerOrganizationId ?? null,
+            attributes: {
+              invoiceId: p.invoiceId ?? null,
+              payerCustomerId: p.payerCustomerId ?? null,
+            },
+          },
+        ).resource,
+        p,
+      );
+      if (!fieldAccess.ok) return fieldAccess;
+
       const amount = toMoney(p.amount);
       if (!amount.ok) return amount;
 

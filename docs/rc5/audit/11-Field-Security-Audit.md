@@ -1,5 +1,16 @@
 # RC5 Field-Level Security Audit
 
+> **Post-audit correction (2026-07-18, RC5.6):** The findings below describe
+> the pre-RC5.6 baseline. RC5.6 now provides a shared Policy-driven projection
+> and patch contract, applies it to live finance invoice/payment/credit DTOs,
+> records sensitive field decisions without values, and adds presentation-only
+> field metadata. Finance/KYC deny, masking, restricted-write, audit, and
+> fail-closed tests live in
+> `packages/api/src/authorization/field-authorization.test.ts`. No RBAC catalog,
+> role seed, route, session, or Policy Engine algorithm changed. See
+> `docs/release/RC5.6-field-level-security-audit.md` for the independent
+> post-implementation audit.
+
 ## 1. Enforcement truth
 
 No permission-aware DTO mapper, serializer redaction, field masking policy, field-write allowlist by role, or Policy-driven response projection was found. Policy currently decides an action on a record resource; an allowed query returns its normal result shape.
