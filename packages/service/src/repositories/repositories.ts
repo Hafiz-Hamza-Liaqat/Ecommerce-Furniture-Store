@@ -44,6 +44,14 @@ export interface WorkOrderRepository {
     serviceRequestId: string,
     page?: PageRequest,
   ): Promise<Result<Page<WorkOrder>, PlatformError>>;
+  /**
+   * RC7.2g — company-scoped bounded candidates for ListWorkOrder.
+   * Repository contract completion for RC7.1 authorized-list; not a new capability.
+   */
+  listByCompany(
+    companyId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<WorkOrder>, PlatformError>>;
 }
 
 export interface AppointmentRepository {
@@ -64,4 +72,12 @@ export interface TechnicianAssignmentRepository {
   save(
     assignment: TechnicianAssignmentReference,
   ): Promise<Result<void, PlatformError>>;
+  /**
+   * RC7.2g — company-scoped bounded candidates for ListTechnicianAssignment.
+   * Repository contract completion for RC7.1 authorized-list; not a new capability.
+   */
+  listByCompany(
+    companyId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<TechnicianAssignmentReference>, PlatformError>>;
 }

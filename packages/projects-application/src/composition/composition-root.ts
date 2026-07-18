@@ -31,6 +31,9 @@ import {
   createGetTaskHandler,
   createGetTeamHandler,
   createGetWorkItemHandler,
+  createListMilestoneHandler,
+  createListProjectHandler,
+  createListTaskHandler,
   createReleaseResourceHandler,
   createUpdateMilestoneHandler,
   createUpdateProjectHandler,
@@ -99,6 +102,9 @@ export function createProjectApplication(
   handlers.registerQuery(createGetScheduleHandler(deps));
   handlers.registerQuery(createGetWorkItemHandler(deps));
   handlers.registerQuery(createGetProjectSummaryHandler(deps));
+  handlers.registerQuery(createListProjectHandler(deps));
+  handlers.registerQuery(createListTaskHandler(deps));
+  handlers.registerQuery(createListMilestoneHandler(deps));
 
   return { handlers, deps };
 }

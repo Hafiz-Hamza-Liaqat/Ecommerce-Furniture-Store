@@ -4,7 +4,12 @@
  */
 
 import type { Command, Query, Validator } from "@afh/shared-kernel";
-import { validationFail, validationOk } from "@afh/shared-kernel";
+import {
+  validateFilterAllowList,
+  validateSortAllowList,
+  validationFail,
+  validationOk,
+} from "@afh/shared-kernel";
 import type {
   AssignTechnicianPayload,
   CloseServiceRequestPayload,
@@ -24,7 +29,21 @@ import type {
   GetServiceSummaryPayload,
   GetTechnicianAssignmentPayload,
   GetWorkOrderPayload,
+  ListAppointmentPayload,
+  ListServiceRequestPayload,
+  ListTechnicianAssignmentPayload,
+  ListWorkOrderPayload,
 } from "../queries/queries.js";
+import {
+  APPOINTMENT_FILTER_FIELDS,
+  APPOINTMENT_SORT_FIELDS,
+  SERVICE_REQUEST_FILTER_FIELDS,
+  SERVICE_REQUEST_SORT_FIELDS,
+  TECHNICIAN_ASSIGNMENT_FILTER_FIELDS,
+  TECHNICIAN_ASSIGNMENT_SORT_FIELDS,
+  WORK_ORDER_FILTER_FIELDS,
+  WORK_ORDER_SORT_FIELDS,
+} from "../list-fields.js";
 
 function requireField(
   field: string,
@@ -310,6 +329,105 @@ export const getServiceSummaryQueryValidator: Validator<
     return (
       requireField("companyId", p.companyId) ??
       requireField("serviceRequestId", p.serviceRequestId) ??
+      validationOk()
+    );
+  },
+};
+
+function listCriteriaViolations(
+  payload: ListServiceRequestPayload,
+  sortFields: ReadonlySet<string>,
+  filterFields: ReadonlySet<string>,
+): ReturnType<typeof validationFail> | null {
+  const sort = validateSortAllowList(payload.criteria?.sort, sortFields);
+  if (!sort.ok) {
+    return validationFail([
+      {
+        field: "criteria.sort",
+        code: sort.error.code,
+        message: sort.error.message,
+      },
+    ]);
+  }
+  const filters = validateFilterAllowList(
+    payload.criteria?.filters,
+    filterFields,
+  );
+  if (!filters.ok) {
+    return validationFail([
+      {
+        field: "criteria.filters",
+        code: filters.error.code,
+        message: filters.error.message,
+      },
+    ]);
+  }
+  return null;
+}
+
+export const listServiceRequestQueryValidator: Validator<
+  Query<ListServiceRequestPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        SERVICE_REQUEST_SORT_FIELDS,
+        SERVICE_REQUEST_FILTER_FIELDS,
+      ) ??
+      validationOk()
+    );
+  },
+};
+
+export const listWorkOrderQueryValidator: Validator<
+  Query<ListWorkOrderPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        WORK_ORDER_SORT_FIELDS,
+        WORK_ORDER_FILTER_FIELDS,
+      ) ??
+      validationOk()
+    );
+  },
+};
+
+export const listAppointmentQueryValidator: Validator<
+  Query<ListAppointmentPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        APPOINTMENT_SORT_FIELDS,
+        APPOINTMENT_FILTER_FIELDS,
+      ) ??
+      validationOk()
+    );
+  },
+};
+
+export const listTechnicianAssignmentQueryValidator: Validator<
+  Query<ListTechnicianAssignmentPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        TECHNICIAN_ASSIGNMENT_SORT_FIELDS,
+        TECHNICIAN_ASSIGNMENT_FILTER_FIELDS,
+      ) ??
       validationOk()
     );
   },

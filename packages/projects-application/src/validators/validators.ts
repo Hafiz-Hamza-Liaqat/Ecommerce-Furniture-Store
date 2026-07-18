@@ -4,7 +4,12 @@
  */
 
 import type { Command, Query, Validator } from "@afh/shared-kernel";
-import { validationFail, validationOk } from "@afh/shared-kernel";
+import {
+  validateFilterAllowList,
+  validateSortAllowList,
+  validationFail,
+  validationOk,
+} from "@afh/shared-kernel";
 import type {
   ArchiveProjectPayload,
   AssignResourcePayload,
@@ -28,7 +33,18 @@ import type {
   GetTaskPayload,
   GetTeamPayload,
   GetWorkItemPayload,
+  ListMilestonePayload,
+  ListProjectPayload,
+  ListTaskPayload,
 } from "../queries/queries.js";
+import {
+  MILESTONE_FILTER_FIELDS,
+  MILESTONE_SORT_FIELDS,
+  PROJECT_FILTER_FIELDS,
+  PROJECT_SORT_FIELDS,
+  TASK_FILTER_FIELDS,
+  TASK_SORT_FIELDS,
+} from "../list-fields.js";
 
 function requireField(
   field: string,
@@ -314,6 +330,77 @@ export const getProjectSummaryQueryValidator: Validator<
     return (
       requireField("companyId", p.companyId) ??
       requireField("projectId", p.projectId) ??
+      validationOk()
+    );
+  },
+};
+
+function listCriteriaViolations(
+  payload: ListProjectPayload | ListTaskPayload | ListMilestonePayload,
+  sortFields: ReadonlySet<string>,
+  filterFields: ReadonlySet<string>,
+): ReturnType<typeof validationFail> | null {
+  const sort = validateSortAllowList(payload.criteria?.sort, sortFields);
+  if (!sort.ok) {
+    return validationFail([
+      {
+        field: "criteria.sort",
+        code: sort.error.code,
+        message: sort.error.message,
+      },
+    ]);
+  }
+  const filters = validateFilterAllowList(
+    payload.criteria?.filters,
+    filterFields,
+  );
+  if (!filters.ok) {
+    return validationFail([
+      {
+        field: "criteria.filters",
+        code: filters.error.code,
+        message: filters.error.message,
+      },
+    ]);
+  }
+  return null;
+}
+
+export const listProjectQueryValidator: Validator<Query<ListProjectPayload>> =
+  {
+    validate(query) {
+      const p = query.payload;
+      return (
+        requireField("companyId", p.companyId) ??
+        listCriteriaViolations(p, PROJECT_SORT_FIELDS, PROJECT_FILTER_FIELDS) ??
+        validationOk()
+      );
+    },
+  };
+
+export const listTaskQueryValidator: Validator<Query<ListTaskPayload>> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, TASK_SORT_FIELDS, TASK_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listMilestoneQueryValidator: Validator<
+  Query<ListMilestonePayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        MILESTONE_SORT_FIELDS,
+        MILESTONE_FILTER_FIELDS,
+      ) ??
       validationOk()
     );
   },

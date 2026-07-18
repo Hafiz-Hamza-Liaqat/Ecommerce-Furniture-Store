@@ -148,6 +148,7 @@ export function createSqlActivityRepository(
       });
       return ok(toPage(filtered, pageBounds(page)));
     },
+    listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };
 }
 

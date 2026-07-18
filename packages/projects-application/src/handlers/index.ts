@@ -27,3 +27,8 @@ export {
   createGetWorkItemHandler,
   createGetProjectSummaryHandler,
 } from "./query-handlers.js";
+export {
+  createListProjectHandler,
+  createListTaskHandler,
+  createListMilestoneHandler,
+} from "./list-handlers.js";

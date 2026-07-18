@@ -75,6 +75,7 @@ export function createSqlWorkOrderRepository(
       lines.listByParent(companyId, workOrderId),
     listByServiceRequest: (companyId, serviceRequestId, page) =>
       docs.listByParentScoped(companyId, serviceRequestId, page),
+    listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };
 }
 
@@ -113,5 +114,15 @@ export function createSqlTechnicianAssignmentRepository(
     },
     save: (assignment) =>
       docs.save(toAssignmentDoc(assignment), assignment.workOrderId),
+    listByCompany: async (companyId, page) => {
+      const listed = await docs.listByCompany(companyId, page);
+      if (!listed.ok) return listed;
+      return ok({
+        ...listed.value,
+        items: listed.value.items.map(
+          (doc) => fromAssignmentDoc(doc) as TechnicianAssignmentReference,
+        ),
+      });
+    },
   };
 }

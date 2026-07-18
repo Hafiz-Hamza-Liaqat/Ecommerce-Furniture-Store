@@ -24,6 +24,10 @@ import {
   createGetServiceSummaryHandler,
   createGetTechnicianAssignmentHandler,
   createGetWorkOrderHandler,
+  createListAppointmentHandler,
+  createListServiceRequestHandler,
+  createListTechnicianAssignmentHandler,
+  createListWorkOrderHandler,
   createReassignTechnicianHandler,
   createRescheduleAppointmentHandler,
   createScheduleAppointmentHandler,
@@ -82,6 +86,10 @@ export function createServiceApplication(
   handlers.registerQuery(createGetTechnicianAssignmentHandler(deps));
   handlers.registerQuery(createGetServiceHistoryHandler(deps));
   handlers.registerQuery(createGetServiceSummaryHandler(deps));
+  handlers.registerQuery(createListServiceRequestHandler(deps));
+  handlers.registerQuery(createListWorkOrderHandler(deps));
+  handlers.registerQuery(createListAppointmentHandler(deps));
+  handlers.registerQuery(createListTechnicianAssignmentHandler(deps));
 
   return { handlers, deps };
 }

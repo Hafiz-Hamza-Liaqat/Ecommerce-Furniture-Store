@@ -22,6 +22,10 @@ export const ServiceQueryTypes = {
   GetTechnicianAssignment: "service.GetTechnicianAssignment",
   GetServiceHistory: "service.GetServiceHistory",
   GetServiceSummary: "service.GetServiceSummary",
+  ListServiceRequest: "service.ListServiceRequest",
+  ListWorkOrder: "service.ListWorkOrder",
+  ListAppointment: "service.ListAppointment",
+  ListTechnicianAssignment: "service.ListTechnicianAssignment",
 } as const;
 
 export const ServiceWorkflowCodes = {

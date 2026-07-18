@@ -68,6 +68,14 @@ export interface TaskRepository {
     companyId: string,
     parentTaskId: string,
   ): Promise<Result<readonly Task[], PlatformError>>;
+  /**
+   * RC7.2f — company-scoped bounded candidates for ListTask.
+   * Repository contract completion for RC7.1 authorized-list; not a new capability.
+   */
+  listByCompany(
+    companyId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<Task>, PlatformError>>;
 }
 
 export interface MilestoneRepository {
@@ -78,6 +86,14 @@ export interface MilestoneRepository {
   listByProject(
     companyId: string,
     projectId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<Milestone>, PlatformError>>;
+  /**
+   * RC7.2f — company-scoped bounded candidates for ListMilestone.
+   * Repository contract completion for RC7.1 authorized-list; not a new capability.
+   */
+  listByCompany(
+    companyId: string,
     page?: PageRequest,
   ): Promise<Result<Page<Milestone>, PlatformError>>;
 }

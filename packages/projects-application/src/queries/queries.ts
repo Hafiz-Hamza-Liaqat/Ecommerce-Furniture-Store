@@ -2,8 +2,13 @@
  * Projects application queries — no transport DTOs.
  */
 
-import type { PageRequest } from "@afh/shared-kernel";
+import type { ListQueryRequest, PageRequest } from "@afh/shared-kernel";
 import { ProjectsQueryTypes } from "../constants.js";
+
+/** RC7.2f — shared List* envelope (companyId + optional criteria / q). */
+export type ListProjectPayload = ListQueryRequest;
+export type ListTaskPayload = ListQueryRequest;
+export type ListMilestonePayload = ListQueryRequest;
 
 export type GetProjectPayload = {
   readonly companyId: string;

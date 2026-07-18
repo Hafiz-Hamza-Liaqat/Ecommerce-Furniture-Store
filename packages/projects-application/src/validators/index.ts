@@ -19,4 +19,7 @@ export {
   getScheduleQueryValidator,
   getWorkItemQueryValidator,
   getProjectSummaryQueryValidator,
+  listProjectQueryValidator,
+  listTaskQueryValidator,
+  listMilestoneQueryValidator,
 } from "./validators.js";

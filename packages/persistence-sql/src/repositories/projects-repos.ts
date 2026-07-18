@@ -92,6 +92,7 @@ export function createSqlTaskRepository(
       if (!listed.ok) return listed;
       return ok(listed.value.items.filter((t) => t.parentTaskId === parentTaskId));
     },
+    listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };
 }
 
@@ -109,6 +110,7 @@ export function createSqlMilestoneRepository(
     save: (milestone) => docs.save(milestone, milestone.projectId),
     listByProject: (companyId, projectId, page) =>
       docs.listByParentScoped(companyId, projectId, page),
+    listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };
 }
 

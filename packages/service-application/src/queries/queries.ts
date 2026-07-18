@@ -2,7 +2,7 @@
  * Service application queries — no transport DTOs.
  */
 
-import type { PageRequest } from "@afh/shared-kernel";
+import type { ListQueryRequest, PageRequest } from "@afh/shared-kernel";
 import type {
   Appointment,
   ServiceRequest,
@@ -10,6 +10,12 @@ import type {
   WorkOrder,
 } from "@afh/service";
 import { ServiceQueryTypes } from "../constants.js";
+
+/** RC7.2g — shared List* envelope (companyId + optional criteria / q). */
+export type ListServiceRequestPayload = ListQueryRequest;
+export type ListWorkOrderPayload = ListQueryRequest;
+export type ListAppointmentPayload = ListQueryRequest;
+export type ListTechnicianAssignmentPayload = ListQueryRequest;
 
 export type GetServiceRequestPayload = {
   readonly companyId: string;

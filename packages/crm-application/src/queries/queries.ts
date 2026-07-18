@@ -2,9 +2,16 @@
  * CRM application queries — no transport DTOs.
  */
 
-import type { PageRequest } from "@afh/shared-kernel";
+import type { ListQueryRequest, PageRequest } from "@afh/shared-kernel";
 import type { LeadStatus } from "@afh/crm";
 import { CrmQueryTypes } from "../constants.js";
+
+/** RC7.2e — shared List* envelope (companyId + optional criteria / q). */
+export type ListLeadPayload = ListQueryRequest;
+export type ListContactPayload = ListQueryRequest;
+export type ListAccountPayload = ListQueryRequest;
+export type ListActivityPayload = ListQueryRequest;
+export type ListCampaignPayload = ListQueryRequest;
 
 export type GetLeadPayload = {
   readonly companyId: string;

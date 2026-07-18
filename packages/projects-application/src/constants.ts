@@ -26,6 +26,9 @@ export const ProjectsQueryTypes = {
   GetSchedule: "projects.GetSchedule",
   GetWorkItem: "projects.GetWorkItem",
   GetProjectSummary: "projects.GetProjectSummary",
+  ListProject: "projects.ListProject",
+  ListTask: "projects.ListTask",
+  ListMilestone: "projects.ListMilestone",
 } as const;
 
 export const ProjectsWorkflowCodes = {

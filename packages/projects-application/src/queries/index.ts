@@ -9,4 +9,7 @@ export type {
   GetWorkItemPayload,
   GetProjectSummaryPayload,
   ProjectSummary,
+  ListProjectPayload,
+  ListTaskPayload,
+  ListMilestonePayload,
 } from "./queries.js";

@@ -26,3 +26,10 @@ export {
   createGetCampaignHandler,
   createGetCrmSummaryHandler,
 } from "./query-handlers.js";
+export {
+  createListLeadHandler,
+  createListContactHandler,
+  createListAccountHandler,
+  createListActivityHandler,
+  createListCampaignHandler,
+} from "./list-handlers.js";

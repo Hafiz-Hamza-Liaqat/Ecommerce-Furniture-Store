@@ -66,6 +66,14 @@ export interface ActivityRepository {
     subjectId: string,
     page?: PageRequest,
   ): Promise<Result<Page<Activity>, PlatformError>>;
+  /**
+   * RC7.2e — company-scoped bounded candidates for ListActivity.
+   * Repository contract completion for RC7.1 authorized-list; not a new capability.
+   */
+  listByCompany(
+    companyId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<Activity>, PlatformError>>;
 }
 
 export interface CampaignRepository {

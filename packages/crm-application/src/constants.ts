@@ -25,6 +25,11 @@ export const CrmQueryTypes = {
   GetCommunication: "crm.GetCommunication",
   GetCampaign: "crm.GetCampaign",
   GetCrmSummary: "crm.GetCrmSummary",
+  ListLead: "crm.ListLead",
+  ListContact: "crm.ListContact",
+  ListAccount: "crm.ListAccount",
+  ListActivity: "crm.ListActivity",
+  ListCampaign: "crm.ListCampaign",
 } as const;
 
 export const CrmWorkflowCodes = {

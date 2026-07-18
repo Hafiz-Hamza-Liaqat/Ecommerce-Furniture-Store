@@ -4,7 +4,12 @@
  */
 
 import type { Command, Query, Validator } from "@afh/shared-kernel";
-import { validationFail, validationOk } from "@afh/shared-kernel";
+import {
+  validateFilterAllowList,
+  validateSortAllowList,
+  validationFail,
+  validationOk,
+} from "@afh/shared-kernel";
 import type {
   ConvertLeadPayload,
   CreateAccountPayload,
@@ -27,7 +32,24 @@ import type {
   GetContactPayload,
   GetCrmSummaryPayload,
   GetLeadPayload,
+  ListAccountPayload,
+  ListActivityPayload,
+  ListCampaignPayload,
+  ListContactPayload,
+  ListLeadPayload,
 } from "../queries/queries.js";
+import {
+  ACCOUNT_FILTER_FIELDS,
+  ACCOUNT_SORT_FIELDS,
+  ACTIVITY_FILTER_FIELDS,
+  ACTIVITY_SORT_FIELDS,
+  CAMPAIGN_FILTER_FIELDS,
+  CAMPAIGN_SORT_FIELDS,
+  CONTACT_FILTER_FIELDS,
+  CONTACT_SORT_FIELDS,
+  LEAD_FILTER_FIELDS,
+  LEAD_SORT_FIELDS,
+} from "../list-fields.js";
 
 function requireField(
   field: string,
@@ -304,6 +326,108 @@ export const getCrmSummaryQueryValidator: Validator<
   validate(query) {
     return (
       requireField("companyId", query.payload.companyId) ?? validationOk()
+    );
+  },
+};
+
+function listCriteriaViolations(
+  payload: ListLeadPayload,
+  sortFields: ReadonlySet<string>,
+  filterFields: ReadonlySet<string>,
+): ReturnType<typeof validationFail> | null {
+  const sort = validateSortAllowList(payload.criteria?.sort, sortFields);
+  if (!sort.ok) {
+    return validationFail([
+      {
+        field: "criteria.sort",
+        code: sort.error.code,
+        message: sort.error.message,
+      },
+    ]);
+  }
+  const filters = validateFilterAllowList(
+    payload.criteria?.filters,
+    filterFields,
+  );
+  if (!filters.ok) {
+    return validationFail([
+      {
+        field: "criteria.filters",
+        code: filters.error.code,
+        message: filters.error.message,
+      },
+    ]);
+  }
+  return null;
+}
+
+export const listLeadQueryValidator: Validator<Query<ListLeadPayload>> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, LEAD_SORT_FIELDS, LEAD_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listContactQueryValidator: Validator<
+  Query<ListContactPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, CONTACT_SORT_FIELDS, CONTACT_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listAccountQueryValidator: Validator<
+  Query<ListAccountPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, ACCOUNT_SORT_FIELDS, ACCOUNT_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listActivityQueryValidator: Validator<
+  Query<ListActivityPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        ACTIVITY_SORT_FIELDS,
+        ACTIVITY_FILTER_FIELDS,
+      ) ??
+      validationOk()
+    );
+  },
+};
+
+export const listCampaignQueryValidator: Validator<
+  Query<ListCampaignPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        CAMPAIGN_SORT_FIELDS,
+        CAMPAIGN_FILTER_FIELDS,
+      ) ??
+      validationOk()
     );
   },
 };

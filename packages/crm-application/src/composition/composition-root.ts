@@ -27,6 +27,11 @@ import {
   createGetContactHandler,
   createGetCrmSummaryHandler,
   createGetLeadHandler,
+  createListAccountHandler,
+  createListActivityHandler,
+  createListCampaignHandler,
+  createListContactHandler,
+  createListLeadHandler,
   createLogActivityHandler,
   createQualifyLeadHandler,
   createRecordCommunicationHandler,
@@ -94,6 +99,11 @@ export function createCrmApplication(
   handlers.registerQuery(createGetCommunicationHandler(deps));
   handlers.registerQuery(createGetCampaignHandler(deps));
   handlers.registerQuery(createGetCrmSummaryHandler(deps));
+  handlers.registerQuery(createListLeadHandler(deps));
+  handlers.registerQuery(createListContactHandler(deps));
+  handlers.registerQuery(createListAccountHandler(deps));
+  handlers.registerQuery(createListActivityHandler(deps));
+  handlers.registerQuery(createListCampaignHandler(deps));
 
   return { handlers, deps };
 }

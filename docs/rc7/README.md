@@ -3,7 +3,7 @@
 - **Version:** 1.0
 - **Created:** 2026-07-18
 - **Last Updated:** 2026-07-18
-- **Status:** RC7.0–RC7.2c committed; **RC7.2d Finance List* implemented — awaiting review (not committed). Do not start RC7.2e.**
+- **Status:** RC7.0–RC7.2d committed; **RC7.2e–g CRM/Projects/Service List* implemented — awaiting review (not committed). Do not start RC7.3.**
 - **Depends on:** RC5 (authorization), RC6 (workflow/approval) — both release-ready (`rc6` / `v0.6.0`).
 - **Canonical product scope:** `docs/productization/01-productization-roadmap.md` §RC7
 - **V1 freeze:** [`03-V1-Scope-Freeze.md`](./03-V1-Scope-Freeze.md) — **single source of truth** for Included / Excluded / Deferred / Future. No RC7 engineering slice may expand Included scope without an approved amendment to that document.
@@ -67,15 +67,17 @@ RC7 is complete only when:
 3. **RC7.2a** — Sales `List*` — committed
 4. **RC7.2b** — Procurement `List*` — committed
 5. **RC7.2c** — Inventory `List*` — committed
-6. **RC7.2d** — Finance `List*` — **implementation complete; awaiting review**
-7. **RC7.2e–g** — `List*` per remaining wired ERP modules — **not started**
-8. **RC7.3** — Production UI de-fixturing — **not started**
-9. **RC7.4** — Validation, concurrency, audit, scope completion
-10. **RC7.5** — DAM foundation (binary/object where V1 claims)
-11. **RC7.6** — Attachments, notes, comments, activity
-12. **RC7.7** — Import, export, bulk (Policy + audit + company + concurrency)
-13. **RC7.8 and later** — Manufacturing, HR, CMS, Notifications, Reporting, Search (V1 subsets only; each module begins with its own planning review before implementation if the approved V1 freeze changes)
-14. Final RC7 verification, audit, checklist, tag (after approval)
+6. **RC7.2d** — Finance `List*` — committed
+7. **RC7.2e** — CRM `List*` — **implementation complete; awaiting review**
+8. **RC7.2f** — Projects `List*` — **implementation complete; awaiting review**
+9. **RC7.2g** — Service `List*` — **implementation complete; awaiting review**
+10. **RC7.3** — Production UI de-fixturing — **not started**
+11. **RC7.4** — Validation, concurrency, audit, scope completion
+12. **RC7.5** — DAM foundation (binary/object where V1 claims)
+13. **RC7.6** — Attachments, notes, comments, activity
+14. **RC7.7** — Import, export, bulk (Policy + audit + company + concurrency)
+15. **RC7.8 and later** — Manufacturing, HR, CMS, Notifications, Reporting, Search (V1 subsets only; each module begins with its own planning review before implementation if the approved V1 freeze changes)
+16. Final RC7 verification, audit, checklist, tag (after approval)
 
 Detail: [`05-Slice-Roadmap.md`](./05-Slice-Roadmap.md).
 
@@ -89,15 +91,15 @@ See **Definition of Done** above for the one-page finish line.
 
 | Slice | Title | Status |
 |---|---|---|
-| RC7.0 | V1 Product Freeze & Planning | Committed (`9762047`) — documentation only |
-| RC7.1 | Shared List Foundation | Implemented (pending review/commit) — ADR D56 |
-| RC7.2a | Sales List | Not started |
-| RC7.2b | Procurement List | Not started |
-| RC7.2c | Inventory List | Not started |
-| RC7.2d | Finance List | Not started |
-| RC7.2e | CRM List | Not started |
-| RC7.2f | Projects List | Not started |
-| RC7.2g | Service List | Not started |
+| RC7.0 | V1 Product Freeze & Planning | Committed |
+| RC7.1 | Shared List Foundation | Committed (`1fb1a26`) |
+| RC7.2a | Sales List | Committed (`2e811cf`) |
+| RC7.2b | Procurement List | Committed (`d01c880`) |
+| RC7.2c | Inventory List | Committed (`7ee1a56`) |
+| RC7.2d | Finance List | Committed (`6e8f48b`) |
+| RC7.2e | CRM List | Implemented — awaiting review (not committed) |
+| RC7.2f | Projects List | Implemented — awaiting review (not committed) |
+| RC7.2g | Service List | Implemented — awaiting review (not committed) |
 | RC7.3 | Production UI de-fixturing | Not started |
 | RC7.4 | Validation / concurrency / audit / scope | Not started |
 | RC7.5 | DAM foundation | Not started |
