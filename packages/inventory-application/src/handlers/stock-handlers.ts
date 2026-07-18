@@ -1,5 +1,12 @@
 import type { CommandHandler } from "@afh/application";
-import { ConflictError, fail, ok } from "@afh/shared-kernel";
+import { authorizationDenied } from "@afh/application";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+  fail,
+  ok,
+} from "@afh/shared-kernel";
 import { InventoryEventTypes } from "@afh/inventory";
 import {
   InventoryApprovalTypes,
@@ -398,6 +405,14 @@ export function createReserveStockHandler(
       });
       if (!position.ok) return position;
 
+      if (position.value.available < p.quantity) {
+        return fail(
+          new ValidationError("Insufficient available stock to reserve", {
+            code: "insufficient_stock",
+          }),
+        );
+      }
+
       const persisted = await persistMovementAndLedger(deps, ctx, {
         companyId: scope.value,
         kind: "reservation",
@@ -617,8 +632,8 @@ export function createTransferStockHandler(
           id: p.toWarehouseId,
         }),
       );
-      // Single-branch PolicyResource: source branch drives the scope check;
-      // destination branch is exposed as an attribute (ADR D45 deferral).
+      // Single-branch PolicyResource: source branch drives authorize(); RC7.4
+      // destination branch is evaluated again in handle() before mutations.
       return companyResource(
         "stock",
         InventoryPolicyActions.StockTransfer,
@@ -700,6 +715,64 @@ export function createTransferStockHandler(
         });
       }
 
+      const fromWarehouseResult = await deps.warehouses.findById({
+        companyId: scope.value,
+        id: p.fromWarehouseId,
+      });
+      if (!fromWarehouseResult.ok) return fromWarehouseResult;
+      if (!fromWarehouseResult.value) {
+        return fail(
+          new NotFoundError("Source warehouse not found", {
+            code: "warehouse_not_found",
+          }),
+        );
+      }
+
+      const toWarehouseResult = await deps.warehouses.findById({
+        companyId: scope.value,
+        id: p.toWarehouseId,
+      });
+      if (!toWarehouseResult.ok) return toWarehouseResult;
+      if (!toWarehouseResult.value) {
+        return fail(
+          new NotFoundError("Destination warehouse not found", {
+            code: "warehouse_not_found",
+          }),
+        );
+      }
+
+      const fromWarehouse = fromWarehouseResult.value;
+      const toWarehouse = toWarehouseResult.value;
+
+      const destDecision = await ctx.policyEngine.evaluate(
+        ctx.principal!,
+        InventoryPolicyActions.StockTransfer,
+        {
+          type: "stock",
+          id: null,
+          companyId: scope.value,
+          ownerUserId: null,
+          organizationId: null,
+          branchId: toWarehouse.branchId ?? null,
+          attributes: {
+            fromBranchId: fromWarehouse.branchId ?? null,
+            toBranchId: toWarehouse.branchId ?? null,
+            inventoryItemId: p.inventoryItemId ?? null,
+            fromWarehouseId: p.fromWarehouseId ?? null,
+            toWarehouseId: p.toWarehouseId ?? null,
+            fromLocationId: p.fromLocationId ?? null,
+            toLocationId: p.toLocationId ?? null,
+            subjectId: p.subjectId ?? null,
+          },
+        },
+        { correlationId: ctx.correlationId },
+      );
+      if (!destDecision.allowed) {
+        return fail(
+          authorizationDenied(destDecision.reasonCode, destDecision.message),
+        );
+      }
+
       if (p.workflowInstanceId && p.transitionCode) {
         const wf = workflowOrFail(ctx);
         if (!wf.ok) return wf;
@@ -726,6 +799,14 @@ export function createTransferStockHandler(
         now,
       });
       if (!fromPosition.ok) return fromPosition;
+
+      if (fromPosition.value.available < p.quantity) {
+        return fail(
+          new ValidationError("Insufficient available stock to transfer", {
+            code: "insufficient_stock",
+          }),
+        );
+      }
 
       const toPosition = await loadOrCreatePosition(deps, {
         companyId: scope.value,

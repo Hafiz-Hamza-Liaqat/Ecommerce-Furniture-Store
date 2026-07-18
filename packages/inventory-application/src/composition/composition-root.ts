@@ -3,7 +3,13 @@
  * Registers handlers into the Phase 5B HandlerRegistry. No HTTP/APIs.
  */
 
-import { HandlerRegistry } from "@afh/application";
+import {
+  HandlerRegistry,
+  createCollaborationAttachmentHandlers,
+  createCollaborationNoteHandlers,
+  type EntityAttachmentLinkRepository,
+  type EntityNoteRepository,
+} from "@afh/application";
 import type { OutboxStore } from "@afh/persistence";
 import type { SecurityAuditService } from "@afh/identity";
 import type {
@@ -39,6 +45,9 @@ import {
   createUpdateInventoryItemHandler,
 } from "../handlers/index.js";
 import type { InventoryHandlerDeps } from "../handlers/deps.js";
+import {
+  InventoryPolicyActions,
+} from "../constants.js";
 
 export type CreateInventoryApplicationOptions = {
   readonly items: InventoryRepository;
@@ -49,6 +58,8 @@ export type CreateInventoryApplicationOptions = {
   readonly ledger: LedgerRepository;
   readonly batches: BatchRepository;
   readonly serials: SerialNumberRepository;
+  readonly notes?: EntityNoteRepository;
+  readonly attachmentLinks?: EntityAttachmentLinkRepository;
   readonly outbox: OutboxStore;
   readonly audit: SecurityAuditService;
   readonly handlers?: HandlerRegistry;
@@ -102,6 +113,34 @@ export function createInventoryApplication(
   handlers.registerQuery(createListInventoryItemHandler(deps));
   handlers.registerQuery(createListWarehouseHandler(deps));
   handlers.registerQuery(createListStockHandler(deps));
+
+  if (options.notes && options.attachmentLinks) {
+    const collaborationBinding = {
+      parentResourceType: "inventory_item",
+      parentReadAction: InventoryPolicyActions.ItemRead,
+      parentUpdateAction: InventoryPolicyActions.ItemUpdate,
+    } as const;
+
+    const noteHandlers = createCollaborationNoteHandlers({
+      notes: options.notes,
+      audit: options.audit,
+      binding: collaborationBinding,
+      allowedEntityType: "inventory.item",
+    });
+    handlers.registerCommand(noteHandlers.create);
+    handlers.registerCommand(noteHandlers.delete);
+    handlers.registerQuery(noteHandlers.list);
+
+    const attachmentHandlers = createCollaborationAttachmentHandlers({
+      attachmentLinks: options.attachmentLinks,
+      audit: options.audit,
+      binding: collaborationBinding,
+      allowedEntityType: "inventory.item",
+    });
+    handlers.registerCommand(attachmentHandlers.attach);
+    handlers.registerCommand(attachmentHandlers.detach);
+    handlers.registerQuery(attachmentHandlers.list);
+  }
 
   return { handlers, deps };
 }

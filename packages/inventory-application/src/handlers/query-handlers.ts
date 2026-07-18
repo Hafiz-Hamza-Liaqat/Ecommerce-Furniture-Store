@@ -46,7 +46,7 @@ import {
 
 export function createGetInventoryItemHandler(
   deps: InventoryHandlerDeps,
-): QueryHandler<GetInventoryItemPayload, InventoryItem> {
+): QueryHandler<GetInventoryItemPayload, InventoryItem & { version: number }> {
   return {
     queryType: InventoryQueryTypes.GetInventoryItem,
     authorize(query) {
@@ -63,7 +63,7 @@ export function createGetInventoryItemHandler(
     async handle(query, ctx) {
       const scope = requireCompanyId(ctx, query.payload.companyId);
       if (!scope.ok) return scope;
-      const found = await deps.items.findById({
+      const found = await deps.items.findByIdWithVersion({
         companyId: scope.value,
         id: query.payload.inventoryItemId,
       });
@@ -75,7 +75,7 @@ export function createGetInventoryItemHandler(
           }),
         );
       }
-      return ok(found.value);
+      return ok({ ...found.value.entity, version: found.value.version });
     },
   };
 }

@@ -18,8 +18,12 @@ import type {
   TransactionState,
 } from "@afh/persistence";
 
+export type SqlRunResult = {
+  readonly changes: number;
+};
+
 export type SqlExec = {
-  run(sql: string, params?: readonly unknown[]): void;
+  run(sql: string, params?: readonly unknown[]): SqlRunResult;
   get<T extends Record<string, unknown>>(
     sql: string,
     params?: readonly unknown[],
@@ -127,8 +131,9 @@ export class SqliteDatabaseClient implements DatabaseClient, SqlExec {
     this.#db.exec(sql);
   }
 
-  run(sql: string, params: readonly unknown[] = []): void {
-    this.#db.prepare(sql).run(...(params as never[]));
+  run(sql: string, params: readonly unknown[] = []): SqlRunResult {
+    const result = this.#db.prepare(sql).run(...(params as never[]));
+    return { changes: Number(result.changes ?? 0) };
   }
 
   get<T extends Record<string, unknown>>(

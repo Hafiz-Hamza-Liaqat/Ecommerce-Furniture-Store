@@ -26,7 +26,15 @@ export interface InventoryRepository {
   findById(
     key: CompanyScopedId,
   ): Promise<Result<InventoryItem | null, PlatformError>>;
-  save(item: InventoryItem): Promise<Result<void, PlatformError>>;
+  findByIdWithVersion(
+    key: CompanyScopedId,
+  ): Promise<
+    Result<{ entity: InventoryItem; version: number } | null, PlatformError>
+  >;
+  save(
+    item: InventoryItem,
+    options?: { readonly expectedVersion?: number },
+  ): Promise<Result<void, PlatformError>>;
   remove(key: CompanyScopedId): Promise<Result<void, PlatformError>>;
   listByCompany(
     companyId: string,

@@ -5,6 +5,7 @@
 
 import {
   ConflictError,
+  ConcurrencyError,
   fail,
   isOffsetPagination,
   ok,
@@ -34,6 +35,17 @@ type AggRow = {
 export type CompanyScopedId = {
   readonly companyId: string;
   readonly id: string;
+};
+
+export type DocumentWithVersion<T> = {
+  readonly entity: T;
+  readonly version: number;
+};
+
+export type SaveDocumentOptions = {
+  readonly parentId?: string | null;
+  /** When set, fail closed if the persisted version does not match (RC7.4 OCC). */
+  readonly expectedVersion?: number;
 };
 
 function pageBounds(page?: PageRequest): { limit: number; offset: number; page: number; pageSize: number } {
@@ -66,21 +78,52 @@ export class SqlDocumentRepository<
   async findById(
     key: CompanyScopedId,
   ): Promise<Result<T | null, PlatformError>> {
+    const found = await this.findByIdWithVersion(key);
+    if (!found.ok) return found;
+    return ok(found.value?.entity ?? null);
+  }
+
+  async findByIdWithVersion(
+    key: CompanyScopedId,
+  ): Promise<Result<DocumentWithVersion<T> | null, PlatformError>> {
     const row = this.client.get<AggRow>(
       "SELECT * FROM aggregate_documents WHERE id = ?",
       [this.documentId(key.companyId, key.id)],
     );
     if (!row) return ok(null);
-    return ok(JSON.parse(row.payload_json) as T);
+    return ok({
+      entity: JSON.parse(row.payload_json) as T,
+      version: row.version,
+    });
   }
 
-  async save(entity: T, parentId: string | null = null): Promise<Result<void, PlatformError>> {
+  /**
+   * Persist entity. Pass `expectedVersion` for client-driven OCC (RC7.4).
+   * Back-compat: `save(entity)` or `save(entity, parentId)` still work;
+   * without expectedVersion the store uses the just-read row version, and
+   * UPDATE still fails closed when `changes === 0`.
+   */
+  async save(
+    entity: T,
+    parentIdOrOptions: string | null | SaveDocumentOptions = null,
+  ): Promise<Result<void, PlatformError>> {
+    const options: SaveDocumentOptions =
+      parentIdOrOptions !== null &&
+      typeof parentIdOrOptions === "object" &&
+      !Array.isArray(parentIdOrOptions)
+        ? parentIdOrOptions
+        : { parentId: parentIdOrOptions as string | null };
+
+    const parentId = options.parentId ?? null;
     const docId = this.documentId(entity.companyId, entity.id);
     const existing = this.client.get<AggRow>(
       "SELECT * FROM aggregate_documents WHERE id = ?",
       [docId],
     );
-    const expected = existing?.version ?? 0;
+    const expected =
+      options.expectedVersion !== undefined
+        ? options.expectedVersion
+        : (existing?.version ?? 0);
     const versionCheck = assertExpectedVersion(
       existing?.version ?? null,
       expected,
@@ -93,12 +136,21 @@ export class SqlDocumentRepository<
     const payload = JSON.stringify(entity);
 
     if (existing) {
-      this.client.run(
+      const result = this.client.run(
         `UPDATE aggregate_documents
          SET payload_json = ?, version = ?, parent_id = ?, updated_at = ?
          WHERE id = ? AND version = ?`,
         [payload, nextVer, parentId, now, docId, expected],
       );
+      if (result.changes === 0) {
+        return fail(
+          new ConcurrencyError("Optimistic concurrency conflict", {
+            code: "optimistic_concurrency_conflict",
+            details: { aggregateId: docId, expected },
+            retryable: true,
+          }),
+        );
+      }
     } else {
       this.client.run(
         `INSERT INTO aggregate_documents
@@ -261,11 +313,20 @@ export class SqlNullableCompanyDocumentRepository<
     const nextVer = nextVersion(expected);
     const payload = JSON.stringify(entity);
     if (existing) {
-      this.client.run(
+      const result = this.client.run(
         `UPDATE aggregate_documents SET payload_json = ?, version = ?, updated_at = ?
          WHERE id = ? AND version = ?`,
         [payload, nextVer, now, docId, expected],
       );
+      if (result.changes === 0) {
+        return fail(
+          new ConcurrencyError("Optimistic concurrency conflict", {
+            code: "optimistic_concurrency_conflict",
+            details: { aggregateId: docId, expected },
+            retryable: true,
+          }),
+        );
+      }
     } else {
       this.client.run(
         `INSERT INTO aggregate_documents

@@ -71,7 +71,8 @@ export function createSqlFinancialAccountRepository(
   );
   return {
     findById: (key) => docs.findById(key),
-    save: (e) => docs.save(e),
+    findByIdWithVersion: (key) => docs.findByIdWithVersion(key),
+    save: (e, options) => docs.save(e, options ?? null),
     remove: (key) => docs.remove(key),
     listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };

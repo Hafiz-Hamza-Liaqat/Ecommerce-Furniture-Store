@@ -45,7 +45,10 @@ import {
 
 export function createGetFinancialAccountHandler(
   deps: FinanceHandlerDeps,
-): QueryHandler<GetFinancialAccountPayload, FinancialAccount> {
+): QueryHandler<
+  GetFinancialAccountPayload,
+  FinancialAccount & { version: number }
+> {
   return {
     queryType: FinanceQueryTypes.GetFinancialAccount,
     authorize(query) {
@@ -62,7 +65,7 @@ export function createGetFinancialAccountHandler(
     async handle(query, ctx) {
       const scope = requireCompanyId(ctx, query.payload.companyId);
       if (!scope.ok) return scope;
-      const found = await deps.accounts.findById({
+      const found = await deps.accounts.findByIdWithVersion({
         companyId: scope.value,
         id: query.payload.accountId,
       });
@@ -74,7 +77,7 @@ export function createGetFinancialAccountHandler(
           }),
         );
       }
-      return ok(found.value);
+      return ok({ ...found.value.entity, version: found.value.version });
     },
   };
 }

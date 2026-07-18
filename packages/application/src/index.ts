@@ -13,3 +13,4 @@ export * from "./dispatcher/index.js";
 export * from "./extensions/index.js";
 export * from "./composition/index.js";
 export * from "./security/index.js";
+export * from "./collaboration/index.js";

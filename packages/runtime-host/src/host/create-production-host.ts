@@ -75,6 +75,7 @@ function toEnterpriseRepositories(
     projects: repos.projects,
     service: repos.service,
     crm: repos.crm,
+    collaboration: repos.collaboration,
     damAssets: repos.damAssets,
   };
 }

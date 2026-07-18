@@ -152,6 +152,13 @@ export function createListStockHandler(
       if (!scope.ok) return scope;
 
       const request = { ...query.payload, companyId: scope.value };
+      const branchByWarehouse = new Map<string, string | null>();
+      const baseFetcher = createInventoryListCandidateFetcher({
+        listByCompany: (companyId, page) =>
+          deps.stock.listByCompany(companyId, page),
+        request,
+        searchFields: ["inventoryItemId", "warehouseId"],
+      });
       return buildAuthorizedListPage<StockPosition>({
         ctx,
         action: InventoryPolicyActions.StockRead,
@@ -160,13 +167,25 @@ export function createListStockHandler(
         toScope: (s) => ({
           id: s.id,
           companyId: s.companyId,
+          branchId: branchByWarehouse.get(s.warehouseId) ?? null,
         }),
-        fetchCandidates: createInventoryListCandidateFetcher({
-          listByCompany: (companyId, page) =>
-            deps.stock.listByCompany(companyId, page),
-          request,
-          searchFields: ["inventoryItemId", "warehouseId"],
-        }),
+        fetchCandidates: async (args) => {
+          const result = await baseFetcher(args);
+          if (!result.ok) return result;
+          for (const s of result.value) {
+            if (!branchByWarehouse.has(s.warehouseId)) {
+              const wh = await deps.warehouses.findById({
+                companyId: scope.value,
+                id: s.warehouseId,
+              });
+              branchByWarehouse.set(
+                s.warehouseId,
+                wh.ok && wh.value ? wh.value.branchId : null,
+              );
+            }
+          }
+          return result;
+        },
       });
     },
   };

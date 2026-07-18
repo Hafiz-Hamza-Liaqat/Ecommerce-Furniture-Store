@@ -1,6 +1,12 @@
 import type { CommandHandler } from "@afh/application";
 import type { Money } from "@afh/commerce";
-import { ConflictError, NotFoundError, fail, ok } from "@afh/shared-kernel";
+import {
+  ConflictError,
+  ConcurrencyError,
+  NotFoundError,
+  fail,
+  ok,
+} from "@afh/shared-kernel";
 import type {
   FinancialAccount,
   FinancialAccountStatus,
@@ -162,12 +168,16 @@ export function createUpdateFinancialAccountHandler(
 ): CommandHandler<UpdateFinancialAccountPayload, { accountId: string }> {
   return {
     commandType: FinanceCommandTypes.UpdateFinancialAccount,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      await loadRecordForAuthorization(() =>
+        deps.accounts.findById({ companyId: p.companyId, id: p.accountId }),
+      );
       return companyResource(
         "financial_account",
         FinancePolicyActions.AccountUpdate,
-        command.payload.companyId,
-        command.payload.accountId,
+        p.companyId,
+        p.accountId,
       );
     },
     validate() {
@@ -223,8 +233,30 @@ export function createUpdateFinancialAccountHandler(
         updatedAt: now,
       };
 
-      const saved = await deps.accounts.save(updated);
-      if (!saved.ok) return saved;
+      const saved =
+        p.expectedVersion !== undefined
+          ? await deps.accounts.save(updated, {
+              expectedVersion: p.expectedVersion,
+            })
+          : await deps.accounts.save(updated);
+      if (!saved.ok) {
+        if (
+          saved.error instanceof ConcurrencyError &&
+          p.expectedVersion !== undefined
+        ) {
+          await recordFinanceAudit(deps.audit, ctx, {
+            action: FinanceCommandTypes.UpdateFinancialAccount,
+            entityType: "financial_account",
+            entityId: updated.id,
+            outcome: "failure",
+            details: {
+              expectedVersion: p.expectedVersion,
+              code: saved.error.code,
+            },
+          });
+        }
+        return saved;
+      }
 
       await recordFinanceAudit(deps.audit, ctx, {
         action: FinanceCommandTypes.UpdateFinancialAccount,

@@ -120,6 +120,11 @@ export {
 } from "./search-repos.js";
 
 export {
+  createSqlEntityAttachmentLinkRepository,
+  createSqlEntityNoteRepository,
+} from "./collaboration-repos.js";
+
+export {
   createSqlReportDefinitionRepository,
   createSqlReportTemplateRepository,
   createSqlReportExecutionRepository,

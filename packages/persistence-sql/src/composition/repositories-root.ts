@@ -5,6 +5,10 @@
 
 import type { Clock } from "@afh/shared-kernel";
 import type {
+  SqlEntityAttachmentLinkRepository,
+  SqlEntityNoteRepository,
+} from "../repositories/collaboration-repos.js";
+import type {
   AddressRepository,
   CatalogRepository,
   ContactRepository as CommerceContactRepository,
@@ -145,6 +149,8 @@ import {
   createSqlDerivativeRepository,
   createSqlDocumentRepository,
   createSqlEmployeeRepository,
+  createSqlEntityAttachmentLinkRepository,
+  createSqlEntityNoteRepository,
   createSqlExportRequestRepository,
   createSqlFinanceLedgerRepository,
   createSqlFinancialAccountRepository,
@@ -256,6 +262,10 @@ export type SqlDomainRepositories = {
   };
   /** EnterpriseModuleRepositories.damAssets */
   readonly damAssets: AssetRepository;
+  readonly collaboration: {
+    readonly notes: SqlEntityNoteRepository;
+    readonly attachmentLinks: SqlEntityAttachmentLinkRepository;
+  };
   readonly dam: {
     readonly assets: AssetRepository;
     readonly versions: AssetVersionRepository;
@@ -385,6 +395,10 @@ export function createSqlEnterpriseRepositories(
       campaigns: createSqlCampaignRepository(client, clock),
     },
     damAssets,
+    collaboration: {
+      notes: createSqlEntityNoteRepository(client, clock),
+      attachmentLinks: createSqlEntityAttachmentLinkRepository(client, clock),
+    },
     dam: {
       assets: damAssets,
       versions: createSqlAssetVersionRepository(client, clock),

@@ -203,6 +203,12 @@ function memoryAccountRepo(rows: FinancialAccount[]): AccountRepository {
           null,
       );
     },
+    async findByIdWithVersion(key) {
+      const entity =
+        rows.find((r) => r.companyId === key.companyId && r.id === key.id) ??
+        null;
+      return ok(entity ? { entity, version: 1 } : null);
+    },
     async save() {
       return ok(undefined);
     },

@@ -8,6 +8,8 @@ import {
   HandlerRegistry,
   createApplicationRuntime,
   type ApplicationRuntime,
+  type EntityAttachmentLinkRepository,
+  type EntityNoteRepository,
 } from "@afh/application";
 import {
   createInfrastructureRuntime,
@@ -91,6 +93,10 @@ export type EnterpriseModuleRepositories = {
     CreateCrmApplicationOptions,
     "outbox" | "audit" | "handlers"
   >;
+  readonly collaboration: {
+    readonly notes: EntityNoteRepository;
+    readonly attachmentLinks: EntityAttachmentLinkRepository;
+  };
   readonly damAssets: AssetRepository;
 };
 
@@ -188,6 +194,8 @@ export function createEnterpriseComposition(
   });
   createInventoryApplication({
     ...repos.inventory,
+    notes: repos.collaboration.notes,
+    attachmentLinks: repos.collaboration.attachmentLinks,
     outbox,
     audit,
     handlers,

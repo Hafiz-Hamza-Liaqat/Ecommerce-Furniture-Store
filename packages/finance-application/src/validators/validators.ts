@@ -130,6 +130,20 @@ export const updateFinancialAccountCommandValidator: Validator<
         },
       ]);
     }
+    if (
+      p.expectedVersion !== undefined &&
+      (typeof p.expectedVersion !== "number" ||
+        !Number.isInteger(p.expectedVersion) ||
+        p.expectedVersion < 0)
+    ) {
+      return validationFail([
+        {
+          field: "expectedVersion",
+          code: "invalid",
+          message: "expectedVersion must be a non-negative integer",
+        },
+      ]);
+    }
     return validationOk();
   },
 };

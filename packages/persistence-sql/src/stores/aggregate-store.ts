@@ -3,6 +3,8 @@
  */
 
 import {
+  ConcurrencyError,
+  fail,
   isFail,
   ok,
   type PlatformError,
@@ -91,7 +93,7 @@ export class SqlAggregateDocumentStore implements AggregateDocumentStore {
     const createdAt = current?.createdAt ?? record.createdAt;
 
     if (current) {
-      this.client.run(
+      const write = this.client.run(
         `UPDATE aggregate_documents
          SET company_id = ?, aggregate_type = ?, parent_id = ?, version = ?,
              payload_json = ?, updated_at = ?
@@ -107,6 +109,15 @@ export class SqlAggregateDocumentStore implements AggregateDocumentStore {
           expectedVersion,
         ],
       );
+      if (write.changes === 0) {
+        return fail(
+          new ConcurrencyError("Optimistic concurrency conflict", {
+            code: "optimistic_concurrency_conflict",
+            details: { aggregateId: record.id, expected: expectedVersion },
+            retryable: true,
+          }),
+        );
+      }
     } else {
       this.client.run(
         `INSERT INTO aggregate_documents

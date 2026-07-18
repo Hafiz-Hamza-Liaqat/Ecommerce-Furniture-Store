@@ -1,5 +1,5 @@
 import type { CommandHandler } from "@afh/application";
-import { NotFoundError, fail, ok } from "@afh/shared-kernel";
+import { NotFoundError, ConcurrencyError, fail, ok } from "@afh/shared-kernel";
 import type {
   InventoryItem,
   InventoryItemStatus,
@@ -146,12 +146,19 @@ export function createUpdateInventoryItemHandler(
 ): CommandHandler<UpdateInventoryItemPayload, { inventoryItemId: string }> {
   return {
     commandType: InventoryCommandTypes.UpdateInventoryItem,
-    authorize(command) {
+    async authorize(command) {
+      const p = command.payload;
+      await loadRecordForAuthorization(() =>
+        deps.items.findById({
+          companyId: p.companyId,
+          id: p.inventoryItemId,
+        }),
+      );
       return companyResource(
         "inventory_item",
         InventoryPolicyActions.ItemUpdate,
-        command.payload.companyId,
-        command.payload.inventoryItemId,
+        p.companyId,
+        p.inventoryItemId,
       );
     },
     validate() {
@@ -215,8 +222,28 @@ export function createUpdateInventoryItemHandler(
         updatedAt: now,
       };
 
-      const saved = await deps.items.save(updated);
-      if (!saved.ok) return saved;
+      const saved =
+        p.expectedVersion !== undefined
+          ? await deps.items.save(updated, { expectedVersion: p.expectedVersion })
+          : await deps.items.save(updated);
+      if (!saved.ok) {
+        if (
+          saved.error instanceof ConcurrencyError &&
+          p.expectedVersion !== undefined
+        ) {
+          await recordInventoryAudit(deps.audit, ctx, {
+            action: InventoryCommandTypes.UpdateInventoryItem,
+            entityType: "inventory_item",
+            entityId: updated.id,
+            outcome: "failure",
+            details: {
+              expectedVersion: p.expectedVersion,
+              code: saved.error.code,
+            },
+          });
+        }
+        return saved;
+      }
 
       await recordInventoryAudit(deps.audit, ctx, {
         action: InventoryCommandTypes.UpdateInventoryItem,

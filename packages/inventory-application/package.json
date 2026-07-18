@@ -17,7 +17,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "test": "node --test dist/handlers/list-handlers.test.js"
+    "test": "node --test dist/handlers/list-handlers.test.js dist/handlers/rc74-hardening.test.js"
   },
   "dependencies": {
     "@afh/application": "0.1.0",

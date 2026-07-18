@@ -35,6 +35,7 @@ export type UpdateInventoryItemPayload = {
   readonly defaultUnitCode?: string | null;
   readonly workflowInstanceId?: string | null;
   readonly transitionCode?: string | null;
+  readonly expectedVersion?: number;
 };
 
 export type CreateWarehousePayload = {

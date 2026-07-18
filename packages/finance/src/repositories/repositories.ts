@@ -31,7 +31,15 @@ export interface AccountRepository {
   findById(
     key: CompanyScopedId,
   ): Promise<Result<FinancialAccount | null, PlatformError>>;
-  save(account: FinancialAccount): Promise<Result<void, PlatformError>>;
+  findByIdWithVersion(
+    key: CompanyScopedId,
+  ): Promise<
+    Result<{ entity: FinancialAccount; version: number } | null, PlatformError>
+  >;
+  save(
+    account: FinancialAccount,
+    options?: { readonly expectedVersion?: number },
+  ): Promise<Result<void, PlatformError>>;
   remove(key: CompanyScopedId): Promise<Result<void, PlatformError>>;
   listByCompany(
     companyId: string,
