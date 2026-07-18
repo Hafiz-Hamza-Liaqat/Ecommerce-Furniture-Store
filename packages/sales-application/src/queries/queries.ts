@@ -2,7 +2,13 @@
  * Sales application queries — no transport DTOs.
  */
 
+import type { ListQueryRequest } from "@afh/shared-kernel";
 import { SalesQueryTypes } from "../constants.js";
+
+/** RC7.2a — shared List* envelope (companyId + optional criteria / q). */
+export type ListOpportunityPayload = ListQueryRequest;
+export type ListQuotePayload = ListQueryRequest;
+export type ListSalesOrderPayload = ListQueryRequest;
 
 export type GetOpportunityPayload = {
   readonly companyId: string;

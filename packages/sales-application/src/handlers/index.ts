@@ -17,3 +17,8 @@ export {
   createGetSalesOrderHandler,
   createGetCustomerSalesSummaryHandler,
 } from "./query-handlers.js";
+export {
+  createListOpportunityHandler,
+  createListQuoteHandler,
+  createListSalesOrderHandler,
+} from "./list-handlers.js";

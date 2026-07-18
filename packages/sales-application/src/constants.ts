@@ -17,6 +17,9 @@ export const SalesQueryTypes = {
   GetQuote: "sales.GetQuote",
   GetSalesOrder: "sales.GetSalesOrder",
   GetCustomerSalesSummary: "sales.GetCustomerSalesSummary",
+  ListOpportunity: "sales.ListOpportunity",
+  ListQuote: "sales.ListQuote",
+  ListSalesOrder: "sales.ListSalesOrder",
 } as const;
 
 /** Workflow definition codes (host registers definitions) */

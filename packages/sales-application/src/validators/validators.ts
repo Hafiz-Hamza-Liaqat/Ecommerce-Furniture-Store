@@ -4,7 +4,12 @@
  */
 
 import type { Command, Query, Validator } from "@afh/shared-kernel";
-import { validationFail, validationOk } from "@afh/shared-kernel";
+import {
+  validateFilterAllowList,
+  validateSortAllowList,
+  validationFail,
+  validationOk,
+} from "@afh/shared-kernel";
 import type {
   CancelSalesOrderPayload,
   CreateOpportunityPayload,
@@ -18,7 +23,18 @@ import type {
   GetOpportunityPayload,
   GetQuotePayload,
   GetSalesOrderPayload,
+  ListOpportunityPayload,
+  ListQuotePayload,
+  ListSalesOrderPayload,
 } from "../queries/queries.js";
+import {
+  OPPORTUNITY_FILTER_FIELDS,
+  OPPORTUNITY_SORT_FIELDS,
+  QUOTE_FILTER_FIELDS,
+  QUOTE_SORT_FIELDS,
+  SALES_ORDER_FILTER_FIELDS,
+  SALES_ORDER_SORT_FIELDS,
+} from "../list-fields.js";
 
 function requireField(
   field: string,
@@ -255,6 +271,82 @@ export const getCustomerSalesSummaryQueryValidator: Validator<
     return (
       requireField("companyId", p.companyId) ??
       requireField("customerId", p.customerId) ??
+      validationOk()
+    );
+  },
+};
+
+function listCriteriaViolations(
+  payload: ListOpportunityPayload,
+  sortFields: ReadonlySet<string>,
+  filterFields: ReadonlySet<string>,
+): ReturnType<typeof validationFail> | null {
+  const sort = validateSortAllowList(payload.criteria?.sort, sortFields);
+  if (!sort.ok) {
+    return validationFail([
+      {
+        field: "criteria.sort",
+        code: sort.error.code,
+        message: sort.error.message,
+      },
+    ]);
+  }
+  const filters = validateFilterAllowList(
+    payload.criteria?.filters,
+    filterFields,
+  );
+  if (!filters.ok) {
+    return validationFail([
+      {
+        field: "criteria.filters",
+        code: filters.error.code,
+        message: filters.error.message,
+      },
+    ]);
+  }
+  return null;
+}
+
+export const listOpportunityQueryValidator: Validator<
+  Query<ListOpportunityPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        OPPORTUNITY_SORT_FIELDS,
+        OPPORTUNITY_FILTER_FIELDS,
+      ) ??
+      validationOk()
+    );
+  },
+};
+
+export const listQuoteQueryValidator: Validator<Query<ListQuotePayload>> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, QUOTE_SORT_FIELDS, QUOTE_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listSalesOrderQueryValidator: Validator<
+  Query<ListSalesOrderPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        SALES_ORDER_SORT_FIELDS,
+        SALES_ORDER_FILTER_FIELDS,
+      ) ??
       validationOk()
     );
   },

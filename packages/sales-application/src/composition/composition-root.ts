@@ -20,6 +20,9 @@ import {
   createGetOpportunityHandler,
   createGetQuoteHandler,
   createGetSalesOrderHandler,
+  createListOpportunityHandler,
+  createListQuoteHandler,
+  createListSalesOrderHandler,
   createReviseQuoteHandler,
   createUpdateOpportunityHandler,
 } from "../handlers/index.js";
@@ -68,6 +71,9 @@ export function createSalesApplication(
   handlers.registerQuery(createGetQuoteHandler(deps));
   handlers.registerQuery(createGetSalesOrderHandler(deps));
   handlers.registerQuery(createGetCustomerSalesSummaryHandler(deps));
+  handlers.registerQuery(createListOpportunityHandler(deps));
+  handlers.registerQuery(createListQuoteHandler(deps));
+  handlers.registerQuery(createListSalesOrderHandler(deps));
 
   return { handlers, deps };
 }
