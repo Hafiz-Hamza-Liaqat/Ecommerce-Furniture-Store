@@ -1,5 +1,5 @@
 /**
- * RC7.4 — shared collaboration foundation (notes + attachment links).
+ * RC7.4 / RC7.6 — shared collaboration foundation (notes + attachment links).
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -16,6 +16,7 @@ import {
   type Result,
   type UnitOfWork,
 } from "@afh/shared-kernel";
+import { HandlerRegistry } from "../handlers/handlers.js";
 import type { ApplicationContext } from "../context/context.js";
 import {
   CollaborationCommandTypes,
@@ -23,6 +24,8 @@ import {
   createCollaborationAttachmentHandlers,
   createCollaborationNoteHandlers,
   parentEntityResource,
+  registerCollaborationHandlers,
+  type AssetExistenceChecker,
   type EntityAttachmentLink,
   type EntityAttachmentLinkRepository,
   type EntityNote,
@@ -145,25 +148,38 @@ function createInMemoryAttachmentLinkRepository(): EntityAttachmentLinkRepositor
   };
 }
 
-const binding = {
-  parentResourceType: "inventory_item",
-  parentReadAction: "inventory.items.read",
-  parentUpdateAction: "inventory.items.update",
+const inventoryBinding = {
+  allowedEntityType: "inventory.item",
+  parent: {
+    parentResourceType: "inventory_item",
+    parentReadAction: "inventory.items.read",
+    parentUpdateAction: "inventory.items.update",
+  },
 } as const;
+
+const crmLeadBinding = {
+  allowedEntityType: "crm.lead",
+  parent: {
+    parentResourceType: "lead",
+    parentReadAction: "crm.leads.read",
+    parentUpdateAction: "crm.leads.update",
+  },
+} as const;
+
+const multiBindings = [inventoryBinding, crmLeadBinding] as const;
 
 describe("RC7.4 collaboration note handlers", () => {
   it("rejects create when entityType does not match binding", async () => {
     const notes = createInMemoryNoteRepository();
     const handlers = createCollaborationNoteHandlers({
       notes,
-      binding,
-      allowedEntityType: "inventory.item",
+      bindings: multiBindings,
     });
 
     const result = await handlers.create.handle(
       commandOf(CollaborationCommandTypes.CreateEntityNote, {
         companyId: "co-1",
-        entityType: "crm.lead",
+        entityType: "sales.opportunity",
         entityId: "item-1",
         body: "hello",
       }),
@@ -172,15 +188,14 @@ describe("RC7.4 collaboration note handlers", () => {
 
     assert.equal(result.ok, false);
     if (result.ok) return;
-    assert.equal(result.error.code, "entity_type_mismatch");
+    assert.equal(result.error.code, "entity_type_unsupported");
   });
 
   it("lists notes for an entity", async () => {
     const notes = createInMemoryNoteRepository();
     const handlers = createCollaborationNoteHandlers({
       notes,
-      binding,
-      allowedEntityType: "inventory.item",
+      bindings: [inventoryBinding],
     });
 
     const created = await handlers.create.handle(
@@ -207,6 +222,115 @@ describe("RC7.4 collaboration note handlers", () => {
     if (!listed.ok) return;
     assert.equal(listed.value.notes.length, 1);
     assert.equal(listed.value.notes[0]?.body, "first note");
+    assert.equal(listed.value.notes[0]?.kind, "note");
+  });
+});
+
+describe("RC7.6 multi-binding collaboration", () => {
+  it("supports two entity types with one handler set", async () => {
+    const notes = createInMemoryNoteRepository();
+    const handlers = createCollaborationNoteHandlers({
+      notes,
+      bindings: multiBindings,
+    });
+
+    const inventoryNote = await handlers.create.handle(
+      commandOf(CollaborationCommandTypes.CreateEntityNote, {
+        companyId: "co-1",
+        entityType: "inventory.item",
+        entityId: "item-1",
+        body: "inventory note",
+      }),
+      ctx(),
+    );
+    assert.equal(inventoryNote.ok, true);
+
+    const leadNote = await handlers.create.handle(
+      commandOf(CollaborationCommandTypes.CreateEntityNote, {
+        companyId: "co-1",
+        entityType: "crm.lead",
+        entityId: "lead-1",
+        body: "lead note",
+      }),
+      ctx(),
+    );
+    assert.equal(leadNote.ok, true);
+
+    const inventoryList = await handlers.list.handle(
+      queryOf(CollaborationQueryTypes.ListEntityNotes, {
+        companyId: "co-1",
+        entityType: "inventory.item",
+        entityId: "item-1",
+      }),
+      ctx(),
+    );
+    assert.equal(inventoryList.ok, true);
+    if (!inventoryList.ok) return;
+    assert.equal(inventoryList.value.notes.length, 1);
+
+    const leadList = await handlers.list.handle(
+      queryOf(CollaborationQueryTypes.ListEntityNotes, {
+        companyId: "co-1",
+        entityType: "crm.lead",
+        entityId: "lead-1",
+      }),
+      ctx(),
+    );
+    assert.equal(leadList.ok, true);
+    if (!leadList.ok) return;
+    assert.equal(leadList.value.notes.length, 1);
+  });
+
+  it("stores comment kind when provided", async () => {
+    const notes = createInMemoryNoteRepository();
+    const handlers = createCollaborationNoteHandlers({
+      notes,
+      bindings: [inventoryBinding],
+    });
+
+    const created = await handlers.create.handle(
+      commandOf(CollaborationCommandTypes.CreateEntityNote, {
+        companyId: "co-1",
+        entityType: "inventory.item",
+        entityId: "item-1",
+        body: "thread reply",
+        kind: "comment",
+      }),
+      ctx(),
+    );
+    assert.equal(created.ok, true);
+
+    const listed = await handlers.list.handle(
+      queryOf(CollaborationQueryTypes.ListEntityNotes, {
+        companyId: "co-1",
+        entityType: "inventory.item",
+        entityId: "item-1",
+      }),
+      ctx(),
+    );
+    assert.equal(listed.ok, true);
+    if (!listed.ok) return;
+    assert.equal(listed.value.notes[0]?.kind, "comment");
+  });
+
+  it("supports legacy single binding deps shape", async () => {
+    const notes = createInMemoryNoteRepository();
+    const handlers = createCollaborationNoteHandlers({
+      notes,
+      binding: inventoryBinding.parent,
+      allowedEntityType: inventoryBinding.allowedEntityType,
+    });
+
+    const created = await handlers.create.handle(
+      commandOf(CollaborationCommandTypes.CreateEntityNote, {
+        companyId: "co-1",
+        entityType: "inventory.item",
+        entityId: "item-1",
+        body: "legacy binding",
+      }),
+      ctx(),
+    );
+    assert.equal(created.ok, true);
   });
 });
 
@@ -215,8 +339,7 @@ describe("RC7.4 collaboration attachment handlers", () => {
     const attachmentLinks = createInMemoryAttachmentLinkRepository();
     const handlers = createCollaborationAttachmentHandlers({
       attachmentLinks,
-      binding,
-      allowedEntityType: "inventory.item",
+      bindings: [inventoryBinding],
     });
 
     const attached = await handlers.attach.handle(
@@ -247,6 +370,61 @@ describe("RC7.4 collaboration attachment handlers", () => {
     assert.equal(listed.value.attachments.length, 1);
     assert.equal(listed.value.attachments[0]?.assetId, "asset-99");
   });
+
+  it("attach fails when asset checker returns null", async () => {
+    const attachmentLinks = createInMemoryAttachmentLinkRepository();
+    const assets: AssetExistenceChecker = {
+      findById: async () => ok(null),
+    };
+    const handlers = createCollaborationAttachmentHandlers({
+      attachmentLinks,
+      assets,
+      bindings: [inventoryBinding],
+    });
+
+    const attached = await handlers.attach.handle(
+      commandOf(CollaborationCommandTypes.AttachEntityAsset, {
+        companyId: "co-1",
+        entityType: "inventory.item",
+        entityId: "item-1",
+        assetId: "missing-asset",
+        purpose: "spec-sheet",
+      }),
+      ctx(),
+    );
+
+    assert.equal(attached.ok, false);
+    if (attached.ok) return;
+    assert.equal(attached.error.code, "asset_not_found");
+  });
+
+  it("attach fails closed when asset company mismatches", async () => {
+    const attachmentLinks = createInMemoryAttachmentLinkRepository();
+    const assets: AssetExistenceChecker = {
+      findById: async () =>
+        ok({ id: "asset-99", companyId: "other-co" }),
+    };
+    const handlers = createCollaborationAttachmentHandlers({
+      attachmentLinks,
+      assets,
+      bindings: [inventoryBinding],
+    });
+
+    const attached = await handlers.attach.handle(
+      commandOf(CollaborationCommandTypes.AttachEntityAsset, {
+        companyId: "co-1",
+        entityType: "inventory.item",
+        entityId: "item-1",
+        assetId: "asset-99",
+        purpose: "spec-sheet",
+      }),
+      ctx(),
+    );
+
+    assert.equal(attached.ok, false);
+    if (attached.ok) return;
+    assert.equal(attached.error.code, "asset_not_found");
+  });
 });
 
 describe("RC7.4 parentEntityResource policy helper", () => {
@@ -274,8 +452,7 @@ describe("RC7.4 parentEntityResource policy helper", () => {
   it("note create handler authorize targets parent entity", () => {
     const handlers = createCollaborationNoteHandlers({
       notes: createInMemoryNoteRepository(),
-      binding,
-      allowedEntityType: "inventory.item",
+      bindings: [inventoryBinding],
     });
 
     const spec = handlers.create.authorize?.(
@@ -323,8 +500,7 @@ describe("RC7.4 optional audit hook", () => {
     const handlers = createCollaborationNoteHandlers({
       notes: createInMemoryNoteRepository(),
       audit,
-      binding,
-      allowedEntityType: "inventory.item",
+      bindings: [inventoryBinding],
     });
 
     await handlers.create.handle(
@@ -339,5 +515,47 @@ describe("RC7.4 optional audit hook", () => {
 
     assert.equal(auditCalls.length, 1);
     assert.equal(auditCalls[0]?.action, CollaborationCommandTypes.CreateEntityNote);
+  });
+});
+
+describe("RC7.6 registerCollaborationHandlers", () => {
+  it("registers collaboration handlers once for cross-module bindings", () => {
+    const handlers = new HandlerRegistry();
+    const v1LikeBindings = [
+      inventoryBinding,
+      crmLeadBinding,
+      {
+        allowedEntityType: "sales.opportunity",
+        parent: {
+          parentResourceType: "opportunity",
+          parentReadAction: "sales.opportunities.read",
+          parentUpdateAction: "sales.opportunities.update",
+        },
+      },
+    ] as const;
+
+    registerCollaborationHandlers(handlers, {
+      notes: createInMemoryNoteRepository(),
+      attachmentLinks: createInMemoryAttachmentLinkRepository(),
+      bindings: v1LikeBindings,
+    });
+
+    assert.deepEqual(
+      handlers.listCommandTypes().filter((t) => t.startsWith("collaboration.")),
+      [
+        CollaborationCommandTypes.CreateEntityNote,
+        CollaborationCommandTypes.DeleteEntityNote,
+        CollaborationCommandTypes.AttachEntityAsset,
+        CollaborationCommandTypes.DetachEntityAsset,
+      ],
+    );
+    assert.deepEqual(
+      handlers.listQueryTypes().filter((t) => t.startsWith("collaboration.")),
+      [
+        CollaborationQueryTypes.ListEntityNotes,
+        CollaborationQueryTypes.ListEntityAttachments,
+      ],
+    );
+    assert.equal(v1LikeBindings.length, 3);
   });
 });

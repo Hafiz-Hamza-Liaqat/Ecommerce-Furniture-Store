@@ -55,10 +55,12 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
   const composition = createEnterpriseComposition(options);
   let started = false;
 
-  const uploadRouter = createDamUploadRouter(
-    options.repositories.damAssets,
-    composition.infrastructure.clock,
-  );
+  const uploadRouter = createDamUploadRouter({
+    assets: options.repositories.damAssets,
+    versions: options.repositories.damVersions,
+    objectStore: options.repositories.damObjectStore,
+    clock: composition.infrastructure.clock,
+  });
 
   const routeDeps: RouteDeps = {
     runtime: composition.runtime,

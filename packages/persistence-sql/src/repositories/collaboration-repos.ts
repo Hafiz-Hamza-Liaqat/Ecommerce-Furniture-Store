@@ -17,6 +17,7 @@ export type SqlEntityNote = {
   readonly companyId: string;
   readonly entityType: string;
   readonly entityId: string;
+  readonly kind: "note" | "comment";
   readonly body: string;
   readonly createdByUserId: string | null;
   readonly createdAt: string;

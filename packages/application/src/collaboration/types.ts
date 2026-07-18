@@ -1,10 +1,13 @@
 import type { PlatformError, Result } from "@afh/shared-kernel";
 
+export type EntityNoteKind = "note" | "comment";
+
 export type EntityNote = {
   readonly id: string;
   readonly companyId: string;
   readonly entityType: string;
   readonly entityId: string;
+  readonly kind: EntityNoteKind;
   readonly body: string;
   readonly createdByUserId: string | null;
   readonly createdAt: string;
@@ -61,6 +64,7 @@ export type CreateEntityNotePayload = {
   readonly entityType: string;
   readonly entityId: string;
   readonly body: string;
+  readonly kind?: EntityNoteKind;
 };
 
 export type DeleteEntityNotePayload = {
@@ -97,4 +101,18 @@ export type CollaborationParentBinding = {
   readonly parentResourceType: string;
   readonly parentReadAction: string;
   readonly parentUpdateAction: string;
+};
+
+export type CollaborationEntityBinding = {
+  readonly allowedEntityType: string;
+  readonly parent: CollaborationParentBinding;
+};
+
+export type AssetExistenceChecker = {
+  findById(key: {
+    companyId: string;
+    id: string;
+  }): Promise<
+    Result<{ id: string; companyId: string } | null, PlatformError>
+  >;
 };

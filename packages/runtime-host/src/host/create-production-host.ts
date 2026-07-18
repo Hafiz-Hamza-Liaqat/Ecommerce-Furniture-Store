@@ -4,6 +4,7 @@
  * No business logic.
  */
 
+import path from "node:path";
 import {
   createApiHost,
   createInMemoryRateLimitHook,
@@ -13,6 +14,7 @@ import {
 import { InboxRuntime } from "@afh/infrastructure";
 import { createMessagingRuntime, type MessagingRuntime } from "@afh/messaging-broker";
 import {
+  createFilesystemObjectStore,
   createIntegrityHealthProbe,
   createMigrationHealthProbe,
   createSqlPersistenceFoundation,
@@ -65,8 +67,15 @@ export type CreateProductionHostOptions = {
 
 function toEnterpriseRepositories(
   sql: SqlPersistenceFoundation,
+  config: ProductionRuntimeConfig,
 ): EnterpriseModuleRepositories {
   const repos = sql.repositories;
+  const damObjectStoreRoot = path.join(
+    path.dirname(config.databasePath),
+    "dam-objects",
+  );
+  const damObjectStore = createFilesystemObjectStore(damObjectStoreRoot);
+
   return {
     sales: repos.sales,
     procurement: repos.procurement,
@@ -77,6 +86,8 @@ function toEnterpriseRepositories(
     crm: repos.crm,
     collaboration: repos.collaboration,
     damAssets: repos.damAssets,
+    damVersions: repos.dam.versions,
+    damObjectStore,
   };
 }
 
@@ -147,7 +158,7 @@ export async function createProductionHost(
   });
 
   const api = createApiHost({
-    repositories: toEnterpriseRepositories(sql),
+    repositories: toEnterpriseRepositories(sql, config),
     infrastructure: {
       config: {
         serviceName: config.serviceName,

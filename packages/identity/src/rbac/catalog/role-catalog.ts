@@ -156,6 +156,8 @@ export const ROLE_CATALOG: readonly CatalogRoleDefinition[] = [
     parentCode: null,
     permissions: [
       "dam.assets.upload",
+      "dam.assets.create",
+      "dam.assets.read",
       RoutePermissions.CmsDashboardRead,
       RoutePermissions.DamDashboardRead,
     ],

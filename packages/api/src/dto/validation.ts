@@ -8,6 +8,7 @@ import type {
   DispatchQueryRequestDto,
   UploadRequestDto,
 } from "./dto.js";
+import { ALLOWED_ASSET_MIME_TYPES } from "@afh/dam-application";
 
 export type DtoValidationIssue = {
   readonly field: string;
@@ -89,16 +90,7 @@ export function validateDispatchQueryDto(body: unknown): DtoValidationResult {
   return issues.length ? { ok: false, issues } : { ok: true };
 }
 
-const ALLOWED_UPLOAD_MIME = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/svg+xml",
-  "text/plain",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-]);
+const ALLOWED_UPLOAD_MIME = ALLOWED_ASSET_MIME_TYPES;
 
 export function validateUploadRequestDto(body: unknown): DtoValidationResult {
   if (body == null || typeof body !== "object") {

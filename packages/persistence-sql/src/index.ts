@@ -18,3 +18,4 @@ export * from "./identity/sql-audit-store.js";
 export * from "./platform/index.js";
 export * from "./repositories/index.js";
 export * from "./composition/index.js";
+export { createFilesystemObjectStore } from "./storage/filesystem-object-store.js";

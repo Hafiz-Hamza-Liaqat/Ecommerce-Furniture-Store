@@ -1,6 +1,13 @@
 import type { SecurityAuditService } from "@afh/identity";
 import { NotFoundError, ValidationError, fail, ok } from "@afh/shared-kernel";
 import type { CommandHandler, QueryHandler } from "../handlers/handlers.js";
+import {
+  firstBindingParent,
+  normalizeCollaborationBindings,
+  resolveBinding,
+  type LegacyCollaborationBindingDeps,
+  type MultiCollaborationBindingDeps,
+} from "./bindings.js";
 import { CollaborationCommandTypes, CollaborationQueryTypes } from "./constants.js";
 import { parentEntityResource } from "./policy.js";
 import {
@@ -9,8 +16,8 @@ import {
   requireCompanyId,
 } from "./support.js";
 import type {
+  AssetExistenceChecker,
   AttachEntityAssetPayload,
-  CollaborationParentBinding,
   DetachEntityAssetPayload,
   EntityAttachmentLink,
   EntityAttachmentLinkRepository,
@@ -20,9 +27,8 @@ import type {
 export type CollaborationAttachmentHandlerDeps = {
   readonly attachmentLinks: EntityAttachmentLinkRepository;
   readonly audit?: SecurityAuditService;
-  readonly binding: CollaborationParentBinding;
-  readonly allowedEntityType: string;
-};
+  readonly assets?: AssetExistenceChecker;
+} & (MultiCollaborationBindingDeps | LegacyCollaborationBindingDeps);
 
 export type CollaborationAttachmentHandlers = {
   readonly attach: CommandHandler<AttachEntityAssetPayload, { linkId: string }>;
@@ -33,32 +39,23 @@ export type CollaborationAttachmentHandlers = {
   >;
 };
 
-function rejectEntityTypeMismatch(
-  entityType: string,
-  allowedEntityType: string,
-) {
-  if (entityType !== allowedEntityType) {
-    return fail(
-      new ValidationError("entityType is not supported for this binding", {
-        code: "entity_type_mismatch",
-        details: { entityType, allowedEntityType },
-      }),
-    );
-  }
-  return null;
-}
-
 export function createCollaborationAttachmentHandlers(
   deps: CollaborationAttachmentHandlerDeps,
 ): CollaborationAttachmentHandlers {
-  const { attachmentLinks, binding, allowedEntityType } = deps;
+  const bindings = normalizeCollaborationBindings(deps);
+  const { attachmentLinks } = deps;
+  const fallbackParent = firstBindingParent(bindings);
 
   const attach: CommandHandler<AttachEntityAssetPayload, { linkId: string }> = {
     commandType: CollaborationCommandTypes.AttachEntityAsset,
     authorize(command) {
+      const resolved = resolveBinding(bindings, command.payload.entityType);
+      if (!resolved.ok) {
+        throw resolved.error;
+      }
       return parentEntityResource(
-        binding.parentResourceType,
-        binding.parentUpdateAction,
+        resolved.value.parent.parentResourceType,
+        resolved.value.parent.parentUpdateAction,
         command.payload.companyId,
         command.payload.entityId,
       );
@@ -67,17 +64,30 @@ export function createCollaborationAttachmentHandlers(
       const scope = requireCompanyId(ctx, command.payload.companyId);
       if (!scope.ok) return scope;
 
-      const typeMismatch = rejectEntityTypeMismatch(
-        command.payload.entityType,
-        allowedEntityType,
-      );
-      if (typeMismatch) return typeMismatch;
+      const resolved = resolveBinding(bindings, command.payload.entityType);
+      if (!resolved.ok) return resolved;
 
       const assetId = command.payload.assetId.trim();
       if (!assetId) {
         return fail(
           new ValidationError("assetId is required", { code: "asset_required" }),
         );
+      }
+
+      if (deps.assets) {
+        const asset = await deps.assets.findById({
+          companyId: scope.value,
+          id: assetId,
+        });
+        if (!asset.ok) return asset;
+        if (!asset.value || asset.value.companyId !== scope.value) {
+          return fail(
+            new NotFoundError("Asset not found", {
+              code: "asset_not_found",
+              details: { assetId },
+            }),
+          );
+        }
       }
 
       const purpose = command.payload.purpose.trim();
@@ -132,15 +142,21 @@ export function createCollaborationAttachmentHandlers(
       }
       if (!found.value) {
         return parentEntityResource(
-          binding.parentResourceType,
-          binding.parentUpdateAction,
+          fallbackParent.parentResourceType,
+          fallbackParent.parentUpdateAction,
           command.payload.companyId,
           command.payload.id,
         );
       }
+
+      const resolved = resolveBinding(bindings, found.value.entityType);
+      if (!resolved.ok) {
+        throw resolved.error;
+      }
+
       return parentEntityResource(
-        binding.parentResourceType,
-        binding.parentUpdateAction,
+        resolved.value.parent.parentResourceType,
+        resolved.value.parent.parentUpdateAction,
         found.value.companyId,
         found.value.entityId,
       );
@@ -163,11 +179,8 @@ export function createCollaborationAttachmentHandlers(
         );
       }
 
-      const typeMismatch = rejectEntityTypeMismatch(
-        found.value.entityType,
-        allowedEntityType,
-      );
-      if (typeMismatch) return typeMismatch;
+      const resolved = resolveBinding(bindings, found.value.entityType);
+      if (!resolved.ok) return resolved;
 
       const removed = await attachmentLinks.remove({
         companyId: scope.value,
@@ -194,9 +207,13 @@ export function createCollaborationAttachmentHandlers(
   > = {
     queryType: CollaborationQueryTypes.ListEntityAttachments,
     authorize(query) {
+      const resolved = resolveBinding(bindings, query.payload.entityType);
+      if (!resolved.ok) {
+        throw resolved.error;
+      }
       return parentEntityResource(
-        binding.parentResourceType,
-        binding.parentReadAction,
+        resolved.value.parent.parentResourceType,
+        resolved.value.parent.parentReadAction,
         query.payload.companyId,
         query.payload.entityId,
       );
@@ -205,11 +222,8 @@ export function createCollaborationAttachmentHandlers(
       const scope = requireCompanyId(ctx, query.payload.companyId);
       if (!scope.ok) return scope;
 
-      const typeMismatch = rejectEntityTypeMismatch(
-        query.payload.entityType,
-        allowedEntityType,
-      );
-      if (typeMismatch) return typeMismatch;
+      const resolved = resolveBinding(bindings, query.payload.entityType);
+      if (!resolved.ok) return resolved;
 
       const listed = await attachmentLinks.listByEntity(
         scope.value,

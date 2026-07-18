@@ -7,7 +7,9 @@
 import {
   HandlerRegistry,
   createApplicationRuntime,
+  registerCollaborationHandlers,
   type ApplicationRuntime,
+  type AssetExistenceChecker,
   type EntityAttachmentLinkRepository,
   type EntityNoteRepository,
 } from "@afh/application";
@@ -62,7 +64,12 @@ import {
 import {
   createWorkflowApplication,
 } from "@afh/workflow-application";
-import type { AssetRepository } from "@afh/dam";
+import {
+  createDamApplication,
+} from "@afh/dam-application";
+import type { AssetRepository, AssetVersionRepository, ObjectStore } from "@afh/dam";
+import { ok } from "@afh/shared-kernel";
+import { V1_COLLABORATION_BINDINGS } from "../collaboration/v1-bindings.js";
 
 export type EnterpriseModuleRepositories = {
   readonly sales: Omit<
@@ -98,6 +105,8 @@ export type EnterpriseModuleRepositories = {
     readonly attachmentLinks: EntityAttachmentLinkRepository;
   };
   readonly damAssets: AssetRepository;
+  readonly damVersions: AssetVersionRepository;
+  readonly damObjectStore: ObjectStore;
 };
 
 export type CreateEnterpriseCompositionOptions = {
@@ -194,8 +203,6 @@ export function createEnterpriseComposition(
   });
   createInventoryApplication({
     ...repos.inventory,
-    notes: repos.collaboration.notes,
-    attachmentLinks: repos.collaboration.attachmentLinks,
     outbox,
     audit,
     handlers,
@@ -224,7 +231,22 @@ export function createEnterpriseComposition(
     audit,
     handlers,
   });
+  createDamApplication({
+    assets: repos.damAssets,
+    versions: repos.damVersions,
+    objectStore: repos.damObjectStore,
+    audit,
+    handlers,
+  });
   createWorkflowApplication({ handlers });
+
+  registerCollaborationHandlers(handlers, {
+    notes: repos.collaboration.notes,
+    attachmentLinks: repos.collaboration.attachmentLinks,
+    assets: toAssetExistenceChecker(repos.damAssets),
+    audit,
+    bindings: V1_COLLABORATION_BINDINGS,
+  });
 
   const runtime = createApplicationRuntime({
     infrastructure,
@@ -247,6 +269,19 @@ export function createEnterpriseComposition(
     dispose() {
       runtime.dispose();
       infrastructure.dispose();
+    },
+  };
+}
+
+function toAssetExistenceChecker(
+  assets: AssetRepository,
+): AssetExistenceChecker {
+  return {
+    findById: async (key) => {
+      const result = await assets.findById(key);
+      if (!result.ok) return result;
+      if (!result.value) return ok(null);
+      return ok({ id: result.value.id, companyId: result.value.companyId });
     },
   };
 }

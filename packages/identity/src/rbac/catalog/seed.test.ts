@@ -35,7 +35,7 @@ describe("seedRbacCatalog", () => {
     assert.ok(result.ok, "seed must succeed");
     const report = result.value;
     assert.equal(report.catalogVersion, RBAC_CATALOG_VERSION);
-    assert.equal(report.canonicalPermissions.created, 105);
+    assert.equal(report.canonicalPermissions.created, 107);
     assert.equal(report.canonicalPermissions.existing, 0);
     assert.equal(
       report.platformPermissions.created,
@@ -55,12 +55,12 @@ describe("seedRbacCatalog", () => {
     assert.equal(report.legacyCompatibilityPermissions.created, compatCount);
     assert.equal(report.systemRoles.created, 33);
     assert.equal(report.systemRoles.existing, 0);
-    assert.equal(report.legacyMappingCount, 105);
+    assert.equal(report.legacyMappingCount, 107);
     assert.ok(report.rolePermissionLinks.created > 0);
 
     assert.equal(
       store.permissions.size,
-      105 +
+      107 +
         PLATFORM_PERMISSION_DEFINITIONS.length +
         API_PERMISSION_DEFINITIONS.length +
         ROUTE_PERMISSION_DEFINITIONS.length +
@@ -85,7 +85,7 @@ describe("seedRbacCatalog", () => {
     assert.ok(second.ok);
     const report = second.value;
     assert.equal(report.canonicalPermissions.created, 0);
-    assert.equal(report.canonicalPermissions.existing, 105);
+    assert.equal(report.canonicalPermissions.existing, 107);
     assert.equal(report.platformPermissions.created, 0);
     assert.equal(
       report.platformPermissions.existing,
@@ -227,7 +227,7 @@ describe("seedRbacCatalog", () => {
     assert.ok(!readGranted.has("dam.assets.upload"));
   });
 
-  it("super_admin and admin cover all 105 legacy executable keys", async () => {
+  it("super_admin and admin cover all 107 legacy executable keys", async () => {
     const store = new InMemoryIdentityStore();
     const result = await seedRbacCatalog({ store });
     assert.ok(result.ok);

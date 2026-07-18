@@ -39,6 +39,7 @@ import { FinancePolicyActions } from "@afh/finance-application";
 import { ProjectsPolicyActions } from "@afh/projects-application";
 import { ServicePolicyActions } from "@afh/service-application";
 import { CrmPolicyActions } from "@afh/crm-application";
+import { DamPolicyActions } from "@afh/dam-application";
 import {
   AuthorizationError,
   CommandId,
@@ -60,6 +61,10 @@ const MODULE_ACTIONS: Readonly<
   projects: ProjectsPolicyActions,
   service: ServicePolicyActions,
   crm: CrmPolicyActions,
+  dam: {
+    AssetCreate: DamPolicyActions.AssetCreate,
+    AssetRead: DamPolicyActions.AssetRead,
+  },
 };
 
 describe("RC5.3 module CRUD authorization mapping", () => {
@@ -98,14 +103,14 @@ describe("RC5.3 module CRUD authorization mapping", () => {
     }
   });
 
-  it("the 107 handler action references cover the full 105-code catalog exactly", () => {
+  it("the 109 module PolicyActions references cover the full 107-code catalog exactly", () => {
     const references = Object.values(MODULE_ACTIONS).flatMap((actions) =>
       Object.values(actions),
     );
-    assert.equal(references.length, 107, "107 handler action references");
+    assert.equal(references.length, 109, "109 module PolicyActions references");
 
     const distinct = [...new Set(references)].sort();
-    assert.equal(distinct.length, 105, "105 distinct canonical actions");
+    assert.equal(distinct.length, 107, "107 distinct canonical actions");
     assert.deepEqual(distinct, [...CANONICAL_PERMISSION_CODES].sort());
   });
 
@@ -276,7 +281,7 @@ describe("RC5.3 module permission enforcement (Policy Engine)", () => {
     );
   });
 
-  it("admin is allowed representative CRUD actions across all seven modules", async () => {
+  it("admin is allowed representative CRUD actions across all eight modules", async () => {
     const seeded = await principalWithRole("admin");
     for (const action of [
       SalesPolicyActions.OpportunityUpdate,
@@ -286,6 +291,7 @@ describe("RC5.3 module permission enforcement (Policy Engine)", () => {
       ProjectsPolicyActions.MilestoneCreate,
       ServicePolicyActions.TechnicianAssign,
       CrmPolicyActions.CampaignUpdate,
+      DamPolicyActions.AssetCreate,
     ]) {
       assert.deepEqual(
         await decide(seeded, action),

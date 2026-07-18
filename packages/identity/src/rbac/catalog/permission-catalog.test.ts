@@ -1,6 +1,6 @@
 /**
  * RC5.1 permission catalog tests — catalog completeness, canonical grammar,
- * and full legacy action key mapping coverage (105 unique keys, 107 handler
+ * and full legacy action key mapping coverage (107 unique keys, 110 handler
  * action references).
  */
 
@@ -22,7 +22,7 @@ import { validatePermissionCode } from "./validation.js";
  * packages (sales/procurement/inventory/finance/crm/projects/service).
  * This fixture is the tripwire: if a handler action key changes or is added,
  * this test must be updated together with the catalog.
- * 107 action references across 107 handlers; 105 unique keys (the sales and
+ * 110 action references across 110 handlers; 107 unique keys (the sales and
  * procurement summary queries reuse `order.read` / `po.read`).
  */
 const HANDLER_ACTION_REFERENCES: readonly string[] = [
@@ -140,6 +140,10 @@ const HANDLER_ACTION_REFERENCES: readonly string[] = [
   "work_order.read",
   "service.history.read",
   "service.summary.read",
+  // dam (3 references)
+  "dam.asset.create",
+  "dam.asset.read",
+  "dam.asset.read",
 ];
 
 describe("RC5.1 permission catalog", () => {
@@ -147,9 +151,9 @@ describe("RC5.1 permission catalog", () => {
     assert.equal(RBAC_CATALOG_VERSION, "rc5.rbac-catalog.v3");
   });
 
-  it("contains exactly 105 canonical backend permissions", () => {
-    assert.equal(PERMISSION_CATALOG.length, 105);
-    assert.equal(CANONICAL_PERMISSION_CODES.length, 105);
+  it("contains exactly 107 canonical backend permissions", () => {
+    assert.equal(PERMISSION_CATALOG.length, 107);
+    assert.equal(CANONICAL_PERMISSION_CODES.length, 107);
   });
 
   it("includes the RC5.4 API upload permission outside the CQRS catalog", () => {
@@ -162,13 +166,13 @@ describe("RC5.1 permission catalog", () => {
 
   it("has unique canonical codes", () => {
     const codes = new Set(PERMISSION_CATALOG.map((p) => p.code));
-    assert.equal(codes.size, 105);
+    assert.equal(codes.size, 107);
   });
 
-  it("has unique legacy action keys (105)", () => {
+  it("has unique legacy action keys (107)", () => {
     const keys = new Set(PERMISSION_CATALOG.map((p) => p.legacyKey));
-    assert.equal(keys.size, 105);
-    assert.equal(Object.keys(LEGACY_ACTION_MAP).length, 105);
+    assert.equal(keys.size, 107);
+    assert.equal(Object.keys(LEGACY_ACTION_MAP).length, 107);
   });
 
   it("every canonical code satisfies the frozen grammar", () => {
@@ -199,9 +203,9 @@ describe("RC5.1 permission catalog", () => {
 });
 
 describe("RC5.1 legacy action key mapping coverage", () => {
-  it("mirrors 107 handler action references and 105 unique keys", () => {
-    assert.equal(HANDLER_ACTION_REFERENCES.length, 107);
-    assert.equal(new Set(HANDLER_ACTION_REFERENCES).size, 105);
+  it("mirrors 110 handler action references and 107 unique keys", () => {
+    assert.equal(HANDLER_ACTION_REFERENCES.length, 110);
+    assert.equal(new Set(HANDLER_ACTION_REFERENCES).size, 107);
   });
 
   it("maps every handler action reference (0 unmapped keys)", () => {

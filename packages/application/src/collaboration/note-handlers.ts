@@ -1,6 +1,13 @@
 import type { SecurityAuditService } from "@afh/identity";
 import { NotFoundError, ValidationError, fail, ok } from "@afh/shared-kernel";
 import type { CommandHandler, QueryHandler } from "../handlers/handlers.js";
+import {
+  firstBindingParent,
+  normalizeCollaborationBindings,
+  resolveBinding,
+  type LegacyCollaborationBindingDeps,
+  type MultiCollaborationBindingDeps,
+} from "./bindings.js";
 import { CollaborationCommandTypes, CollaborationQueryTypes } from "./constants.js";
 import { parentEntityResource } from "./policy.js";
 import {
@@ -9,10 +16,10 @@ import {
   requireCompanyId,
 } from "./support.js";
 import type {
-  CollaborationParentBinding,
   CreateEntityNotePayload,
   DeleteEntityNotePayload,
   EntityNote,
+  EntityNoteKind,
   EntityNoteRepository,
   ListEntityNotesPayload,
 } from "./types.js";
@@ -20,9 +27,7 @@ import type {
 export type CollaborationNoteHandlerDeps = {
   readonly notes: EntityNoteRepository;
   readonly audit?: SecurityAuditService;
-  readonly binding: CollaborationParentBinding;
-  readonly allowedEntityType: string;
-};
+} & (MultiCollaborationBindingDeps | LegacyCollaborationBindingDeps);
 
 export type CollaborationNoteHandlers = {
   readonly create: CommandHandler<CreateEntityNotePayload, { noteId: string }>;
@@ -33,32 +38,23 @@ export type CollaborationNoteHandlers = {
   >;
 };
 
-function rejectEntityTypeMismatch(
-  entityType: string,
-  allowedEntityType: string,
-) {
-  if (entityType !== allowedEntityType) {
-    return fail(
-      new ValidationError("entityType is not supported for this binding", {
-        code: "entity_type_mismatch",
-        details: { entityType, allowedEntityType },
-      }),
-    );
-  }
-  return null;
-}
-
 export function createCollaborationNoteHandlers(
   deps: CollaborationNoteHandlerDeps,
 ): CollaborationNoteHandlers {
-  const { notes, binding, allowedEntityType } = deps;
+  const bindings = normalizeCollaborationBindings(deps);
+  const { notes } = deps;
+  const fallbackParent = firstBindingParent(bindings);
 
   const create: CommandHandler<CreateEntityNotePayload, { noteId: string }> = {
     commandType: CollaborationCommandTypes.CreateEntityNote,
     authorize(command) {
+      const resolved = resolveBinding(bindings, command.payload.entityType);
+      if (!resolved.ok) {
+        throw resolved.error;
+      }
       return parentEntityResource(
-        binding.parentResourceType,
-        binding.parentUpdateAction,
+        resolved.value.parent.parentResourceType,
+        resolved.value.parent.parentUpdateAction,
         command.payload.companyId,
         command.payload.entityId,
       );
@@ -67,11 +63,8 @@ export function createCollaborationNoteHandlers(
       const scope = requireCompanyId(ctx, command.payload.companyId);
       if (!scope.ok) return scope;
 
-      const typeMismatch = rejectEntityTypeMismatch(
-        command.payload.entityType,
-        allowedEntityType,
-      );
-      if (typeMismatch) return typeMismatch;
+      const resolved = resolveBinding(bindings, command.payload.entityType);
+      if (!resolved.ok) return resolved;
 
       const body = command.payload.body.trim();
       if (!body) {
@@ -80,6 +73,7 @@ export function createCollaborationNoteHandlers(
         );
       }
 
+      const kind: EntityNoteKind = command.payload.kind ?? "note";
       const id = newEntityId();
       const now = ctx.clock.now().toISOString();
       const note: EntityNote = {
@@ -87,6 +81,7 @@ export function createCollaborationNoteHandlers(
         companyId: scope.value,
         entityType: command.payload.entityType,
         entityId: command.payload.entityId,
+        kind,
         body,
         createdByUserId: ctx.userId,
         createdAt: now,
@@ -105,6 +100,7 @@ export function createCollaborationNoteHandlers(
           details: {
             parentEntityType: command.payload.entityType,
             parentEntityId: command.payload.entityId,
+            kind,
           },
         });
       }
@@ -125,15 +121,21 @@ export function createCollaborationNoteHandlers(
       }
       if (!found.value) {
         return parentEntityResource(
-          binding.parentResourceType,
-          binding.parentUpdateAction,
+          fallbackParent.parentResourceType,
+          fallbackParent.parentUpdateAction,
           command.payload.companyId,
           command.payload.id,
         );
       }
+
+      const resolved = resolveBinding(bindings, found.value.entityType);
+      if (!resolved.ok) {
+        throw resolved.error;
+      }
+
       return parentEntityResource(
-        binding.parentResourceType,
-        binding.parentUpdateAction,
+        resolved.value.parent.parentResourceType,
+        resolved.value.parent.parentUpdateAction,
         found.value.companyId,
         found.value.entityId,
       );
@@ -156,11 +158,8 @@ export function createCollaborationNoteHandlers(
         );
       }
 
-      const typeMismatch = rejectEntityTypeMismatch(
-        found.value.entityType,
-        allowedEntityType,
-      );
-      if (typeMismatch) return typeMismatch;
+      const resolved = resolveBinding(bindings, found.value.entityType);
+      if (!resolved.ok) return resolved;
 
       const removed = await notes.remove({
         companyId: scope.value,
@@ -187,9 +186,13 @@ export function createCollaborationNoteHandlers(
   > = {
     queryType: CollaborationQueryTypes.ListEntityNotes,
     authorize(query) {
+      const resolved = resolveBinding(bindings, query.payload.entityType);
+      if (!resolved.ok) {
+        throw resolved.error;
+      }
       return parentEntityResource(
-        binding.parentResourceType,
-        binding.parentReadAction,
+        resolved.value.parent.parentResourceType,
+        resolved.value.parent.parentReadAction,
         query.payload.companyId,
         query.payload.entityId,
       );
@@ -198,11 +201,8 @@ export function createCollaborationNoteHandlers(
       const scope = requireCompanyId(ctx, query.payload.companyId);
       if (!scope.ok) return scope;
 
-      const typeMismatch = rejectEntityTypeMismatch(
-        query.payload.entityType,
-        allowedEntityType,
-      );
-      if (typeMismatch) return typeMismatch;
+      const resolved = resolveBinding(bindings, query.payload.entityType);
+      if (!resolved.ok) return resolved;
 
       const listed = await notes.listByEntity(
         scope.value,

@@ -70,4 +70,6 @@ export type UploadAcceptedDto = {
   readonly companyId: string;
   readonly name: string;
   readonly status: string;
+  readonly versionId?: string;
+  readonly storageRef?: string;
 };

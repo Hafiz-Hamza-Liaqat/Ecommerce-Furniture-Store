@@ -16,3 +16,4 @@ export * from "./events/index.js";
 export * from "./repositories/index.js";
 export * from "./validation/index.js";
 export * from "./composition/index.js";
+export * from "./storage/index.js";

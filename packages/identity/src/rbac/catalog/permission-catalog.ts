@@ -5,7 +5,7 @@
  * Canonical grammar: `<module>.<resource>.<action>`.
  *
  * Every entry maps exactly one legacy executable Policy action key that the
- * 107 registered CQRS handlers emitted before RC5.3 (105 unique keys; the
+ * 110 registered CQRS handlers emitted before RC5.3 (107 unique keys; the
  * sales and procurement summary queries reuse `order.read` / `po.read`).
  * RC5.3 normalized handler actions to the canonical codes; the mapping and
  * the seed-layer compatibility grants (see seed.ts) remain unchanged as the
@@ -169,7 +169,12 @@ const SERVICE: readonly Entry[] = [
   ["service.summary.read", "service.summary.read", "Read the service summary"],
 ];
 
-/** The complete RC5.1 canonical CQRS backend permission catalog (105 entries). */
+const DAM: readonly Entry[] = [
+  ["dam.assets.create", "dam.asset.create", "Create digital assets"],
+  ["dam.assets.read", "dam.asset.read", "Read digital assets"],
+];
+
+/** The complete RC5.1 canonical CQRS backend permission catalog (107 entries). */
 export const PERMISSION_CATALOG: readonly CatalogPermissionDefinition[] = [
   ...moduleEntries("sales", SALES),
   ...moduleEntries("procurement", PROCUREMENT),
@@ -178,6 +183,7 @@ export const PERMISSION_CATALOG: readonly CatalogPermissionDefinition[] = [
   ...moduleEntries("crm", CRM),
   ...moduleEntries("projects", PROJECTS),
   ...moduleEntries("service", SERVICE),
+  ...moduleEntries("dam", DAM),
 ];
 
 /**
@@ -288,7 +294,7 @@ export const API_PERMISSION_DEFINITIONS: readonly CatalogPermissionDefinition[] 
     },
   ];
 
-/** All CQRS backend permission codes in catalog order (105). */
+/** All CQRS backend permission codes in catalog order (107). */
 export const CANONICAL_PERMISSION_CODES: readonly string[] =
   PERMISSION_CATALOG.map((entry) => entry.code);
 
@@ -310,7 +316,7 @@ export const ALL_PERMISSION_DEFINITIONS = [
 
 /**
  * Explicit legacy executable action key → canonical permission code map.
- * Exactly one entry per unique legacy key (105).
+ * Exactly one entry per unique legacy key (107).
  */
 export const LEGACY_ACTION_MAP: Readonly<Record<string, string>> =
   Object.freeze(
