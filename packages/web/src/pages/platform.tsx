@@ -526,47 +526,45 @@ export function ApprovalsPage() {
     [items],
   );
 
-  const loadRequests = useCallback(async () => {
-    if (!companyId) {
-      setItems([]);
-      setLoading(false);
-      setError("Company-scoped session required for approval operator queries.");
-      setForbidden(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setForbidden(false);
-    try {
-      const res = await api.dispatchQuery<readonly ApprovalRequestRow[]>({
-        queryType: "approval.ListRequests",
-        payload: { companyId, openOnly: false },
-      });
-      setLastCorrelationId(res.correlationId);
-      setItems(res.data ?? []);
-    } catch (err) {
-      const formatted = formatApiError(err);
-      if (err instanceof ApiClientError) {
-        setLastCorrelationId(err.correlationId);
-      }
-      setForbidden(formatted.forbidden);
-      setError(formatted.message);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, companyId, setLastCorrelationId]);
-
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      await loadRequests();
-      if (cancelled) return;
+      if (!companyId) {
+        if (cancelled) return;
+        setItems([]);
+        setLoading(false);
+        setError("Company-scoped session required for approval operator queries.");
+        setForbidden(false);
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      setForbidden(false);
+      try {
+        const res = await api.dispatchQuery<readonly ApprovalRequestRow[]>({
+          queryType: "approval.ListRequests",
+          payload: { companyId, openOnly: false },
+        });
+        if (cancelled) return;
+        setLastCorrelationId(res.correlationId);
+        setItems(res.data ?? []);
+      } catch (err) {
+        if (cancelled) return;
+        const formatted = formatApiError(err);
+        if (err instanceof ApiClientError) {
+          setLastCorrelationId(err.correlationId);
+        }
+        setForbidden(formatted.forbidden);
+        setError(formatted.message);
+        setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [loadRequests, reloadToken]);
+  }, [api, companyId, reloadToken, setLastCorrelationId]);
 
   async function claim(requestId: string) {
     if (!companyId) return;
