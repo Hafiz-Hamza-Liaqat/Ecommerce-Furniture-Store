@@ -169,6 +169,10 @@ export async function createProductionHost(
       store: sql.identityStore,
       auditStore: sql.securityAuditStore,
     },
+    platform: {
+      workflowStore: sql.workflowStore,
+      approvalStore: sql.approvalStore,
+    },
     security: { enabled: true },
     host: config.host,
     port: config.port,

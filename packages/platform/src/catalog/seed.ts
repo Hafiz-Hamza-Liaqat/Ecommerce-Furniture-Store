@@ -4,7 +4,7 @@
  * Registers default workflow and approval definitions into the existing
  * WorkflowEngine / ApprovalEngine stores. Soft-skips conflicts so the seed
  * is safely rerunnable on every host start (in-memory stores reset on process
- * restart; SQL definition stores are later RC6 scope).
+ * restart; SQL definition stores land in RC6.4 via injected store adapters).
  *
  * Does not change engine ownership, Policy Engine behavior, or handler logic.
  */

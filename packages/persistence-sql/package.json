@@ -13,11 +13,6 @@
     }
   },
   "files": ["dist", "README.md"],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src --max-warnings 0"
-  },
   "dependencies": {
     "@afh/cms": "0.1.0",
     "@afh/commerce": "0.1.0",
@@ -31,6 +26,7 @@
     "@afh/manufacturing": "0.1.0",
     "@afh/notifications": "0.1.0",
     "@afh/persistence": "0.1.0",
+    "@afh/platform": "0.1.0",
     "@afh/procurement": "0.1.0",
     "@afh/projects": "0.1.0",
     "@afh/reporting": "0.1.0",
@@ -38,6 +34,12 @@
     "@afh/search": "0.1.0",
     "@afh/service": "0.1.0",
     "@afh/shared-kernel": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "test": "node --test dist/platform/sql-platform-stores.test.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

@@ -9,13 +9,19 @@ import {
   type PolicyEngine,
   type SecurityAuditService,
 } from "@afh/identity";
-import { InMemoryWorkflowStore } from "../workflow/workflow-store.js";
+import {
+  InMemoryWorkflowStore,
+  type WorkflowStore,
+} from "../workflow/workflow-store.js";
 import { WorkflowEngine } from "../workflow/workflow-engine.js";
 import type {
   StatusProjectionUpdater,
   WorkflowEventSink,
 } from "../workflow/workflow-engine.js";
-import { InMemoryApprovalStore } from "../approval/approval-store.js";
+import {
+  InMemoryApprovalStore,
+  type ApprovalStore,
+} from "../approval/approval-store.js";
 import { ApprovalEngine } from "../approval/approval-engine.js";
 import type {
   ApprovalEventSink,
@@ -44,6 +50,15 @@ export type CreatePlatformEnginesOptions = {
   readonly identity: IdentityFoundation;
   readonly persistence?: PersistenceFoundation;
   readonly clock?: Clock;
+  /**
+   * Optional WorkflowStore injection (RC6.4). Defaults to InMemoryWorkflowStore
+   * so existing tests and non-SQL compositions stay unchanged.
+   */
+  readonly workflowStore?: WorkflowStore;
+  /**
+   * Optional ApprovalStore injection (RC6.4). Defaults to InMemoryApprovalStore.
+   */
+  readonly approvalStore?: ApprovalStore;
   readonly workflowEvents?: WorkflowEventSink;
   readonly approvalEvents?: ApprovalEventSink;
   readonly rulesEvents?: RulesEventSink;
@@ -68,7 +83,7 @@ export function createPlatformEngines(
     options.rulesEvents,
   );
 
-  const workflowStore = new InMemoryWorkflowStore();
+  const workflowStore = options.workflowStore ?? new InMemoryWorkflowStore();
   const workflow = new WorkflowEngine(
     workflowStore,
     clock,
@@ -78,7 +93,7 @@ export function createPlatformEngines(
     options.projectionUpdater,
   );
 
-  const approvalStore = new InMemoryApprovalStore();
+  const approvalStore = options.approvalStore ?? new InMemoryApprovalStore();
   const approval = new ApprovalEngine(
     approvalStore,
     clock,

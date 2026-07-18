@@ -26,6 +26,8 @@ import { SqlOutboxStore } from "../stores/outbox-store.js";
 import { SqlInboxStore } from "../stores/inbox-store.js";
 import { SqlIdentityStore } from "../identity/sql-identity-store.js";
 import { SqlSecurityAuditStore } from "../identity/sql-audit-store.js";
+import { SqlWorkflowStore } from "../platform/sql-workflow-store.js";
+import { SqlApprovalStore } from "../platform/sql-approval-store.js";
 import {
   createSqlEnterpriseRepositories,
   type SqlDomainRepositories,
@@ -35,6 +37,8 @@ export type SqlPersistenceFoundation = PersistenceFoundation & {
   readonly sqlClient: SqliteDatabaseClient;
   readonly identityStore: SqlIdentityStore;
   readonly securityAuditStore: SqlSecurityAuditStore;
+  readonly workflowStore: SqlWorkflowStore;
+  readonly approvalStore: SqlApprovalStore;
   readonly repositories: SqlDomainRepositories;
   readonly migrationCompatible: boolean;
   readonly busyTimeoutMs: number;
@@ -74,6 +78,8 @@ export function createSqlPersistenceFoundation(
   const inboxStore = new SqlInboxStore(sqlClient);
   const identityStore = new SqlIdentityStore(sqlClient);
   const securityAuditStore = new SqlSecurityAuditStore(sqlClient);
+  const workflowStore = new SqlWorkflowStore(sqlClient);
+  const approvalStore = new SqlApprovalStore(sqlClient);
   const repositories = createSqlEnterpriseRepositories(sqlClient, clock);
 
   return {
@@ -93,6 +99,8 @@ export function createSqlPersistenceFoundation(
     sqlClient,
     identityStore,
     securityAuditStore,
+    workflowStore,
+    approvalStore,
     repositories,
     migrationCompatible,
     busyTimeoutMs: config.busyTimeoutMs,
