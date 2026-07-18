@@ -1,5 +1,8 @@
 export { ProcurementQueryTypes } from "./queries.js";
 export type {
+  ListSupplierPayload,
+  ListPurchaseRequisitionPayload,
+  ListPurchaseOrderPayload,
   GetSupplierPayload,
   GetPurchaseRequisitionPayload,
   GetPurchaseOrderPayload,

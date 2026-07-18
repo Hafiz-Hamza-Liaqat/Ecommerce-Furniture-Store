@@ -2,7 +2,13 @@
  * Procurement application queries — no transport DTOs.
  */
 
+import type { ListQueryRequest } from "@afh/shared-kernel";
 import { ProcurementQueryTypes } from "../constants.js";
+
+/** RC7.2b — shared List* envelope (companyId + optional criteria / q). */
+export type ListSupplierPayload = ListQueryRequest;
+export type ListPurchaseRequisitionPayload = ListQueryRequest;
+export type ListPurchaseOrderPayload = ListQueryRequest;
 
 export type GetSupplierPayload = {
   readonly companyId: string;

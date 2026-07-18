@@ -17,6 +17,9 @@ export const ProcurementQueryTypes = {
   GetPurchaseRequisition: "procurement.GetPurchaseRequisition",
   GetPurchaseOrder: "procurement.GetPurchaseOrder",
   GetProcurementSummary: "procurement.GetProcurementSummary",
+  ListSupplier: "procurement.ListSupplier",
+  ListPurchaseRequisition: "procurement.ListPurchaseRequisition",
+  ListPurchaseOrder: "procurement.ListPurchaseOrder",
 } as const;
 
 export const ProcurementWorkflowCodes = {

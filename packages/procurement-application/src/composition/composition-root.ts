@@ -21,6 +21,9 @@ import {
   createGetPurchaseRequisitionHandler,
   createGetSupplierHandler,
   createIssuePurchaseOrderHandler,
+  createListPurchaseOrderHandler,
+  createListPurchaseRequisitionHandler,
+  createListSupplierHandler,
   createSubmitPurchaseRequisitionHandler,
   createUpdateSupplierHandler,
 } from "../handlers/index.js";
@@ -69,6 +72,9 @@ export function createProcurementApplication(
   handlers.registerQuery(createGetPurchaseRequisitionHandler(deps));
   handlers.registerQuery(createGetPurchaseOrderHandler(deps));
   handlers.registerQuery(createGetProcurementSummaryHandler(deps));
+  handlers.registerQuery(createListSupplierHandler(deps));
+  handlers.registerQuery(createListPurchaseRequisitionHandler(deps));
+  handlers.registerQuery(createListPurchaseOrderHandler(deps));
 
   return { handlers, deps };
 }
