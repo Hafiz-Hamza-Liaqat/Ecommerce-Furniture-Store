@@ -1,15 +1,18 @@
 /**
  * Enterprise dependency composition — wires infrastructure, identity,
- * platform engines, application runtime, and all Phase 6A–6G apps.
+ * platform engines, application runtime, and all Phase 6A–6G + RC7 apps.
  * No business logic.
  */
 
 import {
   HandlerRegistry,
   createApplicationRuntime,
+  registerBulkIoHandlers,
   registerCollaborationHandlers,
+  registerJobHandlers,
   type ApplicationRuntime,
   type AssetExistenceChecker,
+  type BackgroundJobRepository,
   type EntityAttachmentLinkRepository,
   type EntityNoteRepository,
 } from "@afh/application";
@@ -67,9 +70,39 @@ import {
 import {
   createDamApplication,
 } from "@afh/dam-application";
+import {
+  createManufacturingApplication,
+  type CreateManufacturingApplicationOptions,
+} from "@afh/manufacturing-application";
+import {
+  createHrApplication,
+  type CreateHrApplicationOptions,
+} from "@afh/hr-application";
+import {
+  createCmsApplication,
+  type CreateCmsApplicationOptions,
+} from "@afh/cms-application";
+import {
+  createNotificationsApplication,
+  type CreateNotificationsApplicationOptions,
+} from "@afh/notifications-application";
+import {
+  createReportingApplication,
+  type CreateReportingApplicationOptions,
+} from "@afh/reporting-application";
+import {
+  createSearchApplication,
+  type CreateSearchApplicationOptions,
+} from "@afh/search-application";
 import type { AssetRepository, AssetVersionRepository, ObjectStore } from "@afh/dam";
 import { ok } from "@afh/shared-kernel";
 import { V1_COLLABORATION_BINDINGS } from "../collaboration/v1-bindings.js";
+import { V1_BULK_IO_BINDINGS } from "../bulk-io/v1-bindings.js";
+import {
+  createCrmLeadBulkAdapter,
+  createInventoryItemBulkAdapter,
+  createSupplierBulkAdapter,
+} from "../bulk-io/v1-adapters.js";
 
 export type EnterpriseModuleRepositories = {
   readonly sales: Omit<
@@ -107,6 +140,22 @@ export type EnterpriseModuleRepositories = {
   readonly damAssets: AssetRepository;
   readonly damVersions: AssetVersionRepository;
   readonly damObjectStore: ObjectStore;
+  readonly backgroundJobs: BackgroundJobRepository;
+  readonly manufacturing: Omit<
+    CreateManufacturingApplicationOptions,
+    "audit" | "handlers"
+  >;
+  readonly hr: Omit<CreateHrApplicationOptions, "audit" | "handlers">;
+  readonly cms: Omit<CreateCmsApplicationOptions, "audit" | "handlers">;
+  readonly notifications: Omit<
+    CreateNotificationsApplicationOptions,
+    "audit" | "handlers"
+  >;
+  readonly reporting: Omit<
+    CreateReportingApplicationOptions,
+    "audit" | "handlers"
+  >;
+  readonly search: Omit<CreateSearchApplicationOptions, "audit" | "handlers">;
 };
 
 export type CreateEnterpriseCompositionOptions = {
@@ -137,10 +186,6 @@ export type EnterpriseComposition = {
   dispose(): void;
 };
 
-/**
- * Wires the full enterprise stack for API hosting.
- * Repositories remain injected (interfaces only — no SQL here).
- */
 export function createEnterpriseComposition(
   options: CreateEnterpriseCompositionOptions,
 ): EnterpriseComposition {
@@ -238,6 +283,36 @@ export function createEnterpriseComposition(
     audit,
     handlers,
   });
+  createManufacturingApplication({
+    ...repos.manufacturing,
+    audit,
+    handlers,
+  });
+  createHrApplication({
+    ...repos.hr,
+    audit,
+    handlers,
+  });
+  createCmsApplication({
+    ...repos.cms,
+    audit,
+    handlers,
+  });
+  createNotificationsApplication({
+    ...repos.notifications,
+    audit,
+    handlers,
+  });
+  createReportingApplication({
+    ...repos.reporting,
+    audit,
+    handlers,
+  });
+  createSearchApplication({
+    ...repos.search,
+    audit,
+    handlers,
+  });
   createWorkflowApplication({ handlers });
 
   registerCollaborationHandlers(handlers, {
@@ -246,6 +321,21 @@ export function createEnterpriseComposition(
     assets: toAssetExistenceChecker(repos.damAssets),
     audit,
     bindings: V1_COLLABORATION_BINDINGS,
+  });
+
+  registerBulkIoHandlers(handlers, {
+    bindings: V1_BULK_IO_BINDINGS,
+    adapters: {
+      "inventory.item": createInventoryItemBulkAdapter(repos.inventory.items),
+      "crm.lead": createCrmLeadBulkAdapter(repos.crm.leads),
+      "procurement.supplier": createSupplierBulkAdapter(repos.procurement.suppliers),
+    },
+    audit,
+  });
+
+  registerJobHandlers(handlers, {
+    jobs: repos.backgroundJobs,
+    audit,
   });
 
   const runtime = createApplicationRuntime({

@@ -1,6 +1,6 @@
 /**
  * RC5.1 permission catalog tests — catalog completeness, canonical grammar,
- * and full legacy action key mapping coverage (107 unique keys, 110 handler
+ * and full legacy action key mapping coverage (133 unique keys, 136 handler
  * action references).
  */
 
@@ -18,12 +18,14 @@ import {
 import { validatePermissionCode } from "./validation.js";
 
 /**
- * Verbatim mirror of the seven `*PolicyActions` constants in the application
- * packages (sales/procurement/inventory/finance/crm/projects/service).
+ * Verbatim mirror of the `*PolicyActions` constants in the application
+ * packages (sales/procurement/inventory/finance/crm/projects/service/dam
+ * plus manufacturing/hr/cms/notifications/reporting/search/jobs/bulk-io).
  * This fixture is the tripwire: if a handler action key changes or is added,
  * this test must be updated together with the catalog.
- * 110 action references across 110 handlers; 107 unique keys (the sales and
- * procurement summary queries reuse `order.read` / `po.read`).
+ * 136 action references across handlers; 133 unique keys (the sales and
+ * procurement summary queries reuse `order.read` / `po.read`, and dam
+ * reuses `dam.asset.read`).
  */
 const HANDLER_ACTION_REFERENCES: readonly string[] = [
   // sales (10 references)
@@ -144,16 +146,52 @@ const HANDLER_ACTION_REFERENCES: readonly string[] = [
   "dam.asset.create",
   "dam.asset.read",
   "dam.asset.read",
+  // manufacturing (2 references)
+  "manufacturing.production_orders.create",
+  "manufacturing.production_orders.read",
+  // hr (2 references)
+  "hr.employees.create",
+  "hr.employees.read",
+  // cms (3 references)
+  "cms.content.create",
+  "cms.content.update",
+  "cms.content.read",
+  // notifications (3 references)
+  "notifications.notifications.read",
+  "notifications.preferences.read",
+  "notifications.preferences.update",
+  // reporting (2 references)
+  "reporting.report_definitions.read",
+  "reporting.report_definitions.run",
+  // search (2 references)
+  "search.documents.index",
+  "search.query.execute",
+  // jobs (3 references)
+  "jobs.jobs.enqueue",
+  "jobs.jobs.read",
+  "jobs.jobs.complete",
+  // bulk-io inventory (3 references)
+  "inventory.items.import",
+  "inventory.items.export",
+  "inventory.items.bulk_update",
+  // bulk-io crm (3 references)
+  "crm.leads.import",
+  "crm.leads.export",
+  "crm.leads.bulk_update",
+  // bulk-io procurement (3 references)
+  "procurement.suppliers.import",
+  "procurement.suppliers.export",
+  "procurement.suppliers.bulk_update",
 ];
 
 describe("RC5.1 permission catalog", () => {
   it("has the frozen catalog version", () => {
-    assert.equal(RBAC_CATALOG_VERSION, "rc5.rbac-catalog.v3");
+    assert.equal(RBAC_CATALOG_VERSION, "rc7.rbac-catalog.v1");
   });
 
-  it("contains exactly 107 canonical backend permissions", () => {
-    assert.equal(PERMISSION_CATALOG.length, 107);
-    assert.equal(CANONICAL_PERMISSION_CODES.length, 107);
+  it("contains exactly 133 canonical backend permissions", () => {
+    assert.equal(PERMISSION_CATALOG.length, 133);
+    assert.equal(CANONICAL_PERMISSION_CODES.length, 133);
   });
 
   it("includes the RC5.4 API upload permission outside the CQRS catalog", () => {
@@ -166,13 +204,13 @@ describe("RC5.1 permission catalog", () => {
 
   it("has unique canonical codes", () => {
     const codes = new Set(PERMISSION_CATALOG.map((p) => p.code));
-    assert.equal(codes.size, 107);
+    assert.equal(codes.size, 133);
   });
 
-  it("has unique legacy action keys (107)", () => {
+  it("has unique legacy action keys (133)", () => {
     const keys = new Set(PERMISSION_CATALOG.map((p) => p.legacyKey));
-    assert.equal(keys.size, 107);
-    assert.equal(Object.keys(LEGACY_ACTION_MAP).length, 107);
+    assert.equal(keys.size, 133);
+    assert.equal(Object.keys(LEGACY_ACTION_MAP).length, 133);
   });
 
   it("every canonical code satisfies the frozen grammar", () => {
@@ -203,9 +241,9 @@ describe("RC5.1 permission catalog", () => {
 });
 
 describe("RC5.1 legacy action key mapping coverage", () => {
-  it("mirrors 110 handler action references and 107 unique keys", () => {
-    assert.equal(HANDLER_ACTION_REFERENCES.length, 110);
-    assert.equal(new Set(HANDLER_ACTION_REFERENCES).size, 107);
+  it("mirrors 136 handler action references and 133 unique keys", () => {
+    assert.equal(HANDLER_ACTION_REFERENCES.length, 136);
+    assert.equal(new Set(HANDLER_ACTION_REFERENCES).size, 133);
   });
 
   it("maps every handler action reference (0 unmapped keys)", () => {

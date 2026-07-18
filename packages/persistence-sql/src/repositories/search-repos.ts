@@ -19,11 +19,15 @@ import {
 import type {
   SearchDocument,
   SearchDocumentRepository,
+  SearchFilter,
+  SearchFilters,
+  SearchHit,
   SearchIndexDefinition,
   SearchIndexDefinitionRepository,
   SearchQuery,
   SearchRepository,
   SearchResult,
+  SearchSort,
 } from "@afh/search";
 import type { SqliteDatabaseClient } from "../database/sqlite-client.js";
 import { SqlNullableCompanyDocumentRepository } from "../mapping/document-repository.js";
@@ -176,22 +180,145 @@ export function createSqlSearchDocumentRepository(
   };
 }
 
+/** Top-level document fields addressable by filters/sort, alongside `fields.*`. */
+function resolveField(doc: SearchDocument, field: string): unknown {
+  switch (field) {
+    case "companyId":
+      return doc.companyId;
+    case "entityType":
+      return doc.entityType;
+    case "entityId":
+      return doc.entityId;
+    case "indexCode":
+      return doc.indexCode;
+    default:
+      return doc.fields[field];
+  }
+}
+
+function matchesOperator(actual: unknown, op: SearchFilter["op"], expected: unknown): boolean {
+  switch (op) {
+    case "eq":
+      return actual === expected;
+    case "neq":
+      return actual !== expected;
+    case "gt":
+      return typeof actual === "number" && typeof expected === "number" && actual > expected;
+    case "gte":
+      return typeof actual === "number" && typeof expected === "number" && actual >= expected;
+    case "lt":
+      return typeof actual === "number" && typeof expected === "number" && actual < expected;
+    case "lte":
+      return typeof actual === "number" && typeof expected === "number" && actual <= expected;
+    case "in":
+      return Array.isArray(expected) && expected.includes(actual);
+    case "contains":
+      return (
+        typeof actual === "string" &&
+        typeof expected === "string" &&
+        actual.toLowerCase().includes(expected.toLowerCase())
+      );
+    case "range": {
+      if (!Array.isArray(expected) || expected.length !== 2 || typeof actual !== "number") {
+        return false;
+      }
+      const [min, max] = expected as [unknown, unknown];
+      const okMin = typeof min !== "number" || actual >= min;
+      const okMax = typeof max !== "number" || actual <= max;
+      return okMin && okMax;
+    }
+    default:
+      return false;
+  }
+}
+
+function matchesFilters(doc: SearchDocument, filters: SearchFilters | null): boolean {
+  if (!filters || filters.filters.length === 0) return true;
+  return filters.filters.every((filter) =>
+    matchesOperator(resolveField(doc, filter.field), filter.op, filter.value),
+  );
+}
+
+function matchesQueryText(doc: SearchDocument, queryText: string | null): boolean {
+  if (queryText === null || queryText.trim() === "") return true;
+  const needle = queryText.trim().toLowerCase();
+  if (doc.entityId.toLowerCase().includes(needle)) return true;
+  try {
+    return JSON.stringify(doc.fields).toLowerCase().includes(needle);
+  } catch {
+    return false;
+  }
+}
+
+function compareFieldValues(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  if (a === null || a === undefined) return -1;
+  if (b === null || b === undefined) return 1;
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b));
+}
+
+function sortDocuments(
+  docs: readonly SearchDocument[],
+  sort: readonly SearchSort[],
+): SearchDocument[] {
+  if (sort.length === 0) return [...docs];
+  return [...docs].sort((a, b) => {
+    for (const entry of sort) {
+      const cmp = compareFieldValues(resolveField(a, entry.field), resolveField(b, entry.field));
+      if (cmp !== 0) return entry.direction === "asc" ? cmp : -cmp;
+    }
+    return 0;
+  });
+}
+
+/**
+ * Real (bounded) scan of `aggregate_documents` for `aggregate_type =
+ * 'search.document'`. Documents are stored with `parent_id = indexCode`
+ * (see `createSqlSearchDocumentRepository.save`), so the index is narrowed
+ * at the SQL layer before in-process filter/queryText/sort/paging.
+ */
 export function createSqlSearchRepository(
   client: SqliteDatabaseClient,
   clock: Clock,
 ): SearchRepository {
-  void client;
   void clock;
   return {
     search: async (
       query: SearchQuery,
-    ): Promise<Result<SearchResult, PlatformError>> =>
-      ok({
+    ): Promise<Result<SearchResult, PlatformError>> => {
+      const rows = client.all<AggRow>(
+        `SELECT * FROM aggregate_documents
+         WHERE aggregate_type = 'search.document' AND parent_id = ?`,
+        [query.indexCode],
+      );
+      const candidates = rows.map((row) => JSON.parse(row.payload_json) as SearchDocument);
+
+      const matched = candidates.filter(
+        (doc) =>
+          matchesFilters(doc, query.filters) && matchesQueryText(doc, query.queryText),
+      );
+      const sorted = sortDocuments(matched, query.sort);
+
+      const bounds = pageBounds(query.page);
+      const page = sorted.slice(bounds.offset, bounds.offset + bounds.limit);
+
+      const hits: SearchHit[] = page.map((doc) => ({
+        documentId: doc.id,
+        entityType: doc.entityType,
+        entityId: doc.entityId,
+        score: null,
+        fields: doc.fields,
+        highlights: [],
+      }));
+
+      return ok({
         indexCode: query.indexCode,
-        total: 0,
-        hits: [],
+        total: sorted.length,
+        hits,
         facets: [],
         tookMs: null,
-      }),
+      });
+    },
   };
 }

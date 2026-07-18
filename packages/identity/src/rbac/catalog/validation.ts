@@ -29,6 +29,9 @@ export const APPROVED_ACTIONS: ReadonlySet<string> = new Set([
   "export",
   "upload",
   "download",
+  "bulk_update",
+  "index",
+  "enqueue",
   // Lifecycle
   "submit",
   "approve",
@@ -94,6 +97,7 @@ export const RESERVED_MODULE_PREFIXES: ReadonlySet<string> = new Set([
   "portal",
   "integrations",
   "calendar",
+  "jobs",
 ]);
 
 /** Prefixes that must never appear as permission modules (§1.3). */

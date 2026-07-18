@@ -8,6 +8,8 @@ import type {
   SqlEntityAttachmentLinkRepository,
   SqlEntityNoteRepository,
 } from "../repositories/collaboration-repos.js";
+import type { SqlBackgroundJobRepository } from "../repositories/job-repos.js";
+import { createSqlBackgroundJobRepository } from "../repositories/job-repos.js";
 import type {
   AddressRepository,
   CatalogRepository,
@@ -266,6 +268,7 @@ export type SqlDomainRepositories = {
     readonly notes: SqlEntityNoteRepository;
     readonly attachmentLinks: SqlEntityAttachmentLinkRepository;
   };
+  readonly backgroundJobs: SqlBackgroundJobRepository;
   readonly dam: {
     readonly assets: AssetRepository;
     readonly versions: AssetVersionRepository;
@@ -399,6 +402,7 @@ export function createSqlEnterpriseRepositories(
       notes: createSqlEntityNoteRepository(client, clock),
       attachmentLinks: createSqlEntityAttachmentLinkRepository(client, clock),
     },
+    backgroundJobs: createSqlBackgroundJobRepository(client, clock),
     dam: {
       assets: damAssets,
       versions: createSqlAssetVersionRepository(client, clock),

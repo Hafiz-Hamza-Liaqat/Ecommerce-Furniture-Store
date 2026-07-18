@@ -23,6 +23,7 @@ import {
 } from "@afh/identity";
 import {
   AuthorizationBehavior,
+  JobPolicyActions,
   type ApplicationContext,
   type CommandPipelineContext,
 } from "@afh/application";
@@ -40,6 +41,12 @@ import { ProjectsPolicyActions } from "@afh/projects-application";
 import { ServicePolicyActions } from "@afh/service-application";
 import { CrmPolicyActions } from "@afh/crm-application";
 import { DamPolicyActions } from "@afh/dam-application";
+import { ManufacturingPolicyActions } from "@afh/manufacturing-application";
+import { HrPolicyActions } from "@afh/hr-application";
+import { CmsPolicyActions } from "@afh/cms-application";
+import { NotificationsPolicyActions } from "@afh/notifications-application";
+import { ReportingPolicyActions } from "@afh/reporting-application";
+import { SearchPolicyActions } from "@afh/search-application";
 import {
   AuthorizationError,
   CommandId,
@@ -50,21 +57,44 @@ import {
   type Result,
   type UnitOfWork,
 } from "@afh/shared-kernel";
+import { BulkIoPolicyActions } from "../bulk-io/v1-bindings.js";
 
 const MODULE_ACTIONS: Readonly<
   Record<string, Readonly<Record<string, string>>>
 > = {
   sales: SalesPolicyActions,
-  procurement: ProcurementPolicyActions,
-  inventory: InventoryPolicyActions,
+  procurement: {
+    ...ProcurementPolicyActions,
+    SupplierImport: BulkIoPolicyActions.ProcurementImport,
+    SupplierExport: BulkIoPolicyActions.ProcurementExport,
+    SupplierBulkUpdate: BulkIoPolicyActions.ProcurementBulkUpdate,
+  },
+  inventory: {
+    ...InventoryPolicyActions,
+    ItemImport: BulkIoPolicyActions.InventoryImport,
+    ItemExport: BulkIoPolicyActions.InventoryExport,
+    ItemBulkUpdate: BulkIoPolicyActions.InventoryBulkUpdate,
+  },
   finance: FinancePolicyActions,
   projects: ProjectsPolicyActions,
   service: ServicePolicyActions,
-  crm: CrmPolicyActions,
+  crm: {
+    ...CrmPolicyActions,
+    LeadImport: BulkIoPolicyActions.CrmImport,
+    LeadExport: BulkIoPolicyActions.CrmExport,
+    LeadBulkUpdate: BulkIoPolicyActions.CrmBulkUpdate,
+  },
   dam: {
     AssetCreate: DamPolicyActions.AssetCreate,
     AssetRead: DamPolicyActions.AssetRead,
   },
+  manufacturing: ManufacturingPolicyActions,
+  hr: HrPolicyActions,
+  cms: CmsPolicyActions,
+  notifications: NotificationsPolicyActions,
+  reporting: ReportingPolicyActions,
+  search: SearchPolicyActions,
+  jobs: JobPolicyActions,
 };
 
 describe("RC5.3 module CRUD authorization mapping", () => {
@@ -103,14 +133,14 @@ describe("RC5.3 module CRUD authorization mapping", () => {
     }
   });
 
-  it("the 109 module PolicyActions references cover the full 107-code catalog exactly", () => {
+  it("the 135 module PolicyActions references cover the full 133-code catalog exactly", () => {
     const references = Object.values(MODULE_ACTIONS).flatMap((actions) =>
       Object.values(actions),
     );
-    assert.equal(references.length, 109, "109 module PolicyActions references");
+    assert.equal(references.length, 135, "135 module PolicyActions references");
 
     const distinct = [...new Set(references)].sort();
-    assert.equal(distinct.length, 107, "107 distinct canonical actions");
+    assert.equal(distinct.length, 133, "133 distinct canonical actions");
     assert.deepEqual(distinct, [...CANONICAL_PERMISSION_CODES].sort());
   });
 

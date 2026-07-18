@@ -17,7 +17,7 @@ import {
   ROUTE_PERMISSION_DEFINITIONS,
 } from "./route-permission-catalog.js";
 
-export const RBAC_CATALOG_VERSION = "rc5.rbac-catalog.v3";
+export const RBAC_CATALOG_VERSION = "rc7.rbac-catalog.v1";
 
 export type CatalogPermissionDefinition = {
   /** Canonical permission code (`<module>.<resource>.<action>`). */
@@ -174,16 +174,79 @@ const DAM: readonly Entry[] = [
   ["dam.assets.read", "dam.asset.read", "Read digital assets"],
 ];
 
-/** The complete RC5.1 canonical CQRS backend permission catalog (107 entries). */
+const MANUFACTURING: readonly Entry[] = [
+  ["manufacturing.production_orders.create", "manufacturing.production_orders.create", "Create production orders"],
+  ["manufacturing.production_orders.read", "manufacturing.production_orders.read", "Read production orders"],
+];
+
+const HR: readonly Entry[] = [
+  ["hr.employees.create", "hr.employees.create", "Create employees"],
+  ["hr.employees.read", "hr.employees.read", "Read employees"],
+];
+
+const CMS: readonly Entry[] = [
+  ["cms.content.create", "cms.content.create", "Create CMS content entries"],
+  ["cms.content.update", "cms.content.update", "Update CMS content entries"],
+  ["cms.content.read", "cms.content.read", "Read CMS content entries"],
+];
+
+const NOTIFICATIONS: readonly Entry[] = [
+  ["notifications.notifications.read", "notifications.notifications.read", "Read in-app notifications"],
+  ["notifications.preferences.read", "notifications.preferences.read", "Read notification preferences"],
+  ["notifications.preferences.update", "notifications.preferences.update", "Update notification preferences"],
+];
+
+const REPORTING: readonly Entry[] = [
+  ["reporting.report_definitions.read", "reporting.report_definitions.read", "Read report definitions"],
+  ["reporting.report_definitions.run", "reporting.report_definitions.run", "Run bounded V1 reports"],
+];
+
+const SEARCH: readonly Entry[] = [
+  ["search.documents.index", "search.documents.index", "Index search documents"],
+  ["search.query.execute", "search.query.execute", "Execute bounded search queries"],
+];
+
+const JOBS: readonly Entry[] = [
+  ["jobs.jobs.enqueue", "jobs.jobs.enqueue", "Enqueue background jobs"],
+  ["jobs.jobs.read", "jobs.jobs.read", "Read background jobs"],
+  ["jobs.jobs.complete", "jobs.jobs.complete", "Complete or fail background jobs"],
+];
+
+const INVENTORY_BULK: readonly Entry[] = [
+  ["inventory.items.import", "inventory.items.import", "Import inventory items"],
+  ["inventory.items.export", "inventory.items.export", "Export inventory items"],
+  ["inventory.items.bulk_update", "inventory.items.bulk_update", "Bulk-update inventory items"],
+];
+
+const CRM_BULK: readonly Entry[] = [
+  ["crm.leads.import", "crm.leads.import", "Import CRM leads"],
+  ["crm.leads.export", "crm.leads.export", "Export CRM leads"],
+  ["crm.leads.bulk_update", "crm.leads.bulk_update", "Bulk-update CRM leads"],
+];
+
+const PROCUREMENT_BULK: readonly Entry[] = [
+  ["procurement.suppliers.import", "procurement.suppliers.import", "Import suppliers"],
+  ["procurement.suppliers.export", "procurement.suppliers.export", "Export suppliers"],
+  ["procurement.suppliers.bulk_update", "procurement.suppliers.bulk_update", "Bulk-update suppliers"],
+];
+
+/** The complete RC7 CQRS backend permission catalog (133 entries). */
 export const PERMISSION_CATALOG: readonly CatalogPermissionDefinition[] = [
   ...moduleEntries("sales", SALES),
-  ...moduleEntries("procurement", PROCUREMENT),
-  ...moduleEntries("inventory", INVENTORY),
+  ...moduleEntries("procurement", [...PROCUREMENT, ...PROCUREMENT_BULK]),
+  ...moduleEntries("inventory", [...INVENTORY, ...INVENTORY_BULK]),
   ...moduleEntries("finance", FINANCE),
-  ...moduleEntries("crm", CRM),
+  ...moduleEntries("crm", [...CRM, ...CRM_BULK]),
   ...moduleEntries("projects", PROJECTS),
   ...moduleEntries("service", SERVICE),
   ...moduleEntries("dam", DAM),
+  ...moduleEntries("manufacturing", MANUFACTURING),
+  ...moduleEntries("hr", HR),
+  ...moduleEntries("cms", CMS),
+  ...moduleEntries("notifications", NOTIFICATIONS),
+  ...moduleEntries("reporting", REPORTING),
+  ...moduleEntries("search", SEARCH),
+  ...moduleEntries("jobs", JOBS),
 ];
 
 /**
@@ -294,7 +357,7 @@ export const API_PERMISSION_DEFINITIONS: readonly CatalogPermissionDefinition[] 
     },
   ];
 
-/** All CQRS backend permission codes in catalog order (107). */
+/** All CQRS backend permission codes in catalog order (133). */
 export const CANONICAL_PERMISSION_CODES: readonly string[] =
   PERMISSION_CATALOG.map((entry) => entry.code);
 
@@ -316,7 +379,7 @@ export const ALL_PERMISSION_DEFINITIONS = [
 
 /**
  * Explicit legacy executable action key → canonical permission code map.
- * Exactly one entry per unique legacy key (107).
+ * Exactly one entry per unique legacy key (133).
  */
 export const LEGACY_ACTION_MAP: Readonly<Record<string, string>> =
   Object.freeze(

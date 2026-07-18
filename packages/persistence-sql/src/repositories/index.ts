@@ -125,6 +125,12 @@ export {
 } from "./collaboration-repos.js";
 
 export {
+  createSqlBackgroundJobRepository,
+  type SqlBackgroundJob,
+  type SqlBackgroundJobRepository,
+} from "./job-repos.js";
+
+export {
   createSqlReportDefinitionRepository,
   createSqlReportTemplateRepository,
   createSqlReportExecutionRepository,

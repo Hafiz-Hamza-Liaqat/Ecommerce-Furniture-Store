@@ -88,6 +88,28 @@ function toEnterpriseRepositories(
     damAssets: repos.damAssets,
     damVersions: repos.dam.versions,
     damObjectStore,
+    backgroundJobs: repos.backgroundJobs,
+    manufacturing: {
+      productionOrders: repos.manufacturing.productionOrders,
+    },
+    hr: {
+      employees: repos.hr.employees,
+    },
+    cms: {
+      content: repos.cms.content,
+    },
+    notifications: {
+      notifications: repos.notifications.notifications,
+      preferences: repos.notifications.preferences,
+    },
+    reporting: {
+      reportDefinitions: repos.reporting.definitions,
+      reportExecutions: repos.reporting.executions,
+    },
+    search: {
+      documents: repos.search.documents,
+      search: repos.search.search,
+    },
   };
 }
 

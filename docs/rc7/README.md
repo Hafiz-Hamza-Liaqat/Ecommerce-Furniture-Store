@@ -2,8 +2,8 @@
 
 - **Version:** 1.0
 - **Created:** 2026-07-18
-- **Last Updated:** 2026-07-18
-- **Status:** RC7.0–RC7.4 committed; **RC7.5 DAM + RC7.6 collaboration implemented — awaiting review (not committed). Do not start RC7.7.**
+- **Last Updated:** 2026-07-19
+- **Status:** RC7.0–RC7.6 committed; **RC7.7+ merged backend infrastructure implemented — awaiting review (not committed).**
 - **Depends on:** RC5 (authorization), RC6 (workflow/approval) — both release-ready (`rc6` / `v0.6.0`).
 - **Canonical product scope:** `docs/productization/01-productization-roadmap.md` §RC7
 - **V1 freeze:** [`03-V1-Scope-Freeze.md`](./03-V1-Scope-Freeze.md) — **single source of truth** for Included / Excluded / Deferred / Future. No RC7 engineering slice may expand Included scope without an approved amendment to that document.
@@ -73,11 +73,10 @@ RC7 is complete only when:
 9. **RC7.2g** — Service `List*` — committed
 10. **RC7.3** — Production UI de-fixturing — committed
 11. **RC7.4** — Validation, concurrency, audit, scope completion — committed
-12. **RC7.5** — DAM foundation — **implementation complete; awaiting review**
-13. **RC7.6** — Attachments, notes, comments, activity — **implementation complete; awaiting review**
-14. **RC7.7** — Import, export, bulk (Policy + audit + company + concurrency)
-15. **RC7.8 and later** — Manufacturing, HR, CMS, Notifications, Reporting, Search (V1 subsets only; each module begins with its own planning review before implementation if the approved V1 freeze changes)
-16. Final RC7 verification, audit, checklist, tag (after approval)
+12. **RC7.5** — DAM foundation — committed (`bb9f6c4`)
+13. **RC7.6** — Attachments, notes, comments, activity — committed (`bb9f6c4`)
+14. **RC7.7+ merged backend** — Import/export/bulk + jobs + Manufacturing/HR/CMS/Notifications/Reporting/Search V1 — **implemented; awaiting review**
+15. Final RC7 verification, audit, checklist, tag (after approval)
 
 Detail: [`05-Slice-Roadmap.md`](./05-Slice-Roadmap.md).
 
@@ -102,10 +101,9 @@ See **Definition of Done** above for the one-page finish line.
 | RC7.2g | Service List | Committed (`de5acea`) |
 | RC7.3 | Production UI de-fixturing | Committed (`3b349f2`) |
 | RC7.4 | Validation / concurrency / audit / scope | Committed (`85ef278`) |
-| RC7.5 | DAM foundation | **Implemented — awaiting review (not committed)** |
-| RC7.6 | Attachments / notes / comments / activity | **Implemented — awaiting review (not committed)** |
-| RC7.7 | Import / export / bulk | Not started |
-| RC7.8 and later | Manufacturing / HR / CMS / Notifications / Reporting / Search | Not started — V1 subsets only |
+| RC7.5 | DAM foundation | Committed (`bb9f6c4`) |
+| RC7.6 | Attachments / notes / comments / activity | Committed (`bb9f6c4`) |
+| RC7.7+ | Import/export/bulk + remaining V1 backend packages | **Implemented — awaiting review (not committed)** |
 
 ## Pack contents
 
@@ -119,5 +117,5 @@ See **Definition of Done** above for the one-page finish line.
 
 ## Explicit stop rule
 
-**Do not start RC7.1+ engineering until this pack is reviewed and approved.**  
-Do not push tags or begin RC8 during RC7.
+**Do not start RC8 during RC7.**  
+Do not push tags until RC7 closeout approval.
