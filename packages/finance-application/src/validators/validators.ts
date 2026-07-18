@@ -4,7 +4,12 @@
  */
 
 import type { Command, Query, Validator } from "@afh/shared-kernel";
-import { validationFail, validationOk } from "@afh/shared-kernel";
+import {
+  validateFilterAllowList,
+  validateSortAllowList,
+  validationFail,
+  validationOk,
+} from "@afh/shared-kernel";
 import type {
   AppendLedgerEntryPayload,
   CreateFinancialAccountPayload,
@@ -23,7 +28,21 @@ import type {
   GetInvoicePayload,
   GetLedgerPayload,
   GetPaymentPayload,
+  ListFinancialAccountPayload,
+  ListInvoicePayload,
+  ListLedgerPayload,
+  ListPaymentPayload,
 } from "../queries/queries.js";
+import {
+  FINANCIAL_ACCOUNT_FILTER_FIELDS,
+  FINANCIAL_ACCOUNT_SORT_FIELDS,
+  INVOICE_FILTER_FIELDS,
+  INVOICE_SORT_FIELDS,
+  LEDGER_FILTER_FIELDS,
+  LEDGER_SORT_FIELDS,
+  PAYMENT_FILTER_FIELDS,
+  PAYMENT_SORT_FIELDS,
+} from "../list-fields.js";
 
 function requireField(
   field: string,
@@ -306,6 +325,87 @@ export const getFinancialSummaryQueryValidator: Validator<
   validate(query) {
     return (
       requireField("companyId", query.payload.companyId) ?? validationOk()
+    );
+  },
+};
+
+function listCriteriaViolations(
+  payload: ListFinancialAccountPayload,
+  sortFields: ReadonlySet<string>,
+  filterFields: ReadonlySet<string>,
+): ReturnType<typeof validationFail> | null {
+  const sort = validateSortAllowList(payload.criteria?.sort, sortFields);
+  if (!sort.ok) {
+    return validationFail([
+      {
+        field: "criteria.sort",
+        code: sort.error.code,
+        message: sort.error.message,
+      },
+    ]);
+  }
+  const filters = validateFilterAllowList(
+    payload.criteria?.filters,
+    filterFields,
+  );
+  if (!filters.ok) {
+    return validationFail([
+      {
+        field: "criteria.filters",
+        code: filters.error.code,
+        message: filters.error.message,
+      },
+    ]);
+  }
+  return null;
+}
+
+export const listFinancialAccountQueryValidator: Validator<
+  Query<ListFinancialAccountPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        FINANCIAL_ACCOUNT_SORT_FIELDS,
+        FINANCIAL_ACCOUNT_FILTER_FIELDS,
+      ) ??
+      validationOk()
+    );
+  },
+};
+
+export const listInvoiceQueryValidator: Validator<Query<ListInvoicePayload>> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, INVOICE_SORT_FIELDS, INVOICE_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listPaymentQueryValidator: Validator<Query<ListPaymentPayload>> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, PAYMENT_SORT_FIELDS, PAYMENT_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listLedgerQueryValidator: Validator<Query<ListLedgerPayload>> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, LEDGER_SORT_FIELDS, LEDGER_FILTER_FIELDS) ??
+      validationOk()
     );
   },
 };

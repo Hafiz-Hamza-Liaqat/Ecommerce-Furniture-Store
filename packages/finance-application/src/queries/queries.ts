@@ -2,8 +2,14 @@
  * Finance application queries — no transport DTOs.
  */
 
-import type { PageRequest } from "@afh/shared-kernel";
+import type { ListQueryRequest, PageRequest } from "@afh/shared-kernel";
 import { FinanceQueryTypes } from "../constants.js";
+
+/** RC7.2d — shared List* envelope (companyId + optional criteria / q). */
+export type ListFinancialAccountPayload = ListQueryRequest;
+export type ListInvoicePayload = ListQueryRequest;
+export type ListPaymentPayload = ListQueryRequest;
+export type ListLedgerPayload = ListQueryRequest;
 
 export type GetFinancialAccountPayload = {
   readonly companyId: string;

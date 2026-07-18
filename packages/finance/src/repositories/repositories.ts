@@ -53,6 +53,14 @@ export interface LedgerRepository {
     ledgerId: string,
     page?: PageRequest,
   ): Promise<Result<Page<FinancialLedgerEntry>, PlatformError>>;
+  /**
+   * RC7.2d — company-scoped bounded candidates for ListLedger (headers only).
+   * Repository contract completion for RC7.1 authorized-list; not a new capability.
+   */
+  listByCompany(
+    companyId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<FinancialLedger>, PlatformError>>;
 }
 
 export interface InvoiceRepository {
@@ -79,6 +87,14 @@ export interface PaymentRepository {
   listByInvoice(
     companyId: string,
     invoiceId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<Payment>, PlatformError>>;
+  /**
+   * RC7.2d — company-scoped bounded candidates for ListPayment.
+   * Repository contract completion for RC7.1 authorized-list; not a new capability.
+   */
+  listByCompany(
+    companyId: string,
     page?: PageRequest,
   ): Promise<Result<Page<Payment>, PlatformError>>;
 }

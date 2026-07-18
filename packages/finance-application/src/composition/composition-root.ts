@@ -24,6 +24,10 @@ import {
   createGetInvoiceHandler,
   createGetLedgerHandler,
   createGetPaymentHandler,
+  createListFinancialAccountHandler,
+  createListInvoiceHandler,
+  createListLedgerHandler,
+  createListPaymentHandler,
   createRecordCreditAdjustmentHandler,
   createRecordPaymentHandler,
   createUpdateFinancialAccountHandler,
@@ -81,6 +85,10 @@ export function createFinanceApplication(
   handlers.registerQuery(createGetLedgerHandler(deps));
   handlers.registerQuery(createGetCreditAccountHandler(deps));
   handlers.registerQuery(createGetFinancialSummaryHandler(deps));
+  handlers.registerQuery(createListFinancialAccountHandler(deps));
+  handlers.registerQuery(createListInvoiceHandler(deps));
+  handlers.registerQuery(createListPaymentHandler(deps));
+  handlers.registerQuery(createListLedgerHandler(deps));
 
   return { handlers, deps };
 }

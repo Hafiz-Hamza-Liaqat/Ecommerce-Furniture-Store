@@ -137,6 +137,7 @@ export function createSqlFinanceLedgerRepository(
         hasMore: (total?.c ?? 0) > bounds.offset + items.length,
       });
     },
+    listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };
 }
 
@@ -178,6 +179,7 @@ export function createSqlPaymentRepository(
     save: (payment) => docs.save(payment, payment.invoiceId),
     listByInvoice: (companyId, invoiceId, page) =>
       docs.listByParentScoped(companyId, invoiceId, page),
+    listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };
 }
 

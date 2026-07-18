@@ -20,6 +20,10 @@ export const FinanceQueryTypes = {
   GetLedger: "finance.GetLedger",
   GetCreditAccount: "finance.GetCreditAccount",
   GetFinancialSummary: "finance.GetFinancialSummary",
+  ListFinancialAccount: "finance.ListFinancialAccount",
+  ListInvoice: "finance.ListInvoice",
+  ListPayment: "finance.ListPayment",
+  ListLedger: "finance.ListLedger",
 } as const;
 
 export const FinanceWorkflowCodes = {
