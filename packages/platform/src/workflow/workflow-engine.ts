@@ -87,6 +87,7 @@ export type WorkflowEventSink = {
 /**
  * Optional projection updater — domains register to sync read-only status fields.
  * Workflow remains SSoT; this never becomes a second lifecycle owner.
+ * createPlatformEngines always injects an updater (RC6.5/RC6.6).
  */
 export type StatusProjectionUpdater = (input: {
   readonly subjectType: string;
@@ -100,9 +101,13 @@ export class WorkflowEngine {
     private readonly store: WorkflowStore,
     private readonly clock: Clock,
     private readonly audit: SecurityAuditService,
-    private readonly rules?: RulesEngine,
-    private readonly events?: WorkflowEventSink,
-    private readonly projectionUpdater?: StatusProjectionUpdater,
+    private readonly rules: RulesEngine | undefined,
+    private readonly events: WorkflowEventSink | undefined,
+    /**
+     * Required for consistent projection updates after start/transition (RC6.6).
+     * Composition supplies createStatusProjectionUpdater by default.
+     */
+    private readonly projectionUpdater: StatusProjectionUpdater,
   ) {}
 
   async registerDefinition(
@@ -257,7 +262,7 @@ export class WorkflowEngine {
       createdAt: now,
     });
 
-    await this.projectionUpdater?.({
+    await this.projectionUpdater({
       subjectType: instance.subjectType,
       subjectId: instance.subjectId,
       statusProjection: instance.statusProjection,
@@ -409,7 +414,7 @@ export class WorkflowEngine {
       createdAt: now,
     });
 
-    await this.projectionUpdater?.({
+    await this.projectionUpdater({
       subjectType: updated.subjectType,
       subjectId: updated.subjectId,
       statusProjection: updated.statusProjection,

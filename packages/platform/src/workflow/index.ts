@@ -19,9 +19,13 @@ export {
 export {
   InMemoryStatusProjectionStore,
   createStatusProjectionUpdater,
+  entityStatusFromWorkflowProjection,
+  entityStatusMatchesProjection,
+  evaluateStatusProjectionConsistency,
 } from "./status-projection.js";
 export type {
   StatusProjectionRecord,
   StatusProjectionStore,
   CreateStatusProjectionUpdaterOptions,
+  StatusProjectionConsistency,
 } from "./status-projection.js";

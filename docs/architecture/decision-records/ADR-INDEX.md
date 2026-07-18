@@ -63,6 +63,7 @@ Canonical business decision IDs D01–D36 originated in Phase 0A Decision Regist
 | [D51](./ADR-D51-workflow-approval-ui-operator-cqrs.md) | Workflow/Approvals pages are presentation-only over RC6.2 operator CQRS; no frontend authz/lifecycle; transitions read-only; routes/shell preserved | Accepted | RC6.3 replaces fixture queues with live Policy-gated data | `packages/web` platform.tsx operator pages | D04, D43, D50, RC6.3 |
 | [D52](./ADR-D52-workflow-approval-sql-durability.md) | SQL `WorkflowStore`/`ApprovalStore` adapters + migration v2; optional store injection in `createPlatformEngines`; in-memory default preserved | Accepted | RC6.4 durable engine state without interface/CQRS/UI redesign | `@afh/persistence-sql` platform stores; runtime-host injection | D04, D49–D51, RC6.4 |
 | [D53](./ADR-D53-workflow-approval-engine-completion.md) | Rules guards + assignment resolver; SLA/escalation foundations; outbox notification events; status projections; catalog v2 | Accepted | RC6.5 completes roadmap item 4 without delivery workers or ownership moves | `@afh/platform` engines/catalog/composition | D04, D49–D52, RC6.5 |
+| [D54](./ADR-D54-workflow-status-projection-proof.md) | Required StatusProjectionUpdater; consistency helpers; acceptance proof that entity status is read-only projection of Workflow | Accepted | RC6.6 closes roadmap item 5 without handler mass-rewrite or recovery suites | `@afh/platform` status-projection + proof tests | D04, D49–D53, RC6.6 |
 
 ---
 
