@@ -1,6 +1,6 @@
 /**
- * RC6.1 platform definition seed tests — catalog shape, idempotency,
- * start resolution for all workflow codes, and approval registration.
+ * RC6.1/RC6.5 platform definition seed tests — catalog shape, idempotency,
+ * start resolution, guards/SLA foundation, and approval registration.
  */
 
 import assert from "node:assert/strict";
@@ -14,9 +14,13 @@ import { createPlatformEngines } from "../composition/composition-root.js";
 import {
   APPROVAL_CATALOG,
   APPROVAL_CATALOG_TYPES,
+  DEFAULT_STAGE_SLA_HOURS,
   PLATFORM_DEFINITIONS_CATALOG_VERSION,
+  RULES_CATALOG,
+  RULES_CATALOG_CODES,
   WORKFLOW_CATALOG,
   WORKFLOW_CATALOG_CODES,
+  WORKFLOW_GUARD_DEFAULT_RULE_SET,
   computePlatformDefinitionsChecksum,
   seedPlatformDefinitions,
 } from "./index.js";
@@ -28,17 +32,31 @@ function createSeededEngines() {
   return createPlatformEngines({ identity, clock: fixedClock });
 }
 
+async function seedAll(
+  engines: ReturnType<typeof createSeededEngines>,
+  audit?: SecurityAuditService,
+) {
+  return seedPlatformDefinitions({
+    workflow: engines.workflow,
+    approval: engines.approval,
+    rules: engines.rules,
+    ...(audit ? { audit } : {}),
+  });
+}
+
 describe("platform definition catalog", () => {
-  it("exposes 19 workflow codes and 16 approval types", () => {
+  it("exposes 19 workflow codes, 16 approval types, and rules catalog", () => {
     assert.equal(WORKFLOW_CATALOG.length, 19);
     assert.equal(WORKFLOW_CATALOG_CODES.length, 19);
     assert.equal(new Set(WORKFLOW_CATALOG_CODES).size, 19);
     assert.equal(APPROVAL_CATALOG.length, 16);
     assert.equal(APPROVAL_CATALOG_TYPES.length, 16);
     assert.equal(new Set(APPROVAL_CATALOG_TYPES).size, 16);
+    assert.equal(RULES_CATALOG.length, 2);
+    assert.equal(RULES_CATALOG_CODES.length, 2);
   });
 
-  it("requires exactly one initial stage per workflow definition", () => {
+  it("requires exactly one initial stage and RC6.5 version/SLA/guard defaults", () => {
     for (const definition of WORKFLOW_CATALOG) {
       const initials = definition.stages.filter((s) => s.isInitial);
       assert.equal(
@@ -47,7 +65,17 @@ describe("platform definition catalog", () => {
         `${definition.code} must have exactly one initial stage`,
       );
       assert.equal(definition.companyId, null);
-      assert.equal(definition.version, 1);
+      assert.equal(definition.version, 2);
+      for (const stage of definition.stages) {
+        if (stage.isTerminal) {
+          assert.equal(stage.slaHours ?? null, null);
+        } else {
+          assert.equal(stage.slaHours, DEFAULT_STAGE_SLA_HOURS);
+        }
+      }
+      for (const transition of definition.transitions) {
+        assert.equal(transition.guardRuleSetCode, WORKFLOW_GUARD_DEFAULT_RULE_SET);
+      }
     }
   });
 });
@@ -55,10 +83,7 @@ describe("platform definition catalog", () => {
 describe("seedPlatformDefinitions", () => {
   it("seeds all definitions on empty engines", async () => {
     const engines = createSeededEngines();
-    const result = await seedPlatformDefinitions({
-      workflow: engines.workflow,
-      approval: engines.approval,
-    });
+    const result = await seedAll(engines);
 
     assert.ok(result.ok, "seed must succeed");
     const report = result.value;
@@ -68,33 +93,28 @@ describe("seedPlatformDefinitions", () => {
     assert.equal(report.workflows.existing, 0);
     assert.equal(report.approvals.created, 16);
     assert.equal(report.approvals.existing, 0);
+    assert.equal(report.rules.created, 2);
+    assert.equal(report.rules.existing, 0);
   });
 
   it("is idempotent: rerunning creates nothing", async () => {
     const engines = createSeededEngines();
-    const first = await seedPlatformDefinitions({
-      workflow: engines.workflow,
-      approval: engines.approval,
-    });
+    const first = await seedAll(engines);
     assert.ok(first.ok);
 
-    const second = await seedPlatformDefinitions({
-      workflow: engines.workflow,
-      approval: engines.approval,
-    });
+    const second = await seedAll(engines);
     assert.ok(second.ok);
     assert.equal(second.value.workflows.created, 0);
     assert.equal(second.value.workflows.existing, 19);
     assert.equal(second.value.approvals.created, 0);
     assert.equal(second.value.approvals.existing, 16);
+    assert.equal(second.value.rules.created, 0);
+    assert.equal(second.value.rules.existing, 2);
   });
 
   it("makes every catalog workflow code startable", async () => {
     const engines = createSeededEngines();
-    const seeded = await seedPlatformDefinitions({
-      workflow: engines.workflow,
-      approval: engines.approval,
-    });
+    const seeded = await seedAll(engines);
     assert.ok(seeded.ok);
 
     for (const definition of WORKFLOW_CATALOG) {
@@ -117,10 +137,7 @@ describe("seedPlatformDefinitions", () => {
 
   it("registers known handler default transitions from the initial stage", async () => {
     const engines = createSeededEngines();
-    const seeded = await seedPlatformDefinitions({
-      workflow: engines.workflow,
-      approval: engines.approval,
-    });
+    const seeded = await seedAll(engines);
     assert.ok(seeded.ok);
 
     const cases: readonly {
@@ -196,11 +213,7 @@ describe("seedPlatformDefinitions", () => {
     const audit = new SecurityAuditService(auditStore, fixedClock);
     const engines = createSeededEngines();
 
-    const result = await seedPlatformDefinitions({
-      workflow: engines.workflow,
-      approval: engines.approval,
-      audit,
-    });
+    const result = await seedAll(engines, audit);
     assert.ok(result.ok);
 
     const records = audit.recentRecords();

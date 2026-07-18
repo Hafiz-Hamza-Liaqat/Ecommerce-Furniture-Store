@@ -28,9 +28,12 @@ import type {
 import type { WorkflowStore } from "./workflow-store.js";
 import type {
   WorkflowCompletedPayload,
+  WorkflowSlaBreachedPayload,
   WorkflowStartedPayload,
+  WorkflowStatusProjectedPayload,
   WorkflowTransitionedPayload,
 } from "../events/engine-events.js";
+import { isStageSlaBreached } from "./sla.js";
 
 export type RegisterWorkflowInput = {
   readonly companyId: string | null;
@@ -77,6 +80,8 @@ export type WorkflowEventSink = {
   emitStarted?(payload: WorkflowStartedPayload): Promise<void>;
   emitTransitioned?(payload: WorkflowTransitionedPayload): Promise<void>;
   emitCompleted?(payload: WorkflowCompletedPayload): Promise<void>;
+  emitSlaBreached?(payload: WorkflowSlaBreachedPayload): Promise<void>;
+  emitStatusProjected?(payload: WorkflowStatusProjectedPayload): Promise<void>;
 };
 
 /**
@@ -490,17 +495,60 @@ export class WorkflowEngine {
     companyId: string,
   ): Promise<Result<readonly WorkflowInstanceRecord[], PlatformError>> {
     const running = await this.store.listRunningInstances(companyId);
+    const now = this.clock.now();
     const timedOut: WorkflowInstanceRecord[] = [];
     for (const instance of running) {
       const stage = await this.store.getStage(instance.currentStageId);
-      if (!stage?.slaHours) continue;
-      const entered = new Date(instance.stageEnteredAt).getTime();
-      const deadline = entered + stage.slaHours * 60 * 60 * 1000;
-      if (this.clock.now().getTime() > deadline) {
-        timedOut.push(instance);
+      if (
+        !stage ||
+        !isStageSlaBreached(instance.stageEnteredAt, stage.slaHours, now)
+      ) {
+        continue;
       }
+      timedOut.push(instance);
     }
     return ok(timedOut);
+  }
+
+  /**
+   * SLA foundation scan — lists breached instances and emits notification events.
+   * No worker/scheduler; callers invoke on a schedule in later slices.
+   */
+  async reportSlaBreaches(
+    companyId: string,
+  ): Promise<Result<readonly WorkflowInstanceRecord[], PlatformError>> {
+    const timedOut = await this.listTimedOutInstances(companyId);
+    if (isFail(timedOut)) return timedOut;
+
+    for (const instance of timedOut.value) {
+      const stage = await this.store.getStage(instance.currentStageId);
+      const definition = await this.store.getDefinitionById(
+        instance.workflowDefinitionId,
+      );
+      if (!stage?.slaHours || !definition) continue;
+      await this.events?.emitSlaBreached?.({
+        instanceId: instance.id,
+        definitionCode: definition.code,
+        subjectType: instance.subjectType,
+        subjectId: instance.subjectId,
+        stageCode: stage.code,
+        slaHours: stage.slaHours,
+        stageEnteredAt: instance.stageEnteredAt,
+      });
+      await this.audit.record({
+        companyId: instance.companyId,
+        actorUserId: null,
+        action: "workflow.sla_breached",
+        entityType: "workflow_instance",
+        entityId: instance.id,
+        outcome: "success",
+        details: {
+          stageCode: stage.code,
+          slaHours: stage.slaHours,
+        },
+      });
+    }
+    return timedOut;
   }
 
   async getInstance(

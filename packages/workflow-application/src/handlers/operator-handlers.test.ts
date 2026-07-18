@@ -108,6 +108,7 @@ describe("RC6.2 workflow operator handlers", () => {
     const defs = await seedPlatformDefinitions({
       workflow: engines.workflow,
       approval: engines.approval,
+      rules: engines.rules,
     });
     assert.ok(defs.ok);
 

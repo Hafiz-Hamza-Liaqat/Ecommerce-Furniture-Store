@@ -62,6 +62,7 @@ Canonical business decision IDs D01–D36 originated in Phase 0A Decision Regist
 | [D50](./ADR-D50-workflow-approval-operator-cqrs.md) | Thin `@afh/workflow-application` operator CQRS over Workflow/Approval engines; additive `platform.*` operator permissions; engine read helpers; Policy-only authz | Accepted | RC6.2 adds authorized operator contracts without UI/SQL/SLA | workflow-application; PLATFORM_PERMISSION_DEFINITIONS; engine list/get | D04, D39, D43, D49, RC6.2 |
 | [D51](./ADR-D51-workflow-approval-ui-operator-cqrs.md) | Workflow/Approvals pages are presentation-only over RC6.2 operator CQRS; no frontend authz/lifecycle; transitions read-only; routes/shell preserved | Accepted | RC6.3 replaces fixture queues with live Policy-gated data | `packages/web` platform.tsx operator pages | D04, D43, D50, RC6.3 |
 | [D52](./ADR-D52-workflow-approval-sql-durability.md) | SQL `WorkflowStore`/`ApprovalStore` adapters + migration v2; optional store injection in `createPlatformEngines`; in-memory default preserved | Accepted | RC6.4 durable engine state without interface/CQRS/UI redesign | `@afh/persistence-sql` platform stores; runtime-host injection | D04, D49–D51, RC6.4 |
+| [D53](./ADR-D53-workflow-approval-engine-completion.md) | Rules guards + assignment resolver; SLA/escalation foundations; outbox notification events; status projections; catalog v2 | Accepted | RC6.5 completes roadmap item 4 without delivery workers or ownership moves | `@afh/platform` engines/catalog/composition | D04, D49–D52, RC6.5 |
 
 ---
 

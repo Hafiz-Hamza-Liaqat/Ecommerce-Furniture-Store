@@ -115,6 +115,7 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
       const seeded = await seedPlatformDefinitions({
         workflow: composition.platform.workflow,
         approval: composition.platform.approval,
+        rules: composition.platform.rules,
         audit: composition.identity.audit,
       });
       if (!seeded.ok) {
@@ -131,10 +132,13 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
       composition.infrastructure.logger.info("api.host.definitions_seeded", {
         service: API_SERVICE_NAME,
         catalogVersion: seeded.value.catalogVersion,
+        rulesCatalogVersion: seeded.value.rulesCatalogVersion,
         workflowsCreated: seeded.value.workflows.created,
         workflowsExisting: seeded.value.workflows.existing,
         approvalsCreated: seeded.value.approvals.created,
         approvalsExisting: seeded.value.approvals.existing,
+        rulesCreated: seeded.value.rules.created,
+        rulesExisting: seeded.value.rules.existing,
       });
 
       await http.start();

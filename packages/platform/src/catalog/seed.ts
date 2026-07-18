@@ -1,10 +1,8 @@
 /**
- * RC6.1 idempotent platform definition seed (versioned).
+ * RC6.1/RC6.5 idempotent platform definition seed (versioned).
  *
- * Registers default workflow and approval definitions into the existing
- * WorkflowEngine / ApprovalEngine stores. Soft-skips conflicts so the seed
- * is safely rerunnable on every host start (in-memory stores reset on process
- * restart; SQL definition stores land in RC6.4 via injected store adapters).
+ * Registers default workflow, approval, and (RC6.5) Rules catalogs into the
+ * existing engines. Soft-skips conflicts so the seed is safely rerunnable.
  *
  * Does not change engine ownership, Policy Engine behavior, or handler logic.
  */
@@ -14,6 +12,7 @@ import { fail, ok, type Result, type PlatformError } from "@afh/shared-kernel";
 import type { SecurityAuditService } from "@afh/identity";
 import type { WorkflowEngine } from "../workflow/workflow-engine.js";
 import type { ApprovalEngine } from "../approval/approval-engine.js";
+import type { RulesEngine } from "../rules/rules-engine.js";
 import {
   APPROVAL_CATALOG,
   APPROVAL_CATALOG_TYPES,
@@ -23,6 +22,11 @@ import {
   WORKFLOW_CATALOG,
   WORKFLOW_CATALOG_CODES,
 } from "./workflow-catalog.js";
+import {
+  PLATFORM_RULES_CATALOG_VERSION,
+  RULES_CATALOG,
+  RULES_CATALOG_CODES,
+} from "./rules-catalog.js";
 
 export type SeedCounts = {
   readonly created: number;
@@ -31,16 +35,20 @@ export type SeedCounts = {
 
 export type PlatformDefinitionsSeedReport = {
   readonly catalogVersion: string;
+  readonly rulesCatalogVersion: string;
   readonly checksum: string;
   readonly workflows: SeedCounts;
   readonly approvals: SeedCounts;
+  readonly rules: SeedCounts;
   readonly workflowCodes: readonly string[];
   readonly approvalTypes: readonly string[];
+  readonly ruleSetCodes: readonly string[];
 };
 
 export type SeedPlatformDefinitionsDependencies = {
   readonly workflow: WorkflowEngine;
   readonly approval: ApprovalEngine;
+  readonly rules?: RulesEngine;
   readonly audit?: SecurityAuditService;
   readonly actorUserId?: string | null;
 };
@@ -49,6 +57,7 @@ export type SeedPlatformDefinitionsDependencies = {
 export function computePlatformDefinitionsChecksum(): string {
   const payload = JSON.stringify({
     version: PLATFORM_DEFINITIONS_CATALOG_VERSION,
+    rulesVersion: PLATFORM_RULES_CATALOG_VERSION,
     workflows: WORKFLOW_CATALOG.map((d) => ({
       code: d.code,
       version: d.version,
@@ -57,16 +66,25 @@ export function computePlatformDefinitionsChecksum(): string {
         code: s.code,
         isInitial: s.isInitial ?? false,
         isTerminal: s.isTerminal ?? false,
+        slaHours: s.slaHours ?? null,
       })),
       transitions: d.transitions.map((t) => ({
         code: t.code,
         from: t.fromStageCode,
         to: t.toStageCode,
+        guardRuleSetCode: t.guardRuleSetCode ?? null,
+        requiresApprovalType: t.requiresApprovalType ?? null,
       })),
     })),
     approvals: APPROVAL_CATALOG.map((d) => ({
       type: d.type,
       name: d.name,
+    })),
+    rules: RULES_CATALOG.map((r) => ({
+      code: r.code,
+      version: r.version,
+      domain: r.domain,
+      ruleCount: r.rules.length,
     })),
   });
   return createHash("sha256").update(payload).digest("hex");
@@ -80,13 +98,13 @@ function isConflict(
 }
 
 /**
- * Idempotently register the RC6.1 default workflow and approval definitions.
- * Rerunning against an already-seeded engine pair creates nothing.
+ * Idempotently register the default workflow, approval, and rules catalogs.
+ * Rerunning against an already-seeded engine set creates nothing.
  */
 export async function seedPlatformDefinitions(
   deps: SeedPlatformDefinitionsDependencies,
 ): Promise<Result<PlatformDefinitionsSeedReport, PlatformError>> {
-  const { workflow, approval, audit, actorUserId = null } = deps;
+  const { workflow, approval, rules, audit, actorUserId = null } = deps;
   const checksum = computePlatformDefinitionsChecksum();
 
   const workflows = { created: 0, existing: 0 };
@@ -149,13 +167,48 @@ export async function seedPlatformDefinitions(
     return fail(registered.error);
   }
 
+  const ruleCounts = { created: 0, existing: 0 };
+  if (rules) {
+    for (const ruleSet of RULES_CATALOG) {
+      const registered = await rules.registerRuleSet(ruleSet);
+      if (registered.ok) {
+        ruleCounts.created += 1;
+        continue;
+      }
+      if (isConflict(registered, "rule_set_exists")) {
+        ruleCounts.existing += 1;
+        continue;
+      }
+      if (audit) {
+        await audit.record({
+          companyId: null,
+          actorUserId,
+          action: "platform.definitions_seed_rejected",
+          entityType: "platform_definitions",
+          entityId: PLATFORM_DEFINITIONS_CATALOG_VERSION,
+          outcome: "failure",
+          details: {
+            catalogVersion: PLATFORM_DEFINITIONS_CATALOG_VERSION,
+            phase: "rules",
+            code: ruleSet.code,
+            errorCode: registered.error.code,
+          },
+        });
+      }
+      return fail(registered.error);
+    }
+  }
+
   const report: PlatformDefinitionsSeedReport = {
     catalogVersion: PLATFORM_DEFINITIONS_CATALOG_VERSION,
+    rulesCatalogVersion: PLATFORM_RULES_CATALOG_VERSION,
     checksum,
     workflows,
     approvals,
+    rules: ruleCounts,
     workflowCodes: WORKFLOW_CATALOG_CODES,
     approvalTypes: APPROVAL_CATALOG_TYPES,
+    ruleSetCodes: RULES_CATALOG_CODES,
   };
 
   if (audit) {

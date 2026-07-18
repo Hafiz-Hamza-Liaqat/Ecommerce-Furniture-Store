@@ -3,7 +3,10 @@
  */
 
 import { SystemUtcClock, type Clock } from "@afh/shared-kernel";
-import type { PersistenceFoundation } from "@afh/persistence";
+import type {
+  OutboxStore,
+  PersistenceFoundation,
+} from "@afh/persistence";
 import {
   type IdentityFoundation,
   type PolicyEngine,
@@ -19,6 +22,11 @@ import type {
   WorkflowEventSink,
 } from "../workflow/workflow-engine.js";
 import {
+  InMemoryStatusProjectionStore,
+  createStatusProjectionUpdater,
+  type StatusProjectionStore,
+} from "../workflow/status-projection.js";
+import {
   InMemoryApprovalStore,
   type ApprovalStore,
 } from "../approval/approval-store.js";
@@ -28,6 +36,10 @@ import type {
   DelegationHook,
   EscalationHook,
 } from "../approval/approval-engine.js";
+import {
+  createRulesApprovalAssignmentResolver,
+  type ApprovalAssignmentResolver,
+} from "../approval/assignment-resolver.js";
 import { InMemoryRulesStore } from "../rules/rules-store.js";
 import { RulesEngine } from "../rules/rules-engine.js";
 import type { RulesEventSink } from "../rules/rules-engine.js";
@@ -36,6 +48,7 @@ import {
   type PolicyContextEnricher,
   type AttributePredicate,
 } from "../policy/enhanced-policy-engine.js";
+import { createEngineOutboxSinks } from "../events/outbox-event-sink.js";
 
 export type PlatformEngines = {
   readonly clock: Clock;
@@ -44,6 +57,8 @@ export type PlatformEngines = {
   readonly approval: ApprovalEngine;
   readonly rules: RulesEngine;
   readonly policyEngine: PolicyEngine;
+  /** RC6.5 — read-only status projection store (Workflow remains SSoT). */
+  readonly statusProjections: StatusProjectionStore;
 };
 
 export type CreatePlatformEnginesOptions = {
@@ -63,8 +78,21 @@ export type CreatePlatformEnginesOptions = {
   readonly approvalEvents?: ApprovalEventSink;
   readonly rulesEvents?: RulesEventSink;
   readonly projectionUpdater?: StatusProjectionUpdater;
+  readonly statusProjectionStore?: StatusProjectionStore;
   readonly escalationHook?: EscalationHook;
   readonly delegationHook?: DelegationHook;
+  readonly assignmentResolver?: ApprovalAssignmentResolver;
+  /**
+   * Optional Outbox for notification event production (RC6.5).
+   * When set (or when persistence.outboxStore is present), engines emit
+   * workflow/approval events into the Outbox unless explicit sinks are passed.
+   */
+  readonly outboxStore?: OutboxStore;
+  /**
+   * When true (default if an outbox is available), wire outbox sinks for
+   * notification event production unless explicit sinks are passed.
+   */
+  readonly enableOutboxEngineEvents?: boolean;
   readonly policyEnrichers?: readonly PolicyContextEnricher[];
   readonly requiredAttributes?: readonly AttributePredicate[];
 };
@@ -75,13 +103,37 @@ export function createPlatformEngines(
   const clock = options.clock ?? options.identity.clock ?? new SystemUtcClock();
   const audit = options.identity.audit;
 
+  const outboxStore =
+    options.outboxStore ?? options.persistence?.outboxStore;
+  const enableOutbox = options.enableOutboxEngineEvents ?? Boolean(outboxStore);
+  const outboxSinks =
+    enableOutbox && outboxStore
+      ? createEngineOutboxSinks({
+          outbox: outboxStore,
+          clock,
+        })
+      : null;
+
+  const workflowEvents = options.workflowEvents ?? outboxSinks?.workflow;
+  const approvalEvents = options.approvalEvents ?? outboxSinks?.approval;
+  const rulesEvents = options.rulesEvents ?? outboxSinks?.rules;
+
   const rulesStore = new InMemoryRulesStore();
-  const rules = new RulesEngine(
-    rulesStore,
-    clock,
-    audit,
-    options.rulesEvents,
-  );
+  const rules = new RulesEngine(rulesStore, clock, audit, rulesEvents);
+
+  const statusProjections =
+    options.statusProjectionStore ?? new InMemoryStatusProjectionStore();
+  const projectionUpdater =
+    options.projectionUpdater ??
+    createStatusProjectionUpdater({
+      store: statusProjections,
+      clock,
+      ...(workflowEvents ? { events: workflowEvents } : {}),
+    });
+
+  const assignmentResolver =
+    options.assignmentResolver ??
+    createRulesApprovalAssignmentResolver(rules);
 
   const workflowStore = options.workflowStore ?? new InMemoryWorkflowStore();
   const workflow = new WorkflowEngine(
@@ -89,8 +141,8 @@ export function createPlatformEngines(
     clock,
     audit,
     rules,
-    options.workflowEvents,
-    options.projectionUpdater,
+    workflowEvents,
+    projectionUpdater,
   );
 
   const approvalStore = options.approvalStore ?? new InMemoryApprovalStore();
@@ -98,9 +150,10 @@ export function createPlatformEngines(
     approvalStore,
     clock,
     audit,
-    options.approvalEvents,
+    approvalEvents,
     options.escalationHook,
     options.delegationHook,
+    assignmentResolver,
   );
 
   const policyEngine = new EnhancedPolicyEngine(
@@ -110,8 +163,6 @@ export function createPlatformEngines(
     audit,
   );
 
-  void options.persistence;
-
   return {
     clock,
     audit,
@@ -119,5 +170,6 @@ export function createPlatformEngines(
     approval,
     rules,
     policyEngine,
+    statusProjections,
   };
 }

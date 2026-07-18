@@ -11,3 +11,17 @@ export type {
   WorkflowEventSink,
   StatusProjectionUpdater,
 } from "./workflow-engine.js";
+export {
+  computeStageSlaDeadline,
+  isStageSlaBreached,
+  remainingSlaHours,
+} from "./sla.js";
+export {
+  InMemoryStatusProjectionStore,
+  createStatusProjectionUpdater,
+} from "./status-projection.js";
+export type {
+  StatusProjectionRecord,
+  StatusProjectionStore,
+  CreateStatusProjectionUpdaterOptions,
+} from "./status-projection.js";

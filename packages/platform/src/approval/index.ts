@@ -7,3 +7,14 @@ export type {
   EscalationHook,
   DelegationHook,
 } from "./approval-engine.js";
+export {
+  DEFAULT_APPROVAL_ASSIGNMENT_RULE_SET,
+  DEFAULT_APPROVAL_ESCALATE_AFTER_HOURS,
+  createRulesApprovalAssignmentResolver,
+  resolutionFromRuleActions,
+} from "./assignment-resolver.js";
+export type {
+  ApprovalAssignmentContext,
+  ApprovalAssignmentResolution,
+  ApprovalAssignmentResolver,
+} from "./assignment-resolver.js";

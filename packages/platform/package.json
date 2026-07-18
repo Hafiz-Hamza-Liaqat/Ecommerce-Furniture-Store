@@ -17,7 +17,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "test": "node --test dist/catalog/seed.test.js"
+    "test": "node --test dist/catalog/seed.test.js dist/engine-completion.test.js"
   },
 
   "dependencies": {

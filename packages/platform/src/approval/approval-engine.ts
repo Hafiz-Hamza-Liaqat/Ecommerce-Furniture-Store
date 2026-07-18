@@ -24,12 +24,15 @@ import type {
 import type { ApprovalStore } from "./approval-store.js";
 import type {
   ApprovalDecidedPayload,
+  ApprovalEscalatedPayload,
   ApprovalSubmittedPayload,
 } from "../events/engine-events.js";
+import type { ApprovalAssignmentResolver } from "./assignment-resolver.js";
 
 export type ApprovalEventSink = {
   emitSubmitted?(payload: ApprovalSubmittedPayload): Promise<void>;
   emitDecided?(payload: ApprovalDecidedPayload): Promise<void>;
+  emitEscalated?(payload: ApprovalEscalatedPayload): Promise<void>;
 };
 
 export type EscalationHook = (request: ApprovalRequestRecord) => Promise<void>;
@@ -47,6 +50,7 @@ export class ApprovalEngine {
     private readonly events?: ApprovalEventSink,
     private readonly onEscalate?: EscalationHook,
     private readonly onDelegate?: DelegationHook,
+    private readonly assignmentResolver?: ApprovalAssignmentResolver,
   ) {}
 
   async registerDefinition(input: {
@@ -87,6 +91,30 @@ export class ApprovalEngine {
     readonly escalateAfterHours?: number | null;
   }): Promise<Result<ApprovalRequestRecord, PlatformError>> {
     const now = this.clock.now().toISOString();
+    const payload = input.payload ?? {};
+
+    let reviewerUserId: string | null = null;
+    let escalateAfterHours = input.escalateAfterHours ?? null;
+
+    if (this.assignmentResolver) {
+      const resolved = await this.assignmentResolver({
+        companyId: input.companyId,
+        branchId: input.branchId ?? null,
+        type: input.type,
+        subjectType: input.subjectType,
+        subjectId: input.subjectId,
+        payload,
+        submittedByUserId: input.submittedByUserId,
+      });
+      if (isFail(resolved)) {
+        return resolved;
+      }
+      reviewerUserId = resolved.value.reviewerUserId;
+      if (escalateAfterHours === null) {
+        escalateAfterHours = resolved.value.escalateAfterHours;
+      }
+    }
+
     const request: ApprovalRequestRecord = {
       id: newId("areq"),
       companyId: input.companyId,
@@ -94,18 +122,21 @@ export class ApprovalEngine {
       type: input.type,
       subjectType: input.subjectType,
       subjectId: input.subjectId,
-      status: "submitted",
-      payload: input.payload ?? {},
+      status: reviewerUserId ? "under_review" : "submitted",
+      payload,
       submittedByUserId: input.submittedByUserId,
-      reviewerUserId: null,
+      reviewerUserId,
       delegatedToUserId: null,
-      escalateAfterHours: input.escalateAfterHours ?? null,
+      escalateAfterHours,
       decisionReason: null,
       createdAt: now,
       updatedAt: now,
     };
     await this.store.saveRequest(request);
     await this.#action(request.id, input.submittedByUserId, "submit", null);
+    if (reviewerUserId) {
+      await this.#action(request.id, "system", "claim", `assigned:${reviewerUserId}`);
+    }
     await this.audit.record({
       companyId: input.companyId,
       actorUserId: input.submittedByUserId,
@@ -113,13 +144,18 @@ export class ApprovalEngine {
       entityType: "approval_request",
       entityId: request.id,
       outcome: "success",
-      details: { type: input.type },
+      details: {
+        type: input.type,
+        reviewerUserId,
+        escalateAfterHours,
+      },
     });
     await this.events?.emitSubmitted?.({
       requestId: request.id,
       approvalType: input.type,
       subjectType: input.subjectType,
       subjectId: input.subjectId,
+      reviewerUserId,
     });
     return ok(request);
   }
@@ -243,8 +279,48 @@ export class ApprovalEngine {
         created + request.escalateAfterHours * 60 * 60 * 1000;
       if (this.clock.now().getTime() <= deadline) continue;
 
+      let updated = request;
+      if (this.assignmentResolver) {
+        const resolved = await this.assignmentResolver({
+          companyId: request.companyId,
+          branchId: request.branchId,
+          type: request.type,
+          subjectType: request.subjectType,
+          subjectId: request.subjectId,
+          payload: {
+            ...request.payload,
+            preferredReviewerUserId:
+              request.payload["escalationReviewerUserId"] ??
+              request.payload["preferredReviewerUserId"],
+          },
+          submittedByUserId: request.submittedByUserId,
+          escalated: true,
+        });
+        if (
+          resolved.ok &&
+          resolved.value.reviewerUserId &&
+          resolved.value.reviewerUserId !== request.reviewerUserId
+        ) {
+          updated = {
+            ...request,
+            reviewerUserId: resolved.value.reviewerUserId,
+            status: "under_review",
+            updatedAt: this.clock.now().toISOString(),
+          };
+          await this.store.saveRequest(updated);
+        }
+      }
+
       await this.#action(request.id, "system", "escalate", "sla_exceeded");
-      await this.onEscalate?.(request);
+      await this.events?.emitEscalated?.({
+        requestId: updated.id,
+        approvalType: updated.type,
+        subjectType: updated.subjectType,
+        subjectId: updated.subjectId,
+        escalateAfterHours: updated.escalateAfterHours ?? 0,
+        reviewerUserId: updated.reviewerUserId,
+      });
+      await this.onEscalate?.(updated);
       await this.audit.record({
         companyId: request.companyId,
         actorUserId: null,
@@ -252,8 +328,9 @@ export class ApprovalEngine {
         entityType: "approval_request",
         entityId: request.id,
         outcome: "success",
+        details: { reviewerUserId: updated.reviewerUserId },
       });
-      escalated.push(request);
+      escalated.push(updated);
     }
     return ok(escalated);
   }

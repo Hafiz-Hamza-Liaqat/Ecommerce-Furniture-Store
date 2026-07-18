@@ -1,22 +1,59 @@
 /**
- * RC6.1 frozen default workflow definitions.
+ * RC6.1/RC6.5 frozen default workflow definitions.
  *
  * Codes and entity types mirror the seven `*-application` constants.
  * Initial stage codes align with domain status mappers so create handlers
  * project the expected entity status without falling back incorrectly.
  *
- * Default transition codes cover handler fallbacks (`qualify`, `convert`,
- * `submit`, `issue`, `cancel`, `archive`, `complete`, `close`). Guards and
- * approval requirements are intentionally unset — Rules/Approval wiring is
- * later RC6 scope.
+ * RC6.5 bumps definition version to 2 and attaches:
+ * - default stage SLA hours on non-terminal stages
+ * - default Rules guard on transitions (allow unless denyTransition)
+ *
+ * requiresApprovalType remains unset so domain handlers that transition
+ * without approvalSatisfied stay backward compatible.
  */
 
 import type { RegisterWorkflowInput } from "../workflow/workflow-engine.js";
+import { WORKFLOW_GUARD_DEFAULT_RULE_SET } from "./rules-catalog.js";
 
 export const PLATFORM_DEFINITIONS_CATALOG_VERSION =
-  "rc6.1.platform-definitions.v1" as const;
+  "rc6.5.platform-definitions.v1" as const;
+
+/** Default stage SLA foundation (hours) for non-terminal stages. */
+export const DEFAULT_STAGE_SLA_HOURS = 72;
 
 export type CatalogWorkflowDefinition = RegisterWorkflowInput;
+
+function withRc65Defaults(
+  input: Omit<CatalogWorkflowDefinition, "companyId" | "version"> & {
+    readonly companyId?: null;
+    readonly version?: number;
+  },
+): CatalogWorkflowDefinition {
+  return {
+    companyId: null,
+    version: 2,
+    code: input.code,
+    name: input.name,
+    entityType: input.entityType,
+    stages: input.stages.map((stage) => ({
+      ...stage,
+      slaHours:
+        stage.slaHours !== undefined
+          ? stage.slaHours
+          : stage.isTerminal
+            ? null
+            : DEFAULT_STAGE_SLA_HOURS,
+    })),
+    transitions: input.transitions.map((transition) => ({
+      ...transition,
+      guardRuleSetCode:
+        transition.guardRuleSetCode !== undefined
+          ? transition.guardRuleSetCode
+          : WORKFLOW_GUARD_DEFAULT_RULE_SET,
+    })),
+  };
+}
 
 function def(input: {
   readonly code: string;
@@ -25,15 +62,7 @@ function def(input: {
   readonly stages: CatalogWorkflowDefinition["stages"];
   readonly transitions: CatalogWorkflowDefinition["transitions"];
 }): CatalogWorkflowDefinition {
-  return {
-    companyId: null,
-    version: 1,
-    code: input.code,
-    name: input.name,
-    entityType: input.entityType,
-    stages: input.stages,
-    transitions: input.transitions,
-  };
+  return withRc65Defaults(input);
 }
 
 /** Minimal linear lifecycle: initial → terminal via `complete`. */
@@ -78,6 +107,7 @@ function linear(input: {
 /**
  * Default workflow catalog — 19 codes (18 started by handlers today;
  * `inventory_stock_transfer_v1` is declared for completeness).
+ * Version 2 includes RC6.5 SLA + guard foundation.
  */
 export const WORKFLOW_CATALOG: readonly CatalogWorkflowDefinition[] = [
   // CRM

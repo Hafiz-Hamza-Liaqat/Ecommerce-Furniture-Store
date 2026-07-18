@@ -74,6 +74,7 @@ describe("RC6.4 SQL Workflow / Approval stores", () => {
     const seed = await seedPlatformDefinitions({
       workflow: engines.workflow,
       approval: engines.approval,
+      rules: engines.rules,
     });
     assert.ok(seed.ok);
     if (!seed.ok) return;
@@ -156,6 +157,7 @@ describe("RC6.4 SQL Workflow / Approval stores", () => {
     await seedPlatformDefinitions({
       workflow: engines.workflow,
       approval: engines.approval,
+      rules: engines.rules,
     });
 
     const submitted = await engines.approval.submit({
@@ -221,6 +223,7 @@ describe("RC6.4 SQL Workflow / Approval stores", () => {
     const first = await seedPlatformDefinitions({
       workflow: engines.workflow,
       approval: engines.approval,
+      rules: engines.rules,
     });
     assert.equal(first.ok, true);
     if (!first.ok) return;
@@ -228,13 +231,16 @@ describe("RC6.4 SQL Workflow / Approval stores", () => {
     const second = await seedPlatformDefinitions({
       workflow: engines.workflow,
       approval: engines.approval,
+      rules: engines.rules,
     });
     assert.equal(second.ok, true);
     if (!second.ok) return;
     assert.equal(second.value.workflows.created, 0);
     assert.equal(second.value.approvals.created, 0);
+    assert.equal(second.value.rules.created, 0);
     assert.ok(second.value.workflows.existing > 0);
     assert.ok(second.value.approvals.existing > 0);
+    assert.ok(second.value.rules.existing > 0);
 
     const defs = await sql.workflowStore.listDefinitions({
       companyId: null,
@@ -254,6 +260,7 @@ describe("RC6.4 SQL Workflow / Approval stores", () => {
     const seed = await seedPlatformDefinitions({
       workflow: engines.workflow,
       approval: engines.approval,
+      rules: engines.rules,
     });
     assert.equal(seed.ok, true);
     const started = await engines.workflow.start({
