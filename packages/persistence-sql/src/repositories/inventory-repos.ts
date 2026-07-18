@@ -158,6 +158,7 @@ export function createSqlStockRepository(
     save: (position) => docs.save(position, position.inventoryItemId),
     listByItem: (companyId, inventoryItemId, page) =>
       docs.listByParentScoped(companyId, inventoryItemId, page),
+    listByCompany: (companyId, page) => docs.listByCompany(companyId, page),
   };
 }
 

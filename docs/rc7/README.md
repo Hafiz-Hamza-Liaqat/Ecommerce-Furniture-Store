@@ -3,7 +3,7 @@
 - **Version:** 1.0
 - **Created:** 2026-07-18
 - **Last Updated:** 2026-07-18
-- **Status:** RC7.0–RC7.2a committed; **RC7.2b Procurement List* implemented — awaiting review (not committed). Do not start RC7.2c.**
+- **Status:** RC7.0–RC7.2b committed; **RC7.2c Inventory List* implemented — awaiting review (not committed). Do not start RC7.2d.**
 - **Depends on:** RC5 (authorization), RC6 (workflow/approval) — both release-ready (`rc6` / `v0.6.0`).
 - **Canonical product scope:** `docs/productization/01-productization-roadmap.md` §RC7
 - **V1 freeze:** [`03-V1-Scope-Freeze.md`](./03-V1-Scope-Freeze.md) — **single source of truth** for Included / Excluded / Deferred / Future. No RC7 engineering slice may expand Included scope without an approved amendment to that document.
@@ -65,15 +65,16 @@ RC7 is complete only when:
 1. **RC7.0** — V1 freeze & planning (this pack) — complete
 2. **RC7.1** — Shared List foundation — committed
 3. **RC7.2a** — Sales `List*` — committed
-4. **RC7.2b** — Procurement `List*` — **implementation complete; awaiting review**
-5. **RC7.2c–g** — `List*` per remaining wired ERP modules — **not started**
-6. **RC7.3** — Production UI de-fixturing — **not started**
-7. **RC7.4** — Validation, concurrency, audit, scope completion
-8. **RC7.5** — DAM foundation (binary/object where V1 claims)
-9. **RC7.6** — Attachments, notes, comments, activity
-10. **RC7.7** — Import, export, bulk (Policy + audit + company + concurrency)
-11. **RC7.8 and later** — Manufacturing, HR, CMS, Notifications, Reporting, Search (V1 subsets only; each module begins with its own planning review before implementation if the approved V1 freeze changes)
-12. Final RC7 verification, audit, checklist, tag (after approval)
+4. **RC7.2b** — Procurement `List*` — committed
+5. **RC7.2c** — Inventory `List*` — **implementation complete; awaiting review**
+6. **RC7.2d–g** — `List*` per remaining wired ERP modules — **not started**
+7. **RC7.3** — Production UI de-fixturing — **not started**
+8. **RC7.4** — Validation, concurrency, audit, scope completion
+9. **RC7.5** — DAM foundation (binary/object where V1 claims)
+10. **RC7.6** — Attachments, notes, comments, activity
+11. **RC7.7** — Import, export, bulk (Policy + audit + company + concurrency)
+12. **RC7.8 and later** — Manufacturing, HR, CMS, Notifications, Reporting, Search (V1 subsets only; each module begins with its own planning review before implementation if the approved V1 freeze changes)
+13. Final RC7 verification, audit, checklist, tag (after approval)
 
 Detail: [`05-Slice-Roadmap.md`](./05-Slice-Roadmap.md).
 

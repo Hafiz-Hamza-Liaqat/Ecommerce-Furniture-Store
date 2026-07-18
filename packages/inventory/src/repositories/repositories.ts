@@ -74,6 +74,14 @@ export interface StockRepository {
     inventoryItemId: string,
     page?: PageRequest,
   ): Promise<Result<Page<StockPosition>, PlatformError>>;
+  /**
+   * RC7.2c — company-scoped bounded candidate batches for ListStock.
+   * Contract completion for RC7.1 authorized-list; not a new business capability.
+   */
+  listByCompany(
+    companyId: string,
+    page?: PageRequest,
+  ): Promise<Result<Page<StockPosition>, PlatformError>>;
 }
 
 export interface MovementRepository {

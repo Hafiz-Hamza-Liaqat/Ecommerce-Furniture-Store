@@ -4,7 +4,12 @@
  */
 
 import type { Command, Query, Validator } from "@afh/shared-kernel";
-import { validationFail, validationOk } from "@afh/shared-kernel";
+import {
+  validateFilterAllowList,
+  validateSortAllowList,
+  validationFail,
+  validationOk,
+} from "@afh/shared-kernel";
 import type {
   AdjustStockPayload,
   CreateInventoryItemPayload,
@@ -25,7 +30,18 @@ import type {
   GetStockLedgerPayload,
   GetStockPayload,
   GetWarehousePayload,
+  ListInventoryItemPayload,
+  ListStockPayload,
+  ListWarehousePayload,
 } from "../queries/queries.js";
+import {
+  INVENTORY_ITEM_FILTER_FIELDS,
+  INVENTORY_ITEM_SORT_FIELDS,
+  STOCK_FILTER_FIELDS,
+  STOCK_SORT_FIELDS,
+  WAREHOUSE_FILTER_FIELDS,
+  WAREHOUSE_SORT_FIELDS,
+} from "../list-fields.js";
 
 function requireField(
   field: string,
@@ -333,6 +349,78 @@ export const getInventorySummaryQueryValidator: Validator<
   validate(query) {
     return (
       requireField("companyId", query.payload.companyId) ?? validationOk()
+    );
+  },
+};
+
+function listCriteriaViolations(
+  payload: ListInventoryItemPayload,
+  sortFields: ReadonlySet<string>,
+  filterFields: ReadonlySet<string>,
+): ReturnType<typeof validationFail> | null {
+  const sort = validateSortAllowList(payload.criteria?.sort, sortFields);
+  if (!sort.ok) {
+    return validationFail([
+      {
+        field: "criteria.sort",
+        code: sort.error.code,
+        message: sort.error.message,
+      },
+    ]);
+  }
+  const filters = validateFilterAllowList(
+    payload.criteria?.filters,
+    filterFields,
+  );
+  if (!filters.ok) {
+    return validationFail([
+      {
+        field: "criteria.filters",
+        code: filters.error.code,
+        message: filters.error.message,
+      },
+    ]);
+  }
+  return null;
+}
+
+export const listInventoryItemQueryValidator: Validator<
+  Query<ListInventoryItemPayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(
+        p,
+        INVENTORY_ITEM_SORT_FIELDS,
+        INVENTORY_ITEM_FILTER_FIELDS,
+      ) ??
+      validationOk()
+    );
+  },
+};
+
+export const listWarehouseQueryValidator: Validator<
+  Query<ListWarehousePayload>
+> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, WAREHOUSE_SORT_FIELDS, WAREHOUSE_FILTER_FIELDS) ??
+      validationOk()
+    );
+  },
+};
+
+export const listStockQueryValidator: Validator<Query<ListStockPayload>> = {
+  validate(query) {
+    const p = query.payload;
+    return (
+      requireField("companyId", p.companyId) ??
+      listCriteriaViolations(p, STOCK_SORT_FIELDS, STOCK_FILTER_FIELDS) ??
+      validationOk()
     );
   },
 };

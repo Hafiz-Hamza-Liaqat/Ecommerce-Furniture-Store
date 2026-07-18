@@ -23,6 +23,9 @@ export const InventoryQueryTypes = {
   GetLot: "inventory.GetLot",
   GetSerial: "inventory.GetSerial",
   GetInventorySummary: "inventory.GetInventorySummary",
+  ListInventoryItem: "inventory.ListInventoryItem",
+  ListWarehouse: "inventory.ListWarehouse",
+  ListStock: "inventory.ListStock",
 } as const;
 
 export const InventoryWorkflowCodes = {

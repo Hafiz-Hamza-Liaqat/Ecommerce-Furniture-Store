@@ -29,6 +29,9 @@ import {
   createGetStockHandler,
   createGetStockLedgerHandler,
   createGetWarehouseHandler,
+  createListInventoryItemHandler,
+  createListStockHandler,
+  createListWarehouseHandler,
   createReceiveStockHandler,
   createReleaseReservationHandler,
   createReserveStockHandler,
@@ -96,6 +99,9 @@ export function createInventoryApplication(
   handlers.registerQuery(createGetLotHandler(deps));
   handlers.registerQuery(createGetSerialHandler(deps));
   handlers.registerQuery(createGetInventorySummaryHandler(deps));
+  handlers.registerQuery(createListInventoryItemHandler(deps));
+  handlers.registerQuery(createListWarehouseHandler(deps));
+  handlers.registerQuery(createListStockHandler(deps));
 
   return { handlers, deps };
 }

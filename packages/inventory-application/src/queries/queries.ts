@@ -2,8 +2,13 @@
  * Inventory application queries — no transport DTOs.
  */
 
-import type { PageRequest } from "@afh/shared-kernel";
+import type { ListQueryRequest, PageRequest } from "@afh/shared-kernel";
 import { InventoryQueryTypes } from "../constants.js";
+
+/** RC7.2c — shared List* envelope (companyId + optional criteria / q). */
+export type ListInventoryItemPayload = ListQueryRequest;
+export type ListWarehousePayload = ListQueryRequest;
+export type ListStockPayload = ListQueryRequest;
 
 export type GetInventoryItemPayload = {
   readonly companyId: string;

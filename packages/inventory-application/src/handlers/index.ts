@@ -22,3 +22,8 @@ export {
   createGetSerialHandler,
   createGetInventorySummaryHandler,
 } from "./query-handlers.js";
+export {
+  createListInventoryItemHandler,
+  createListWarehouseHandler,
+  createListStockHandler,
+} from "./list-handlers.js";
