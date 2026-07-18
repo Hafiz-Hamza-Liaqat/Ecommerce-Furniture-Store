@@ -7,8 +7,10 @@
 | RC6.3 | Workflow & Approval UI Integration | Committed (`cfb039e`) | `docs/release/RC6.3-*` |
 | RC6.4 | Workflow & Approval SQL Durability | Committed (`e5bcc9d`) | `docs/release/RC6.4-*` |
 | RC6.5 | Workflow & Approval Engine Completion | Committed (`c068249`) | `docs/release/RC6.5-*` |
-| RC6.6 | Workflow Status Projection Proof | Implemented (pending review/commit) | `docs/release/RC6.6-*` |
-| RC6.7+ | Not started — wait for RC6.6 review | — | — |
+| RC6.6 | Workflow Status Projection Proof | Committed (`4be49fa`) | `docs/release/RC6.6-*` |
+| RC6.7 | Workflow & Approval Restart / Retry / Idempotency / Concurrency Acceptance | Implemented (pending review/commit) | `docs/release/RC6.7-*` |
 
 Canonical broad RC6 scope remains in
 `docs/productization/01-productization-roadmap.md` §RC6.
+
+Roadmap items 1–6 are covered by RC6.1–RC6.7 (pending RC6.7 commit).
