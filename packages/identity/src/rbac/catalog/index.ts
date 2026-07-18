@@ -5,6 +5,7 @@ export {
   CANONICAL_PERMISSION_CODES,
   LEGACY_ACTION_MAP,
   PERMISSION_CATALOG,
+  PLATFORM_PERMISSION_DEFINITIONS,
   RBAC_CATALOG_VERSION,
   resolveLegacyActionKey,
   type CatalogPermissionDefinition,

@@ -57,6 +57,9 @@ import {
   createCrmApplication,
   type CreateCrmApplicationOptions,
 } from "@afh/crm-application";
+import {
+  createWorkflowApplication,
+} from "@afh/workflow-application";
 import type { AssetRepository } from "@afh/dam";
 
 export type EnterpriseModuleRepositories = {
@@ -213,6 +216,7 @@ export function createEnterpriseComposition(
     audit,
     handlers,
   });
+  createWorkflowApplication({ handlers });
 
   const runtime = createApplicationRuntime({
     infrastructure,

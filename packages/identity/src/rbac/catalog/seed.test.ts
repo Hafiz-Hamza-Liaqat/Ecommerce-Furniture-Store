@@ -13,6 +13,7 @@ import { InMemoryIdentityStore } from "../../stores/identity-store.js";
 import {
   LEGACY_ACTION_MAP,
   PERMISSION_CATALOG,
+  PLATFORM_PERMISSION_DEFINITIONS,
   RBAC_CATALOG_VERSION,
   API_PERMISSION_DEFINITIONS,
 } from "./permission-catalog.js";
@@ -37,6 +38,11 @@ describe("seedRbacCatalog", () => {
     assert.equal(report.canonicalPermissions.created, 105);
     assert.equal(report.canonicalPermissions.existing, 0);
     assert.equal(
+      report.platformPermissions.created,
+      PLATFORM_PERMISSION_DEFINITIONS.length,
+    );
+    assert.equal(report.platformPermissions.existing, 0);
+    assert.equal(
       report.apiPermissions.created,
       API_PERMISSION_DEFINITIONS.length,
     );
@@ -55,6 +61,7 @@ describe("seedRbacCatalog", () => {
     assert.equal(
       store.permissions.size,
       105 +
+        PLATFORM_PERMISSION_DEFINITIONS.length +
         API_PERMISSION_DEFINITIONS.length +
         ROUTE_PERMISSION_DEFINITIONS.length +
         compatCount,
@@ -79,6 +86,11 @@ describe("seedRbacCatalog", () => {
     const report = second.value;
     assert.equal(report.canonicalPermissions.created, 0);
     assert.equal(report.canonicalPermissions.existing, 105);
+    assert.equal(report.platformPermissions.created, 0);
+    assert.equal(
+      report.platformPermissions.existing,
+      PLATFORM_PERMISSION_DEFINITIONS.length,
+    );
     assert.equal(report.apiPermissions.created, 0);
     assert.equal(
       report.apiPermissions.existing,

@@ -9,6 +9,7 @@ import {
   ALL_CANONICAL_PERMISSION_CODES,
   CANONICAL_PERMISSION_CODES,
   PERMISSION_CATALOG,
+  PLATFORM_PERMISSION_DEFINITIONS,
 } from "./permission-catalog.js";
 import { ROLE_CATALOG, SYSTEM_ROLE_CODES } from "./role-catalog.js";
 
@@ -86,10 +87,16 @@ describe("RC5.1 system role catalog", () => {
     );
   });
 
-  it("admin holds every CQRS and API permission without platform-admin or portal access", () => {
+  it("admin holds every CQRS, platform-operator, and API permission without platform-admin or portal access", () => {
     const permissions = new Set(byCode.get("admin")?.permissions);
     for (const code of CANONICAL_PERMISSION_CODES) {
       assert.ok(permissions.has(code), `admin missing ${code}`);
+    }
+    for (const permission of PLATFORM_PERMISSION_DEFINITIONS) {
+      assert.ok(
+        permissions.has(permission.code),
+        `admin missing ${permission.code}`,
+      );
     }
     assert.ok(permissions.has("dam.assets.upload"));
     assert.ok(!permissions.has("platform.administration.read"));

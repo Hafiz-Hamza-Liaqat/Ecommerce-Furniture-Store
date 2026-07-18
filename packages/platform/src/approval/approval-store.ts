@@ -10,6 +10,9 @@ export interface ApprovalStore {
     companyId: string | null,
     type: string,
   ): Promise<ApprovalDefinitionRecord | null>;
+  listDefinitions(filter?: {
+    readonly companyId?: string | null;
+  }): Promise<readonly ApprovalDefinitionRecord[]>;
 
   saveRequest(request: ApprovalRequestRecord): Promise<void>;
   getRequest(id: string): Promise<ApprovalRequestRecord | null>;
@@ -18,6 +21,11 @@ export interface ApprovalStore {
     type: string,
   ): Promise<readonly ApprovalRequestRecord[]>;
   listOpen(companyId: string): Promise<readonly ApprovalRequestRecord[]>;
+  listRequests(filter: {
+    readonly companyId: string;
+    readonly type?: string;
+    readonly openOnly?: boolean;
+  }): Promise<readonly ApprovalRequestRecord[]>;
 
   appendAction(action: ApprovalActionRecord): Promise<void>;
   listActions(
@@ -45,6 +53,19 @@ export class InMemoryApprovalStore implements ApprovalStore {
           (d.companyId === companyId || d.companyId === null),
       ) ?? null
     );
+  }
+
+  async listDefinitions(filter?: {
+    readonly companyId?: string | null;
+  }): Promise<readonly ApprovalDefinitionRecord[]> {
+    return [...this.definitions.values()]
+      .filter((d) => {
+        if (filter?.companyId === undefined) {
+          return true;
+        }
+        return d.companyId === filter.companyId || d.companyId === null;
+      })
+      .sort((a, b) => a.type.localeCompare(b.type));
   }
 
   async saveRequest(request: ApprovalRequestRecord): Promise<void> {
@@ -75,6 +96,26 @@ export class InMemoryApprovalStore implements ApprovalStore {
         r.companyId === companyId &&
         (r.status === "submitted" || r.status === "under_review"),
     );
+  }
+
+  async listRequests(filter: {
+    readonly companyId: string;
+    readonly type?: string;
+    readonly openOnly?: boolean;
+  }): Promise<readonly ApprovalRequestRecord[]> {
+    const openOnly = filter.openOnly ?? false;
+    return [...this.requests.values()].filter((r) => {
+      if (r.companyId !== filter.companyId) {
+        return false;
+      }
+      if (filter.type !== undefined && r.type !== filter.type) {
+        return false;
+      }
+      if (openOnly) {
+        return r.status === "submitted" || r.status === "under_review";
+      }
+      return true;
+    });
   }
 
   async appendAction(action: ApprovalActionRecord): Promise<void> {

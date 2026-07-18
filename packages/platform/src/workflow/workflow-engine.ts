@@ -20,6 +20,7 @@ import { newId } from "../util/ids.js";
 import type {
   WorkflowAssignmentRecord,
   WorkflowDefinitionRecord,
+  WorkflowHistoryRecord,
   WorkflowInstanceRecord,
   WorkflowStageRecord,
   WorkflowTransitionRecord,
@@ -506,5 +507,74 @@ export class WorkflowEngine {
     instanceId: string,
   ): Promise<Result<WorkflowInstanceRecord | null, PlatformError>> {
     return ok(await this.store.getInstance(instanceId));
+  }
+
+  async getDefinition(
+    definitionId: string,
+  ): Promise<Result<WorkflowDefinitionRecord | null, PlatformError>> {
+    return ok(await this.store.getDefinitionById(definitionId));
+  }
+
+  async getDefinitionByCode(
+    companyId: string | null,
+    code: string,
+    version?: number,
+  ): Promise<Result<WorkflowDefinitionRecord | null, PlatformError>> {
+    return ok(
+      await this.store.getDefinitionByCode(companyId, code, version),
+    );
+  }
+
+  async listDefinitions(filter?: {
+    readonly companyId?: string | null;
+    readonly activeOnly?: boolean;
+  }): Promise<Result<readonly WorkflowDefinitionRecord[], PlatformError>> {
+    return ok(await this.store.listDefinitions(filter));
+  }
+
+  async listInstances(filter: {
+    readonly companyId: string;
+    readonly subjectType?: string;
+    readonly subjectId?: string;
+    readonly instanceStatus?: WorkflowInstanceRecord["instanceStatus"];
+  }): Promise<Result<readonly WorkflowInstanceRecord[], PlatformError>> {
+    return ok(await this.store.listInstances(filter));
+  }
+
+  async listAvailableTransitions(
+    instanceId: string,
+  ): Promise<Result<readonly WorkflowTransitionRecord[], PlatformError>> {
+    const instance = await this.store.getInstance(instanceId);
+    if (!instance) {
+      return fail(
+        new NotFoundError("Workflow instance not found", {
+          code: "workflow_instance_not_found",
+        }),
+      );
+    }
+    const transitions = await this.store.listTransitions(
+      instance.workflowDefinitionId,
+    );
+    return ok(
+      transitions.filter((t) => t.fromStageId === instance.currentStageId),
+    );
+  }
+
+  async listAssignments(
+    instanceId: string,
+  ): Promise<Result<readonly WorkflowAssignmentRecord[], PlatformError>> {
+    return ok(await this.store.listAssignments(instanceId));
+  }
+
+  async listHistory(
+    instanceId: string,
+  ): Promise<Result<readonly WorkflowHistoryRecord[], PlatformError>> {
+    return ok(await this.store.listHistory(instanceId));
+  }
+
+  async listStages(
+    definitionId: string,
+  ): Promise<Result<readonly WorkflowStageRecord[], PlatformError>> {
+    return ok(await this.store.listStages(definitionId));
   }
 }

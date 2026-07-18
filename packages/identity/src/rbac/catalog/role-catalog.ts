@@ -17,6 +17,7 @@ import {
   ALL_CANONICAL_PERMISSION_CODES,
   API_PERMISSION_DEFINITIONS,
   PERMISSION_CATALOG,
+  PLATFORM_PERMISSION_DEFINITIONS,
 } from "./permission-catalog.js";
 import { RoutePermissions } from "./route-permission-catalog.js";
 
@@ -38,9 +39,18 @@ export type CatalogRoleDefinition = {
 };
 
 const ALL = ALL_CANONICAL_PERMISSION_CODES;
-const ALL_READ = PERMISSION_CATALOG.filter((p) =>
-  p.code.endsWith(".read"),
-).map((p) => p.code);
+const ALL_READ = [
+  ...PERMISSION_CATALOG.filter((p) => p.code.endsWith(".read")).map(
+    (p) => p.code,
+  ),
+  ...PLATFORM_PERMISSION_DEFINITIONS.filter((p) =>
+    p.code.endsWith(".read"),
+  ).map((p) => p.code),
+];
+
+const PLATFORM_OPERATOR_PERMISSIONS = PLATFORM_PERMISSION_DEFINITIONS.map(
+  (p) => p.code,
+);
 
 const MANAGER_COMMON_ROUTES = [
   RoutePermissions.CalendarEventsRead,
@@ -127,6 +137,7 @@ export const ROLE_CATALOG: readonly CatalogRoleDefinition[] = [
     parentCode: null,
     permissions: [
       ...PERMISSION_CATALOG.map((p) => p.code),
+      ...PLATFORM_PERMISSION_DEFINITIONS.map((p) => p.code),
       ...API_PERMISSION_DEFINITIONS.map((p) => p.code),
       ...ADMIN_ROUTES,
     ],
@@ -168,6 +179,7 @@ export const ROLE_CATALOG: readonly CatalogRoleDefinition[] = [
     permissions: [
       RoutePermissions.PlatformWorkflowsRead,
       RoutePermissions.PlatformApprovalsRead,
+      ...PLATFORM_OPERATOR_PERMISSIONS,
     ],
   },
   {

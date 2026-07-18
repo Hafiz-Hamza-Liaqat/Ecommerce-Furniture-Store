@@ -3,6 +3,7 @@ import type {
   WorkflowDefinitionRecord,
   WorkflowHistoryRecord,
   WorkflowInstanceRecord,
+  WorkflowInstanceStatus,
   WorkflowStageRecord,
   WorkflowTransitionRecord,
 } from "./models.js";
@@ -15,6 +16,10 @@ export interface WorkflowStore {
     code: string,
     version?: number,
   ): Promise<WorkflowDefinitionRecord | null>;
+  listDefinitions(filter?: {
+    readonly companyId?: string | null;
+    readonly activeOnly?: boolean;
+  }): Promise<readonly WorkflowDefinitionRecord[]>;
 
   saveStage(stage: WorkflowStageRecord): Promise<void>;
   listStages(definitionId: string): Promise<readonly WorkflowStageRecord[]>;
@@ -36,6 +41,12 @@ export interface WorkflowStore {
   listRunningInstances(
     companyId: string,
   ): Promise<readonly WorkflowInstanceRecord[]>;
+  listInstances(filter: {
+    readonly companyId: string;
+    readonly subjectType?: string;
+    readonly subjectId?: string;
+    readonly instanceStatus?: WorkflowInstanceStatus;
+  }): Promise<readonly WorkflowInstanceRecord[]>;
 
   appendHistory(entry: WorkflowHistoryRecord): Promise<void>;
   listHistory(
@@ -81,6 +92,24 @@ export class InMemoryWorkflowStore implements WorkflowStore {
       return matches.find((d) => d.version === version) ?? null;
     }
     return matches.sort((a, b) => b.version - a.version)[0] ?? null;
+  }
+
+  async listDefinitions(filter?: {
+    readonly companyId?: string | null;
+    readonly activeOnly?: boolean;
+  }): Promise<readonly WorkflowDefinitionRecord[]> {
+    const activeOnly = filter?.activeOnly ?? true;
+    return [...this.definitions.values()]
+      .filter((d) => {
+        if (activeOnly && !d.isActive) {
+          return false;
+        }
+        if (filter?.companyId === undefined) {
+          return true;
+        }
+        return d.companyId === filter.companyId || d.companyId === null;
+      })
+      .sort((a, b) => a.code.localeCompare(b.code) || b.version - a.version);
   }
 
   async saveStage(stage: WorkflowStageRecord): Promise<void> {
@@ -143,6 +172,35 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     return [...this.instances.values()].filter(
       (i) => i.companyId === companyId && i.instanceStatus === "running",
     );
+  }
+
+  async listInstances(filter: {
+    readonly companyId: string;
+    readonly subjectType?: string;
+    readonly subjectId?: string;
+    readonly instanceStatus?: WorkflowInstanceStatus;
+  }): Promise<readonly WorkflowInstanceRecord[]> {
+    return [...this.instances.values()].filter((i) => {
+      if (i.companyId !== filter.companyId) {
+        return false;
+      }
+      if (
+        filter.subjectType !== undefined &&
+        i.subjectType !== filter.subjectType
+      ) {
+        return false;
+      }
+      if (filter.subjectId !== undefined && i.subjectId !== filter.subjectId) {
+        return false;
+      }
+      if (
+        filter.instanceStatus !== undefined &&
+        i.instanceStatus !== filter.instanceStatus
+      ) {
+        return false;
+      }
+      return true;
+    });
   }
 
   async appendHistory(entry: WorkflowHistoryRecord): Promise<void> {

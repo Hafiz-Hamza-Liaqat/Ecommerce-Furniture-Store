@@ -264,6 +264,33 @@ export class ApprovalEngine {
     return ok(await this.store.listActions(requestId));
   }
 
+  async getRequest(
+    requestId: string,
+  ): Promise<Result<ApprovalRequestRecord | null, PlatformError>> {
+    return ok(await this.store.getRequest(requestId));
+  }
+
+  async listRequests(filter: {
+    readonly companyId: string;
+    readonly type?: string;
+    readonly openOnly?: boolean;
+  }): Promise<Result<readonly ApprovalRequestRecord[], PlatformError>> {
+    return ok(await this.store.listRequests(filter));
+  }
+
+  async getDefinitionByType(
+    companyId: string | null,
+    type: string,
+  ): Promise<Result<ApprovalDefinitionRecord | null, PlatformError>> {
+    return ok(await this.store.getDefinitionByType(companyId, type));
+  }
+
+  async listDefinitions(filter?: {
+    readonly companyId?: string | null;
+  }): Promise<Result<readonly ApprovalDefinitionRecord[], PlatformError>> {
+    return ok(await this.store.listDefinitions(filter));
+  }
+
   async #updateStatus(
     requestId: string,
     status: ApprovalRequestStatus,

@@ -34,7 +34,8 @@
     "@afh/projects-application": "0.1.0",
     "@afh/sales-application": "0.1.0",
     "@afh/service-application": "0.1.0",
-    "@afh/shared-kernel": "0.1.0"
+    "@afh/shared-kernel": "0.1.0",
+    "@afh/workflow-application": "0.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

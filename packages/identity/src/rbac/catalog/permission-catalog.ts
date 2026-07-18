@@ -181,6 +181,99 @@ export const PERMISSION_CATALOG: readonly CatalogPermissionDefinition[] = [
 ];
 
 /**
+ * RC6.2 platform operator CQRS permissions (workflow/approval).
+ * Distinct from route-only `platform.workflows.read` / `platform.approvals.read`.
+ * `legacyKey` equals `code` — these never existed as pre-RC5.3 handler keys.
+ */
+export const PLATFORM_PERMISSION_DEFINITIONS: readonly CatalogPermissionDefinition[] =
+  [
+    {
+      code: "platform.workflow_definitions.read",
+      module: "platform",
+      legacyKey: "platform.workflow_definitions.read",
+      description: "Read workflow definitions (operator CQRS)",
+    },
+    {
+      code: "platform.workflow_definitions.create",
+      module: "platform",
+      legacyKey: "platform.workflow_definitions.create",
+      description: "Register workflow definitions (operator CQRS)",
+    },
+    {
+      code: "platform.workflow_instances.read",
+      module: "platform",
+      legacyKey: "platform.workflow_instances.read",
+      description: "Read workflow instances and available transitions",
+    },
+    {
+      code: "platform.workflow_instances.transition",
+      module: "platform",
+      legacyKey: "platform.workflow_instances.transition",
+      description: "Transition workflow instances (operator CQRS)",
+    },
+    {
+      code: "platform.workflow_tasks.read",
+      module: "platform",
+      legacyKey: "platform.workflow_tasks.read",
+      description: "Read workflow task assignments",
+    },
+    {
+      code: "platform.workflow_tasks.assign",
+      module: "platform",
+      legacyKey: "platform.workflow_tasks.assign",
+      description: "Assign workflow tasks",
+    },
+    {
+      code: "platform.approval_definitions.read",
+      module: "platform",
+      legacyKey: "platform.approval_definitions.read",
+      description: "Read approval type definitions",
+    },
+    {
+      code: "platform.approval_definitions.create",
+      module: "platform",
+      legacyKey: "platform.approval_definitions.create",
+      description: "Register approval type definitions",
+    },
+    {
+      code: "platform.approval_requests.read",
+      module: "platform",
+      legacyKey: "platform.approval_requests.read",
+      description: "Read approval requests and history",
+    },
+    {
+      code: "platform.approval_requests.submit",
+      module: "platform",
+      legacyKey: "platform.approval_requests.submit",
+      description: "Submit approval requests (operator CQRS)",
+    },
+    {
+      code: "platform.approval_requests.claim",
+      module: "platform",
+      legacyKey: "platform.approval_requests.claim",
+      description: "Claim approval requests for review",
+    },
+    {
+      code: "platform.approval_requests.approve",
+      module: "platform",
+      legacyKey: "platform.approval_requests.approve",
+      description: "Approve approval requests",
+    },
+    {
+      code: "platform.approval_requests.reject",
+      module: "platform",
+      legacyKey: "platform.approval_requests.reject",
+      description: "Reject or request changes on approval requests",
+    },
+    {
+      code: "platform.approval_requests.delegate",
+      module: "platform",
+      legacyKey: "platform.approval_requests.delegate",
+      description: "Delegate approval requests",
+    },
+  ];
+
+/**
  * RC5.4 API-route permissions (not CQRS handler actions).
  * `legacyKey` equals `code` because these never existed as pre-RC5.3
  * executable handler keys; the seed still treats them as canonical records.
@@ -199,16 +292,18 @@ export const API_PERMISSION_DEFINITIONS: readonly CatalogPermissionDefinition[] 
 export const CANONICAL_PERMISSION_CODES: readonly string[] =
   PERMISSION_CATALOG.map((entry) => entry.code);
 
-/** All CQRS, API-route, and inactive route permission codes in catalog order. */
+/** All CQRS, platform-operator, API-route, and inactive route permission codes. */
 export const ALL_CANONICAL_PERMISSION_CODES: readonly string[] = [
   ...CANONICAL_PERMISSION_CODES,
+  ...PLATFORM_PERMISSION_DEFINITIONS.map((entry) => entry.code),
   ...API_PERMISSION_DEFINITIONS.map((entry) => entry.code),
   ...ROUTE_PERMISSION_CODES,
 ];
 
-/** All canonical permission definitions seeded by catalog v3. */
+/** All canonical permission definitions seeded by the catalog. */
 export const ALL_PERMISSION_DEFINITIONS = [
   ...PERMISSION_CATALOG,
+  ...PLATFORM_PERMISSION_DEFINITIONS,
   ...API_PERMISSION_DEFINITIONS,
   ...ROUTE_PERMISSION_DEFINITIONS,
 ] as const;
