@@ -55,8 +55,10 @@ import {
   togglePinnedRecord,
   toggleWatchedRecord,
 } from "../../workspace/prefs";
+import { allowFixtureListFallback, resolveUiProfile } from "./ui-profile";
+import { buildDefaultListPayload, readListPage } from "./list-query";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 25;
 
 export function ModuleApp({ module }: { readonly module: ModuleDefinition }) {
   return (
@@ -328,13 +330,129 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
   const page = Number(params.get("page") || "1");
   const q = params.get("q") || "";
   const { toast } = useWorkspaceUi();
+  const { api, user, setLastCorrelationId } = useSession();
   const [localPatch, setLocalPatch] = useState<Record<string, Record<string, string>>>({});
+  const [liveRows, setLiveRows] = useState<RecordRow[] | null>(null);
+  const [liveTotal, setLiveTotal] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
+  const [usingFixtures, setUsingFixtures] = useState(false);
+
+  const listQueryType = entity?.api?.listQueryType;
+  const mapListRow =
+    entity?.api?.mapListEntity ?? entity?.api?.mapEntity ?? null;
+
+  const filterValues = useMemo(() => {
+    if (!entity) return {} as Record<string, string>;
+    const out: Record<string, string> = {};
+    for (const f of entity.filters) {
+      const val = params.get(f.key);
+      if (val) out[f.key] = val;
+    }
+    return out;
+  }, [entity, params]);
+
+  useEffect(() => {
+    if (!entity || !listQueryType || !mapListRow) {
+      setLiveRows(null);
+      setListError(null);
+      setUsingFixtures(false);
+      return;
+    }
+    if (!user?.companyId) {
+      setLiveRows([]);
+      setLiveTotal(0);
+      setListError("Signed-in user is missing companyId — required for live lists.");
+      setUsingFixtures(false);
+      return;
+    }
+    const companyId = user.companyId;
+
+    let cancelled = false;
+    void (async () => {
+      setListLoading(true);
+      setListError(null);
+      setUsingFixtures(false);
+      try {
+        const listArgs = {
+          page: Math.max(1, page),
+          pageSize: PAGE_SIZE,
+          filters: filterValues,
+          ...(q ? { q } : {}),
+        };
+        const payload =
+          entity.api?.buildListPayload?.(companyId, listArgs) ??
+          buildDefaultListPayload(companyId, listArgs);
+
+        const res = await dedupeAsync(
+          `list:${listQueryType}:${companyId}:${page}:${q}:${JSON.stringify(filterValues)}`,
+          () =>
+            api.dispatchQuery({
+              queryType: listQueryType,
+              payload,
+            }),
+        );
+        if (cancelled) return;
+        setLastCorrelationId(res.correlationId);
+        const { items, totalCount } = readListPage(res.data);
+        const rows = items
+          .map((item) => mapListRow(item))
+          .filter((r): r is RecordRow => r != null)
+          .map((r) => ({ ...r, source: "api" as const }));
+        setLiveRows(rows);
+        setLiveTotal(totalCount);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof ApiClientError) {
+          setLastCorrelationId(err.correlationId);
+          setListError(`${err.message} (${err.code})`);
+        } else {
+          setListError("List query failed.");
+        }
+        if (allowFixtureListFallback()) {
+          setUsingFixtures(true);
+          setLiveRows(null);
+        } else {
+          setLiveRows([]);
+          setLiveTotal(0);
+          setUsingFixtures(false);
+        }
+      } finally {
+        if (!cancelled) setListLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    api,
+    entity,
+    filterValues,
+    listQueryType,
+    mapListRow,
+    page,
+    q,
+    setLastCorrelationId,
+    user?.companyId,
+  ]);
 
   if (!entity) {
     return <EmptyState title="Unknown area" body="This module section is not defined." />;
   }
 
-  const all = mergeRecords(module, entity).map((r) => {
+  const liveMode = Boolean(listQueryType && mapListRow);
+  const fixtureSource = mergeRecords(module, entity);
+  const sourceRows =
+    liveMode && liveRows !== null && !usingFixtures
+      ? liveRows
+      : liveMode && usingFixtures
+        ? fixtureSource
+        : liveMode && !allowFixtureListFallback()
+          ? (liveRows ?? [])
+          : fixtureSource;
+
+  const all = sourceRows.map((r) => {
     const patch = localPatch[r.id];
     if (!patch) return r;
     return {
@@ -344,22 +462,34 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
       meta: { ...r.meta, ...patch },
     };
   });
-  const filtered = all.filter((r) => {
-    if (q) {
-      const hay = `${r.title} ${r.status} ${JSON.stringify(r.meta)}`.toLowerCase();
-      if (!hay.includes(q.toLowerCase())) return false;
-    }
-    for (const f of entity.filters) {
-      const val = params.get(f.key);
-      if (!val) continue;
-      const hay = `${r.status} ${JSON.stringify(r.meta)} ${(r.tags ?? []).join(" ")}`.toLowerCase();
-      if (!hay.includes(val.toLowerCase())) return false;
-    }
-    return true;
-  });
 
-  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const slice = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // Live List* already applies q/filters server-side; fixtures still filter client-side.
+  const filtered =
+    liveMode && liveRows !== null && !usingFixtures
+      ? all
+      : all.filter((r) => {
+          if (q) {
+            const hay = `${r.title} ${r.status} ${JSON.stringify(r.meta)}`.toLowerCase();
+            if (!hay.includes(q.toLowerCase())) return false;
+          }
+          for (const f of entity.filters) {
+            const val = params.get(f.key);
+            if (!val) continue;
+            const hay = `${r.status} ${JSON.stringify(r.meta)} ${(r.tags ?? []).join(" ")}`.toLowerCase();
+            if (!hay.includes(val.toLowerCase())) return false;
+          }
+          return true;
+        });
+
+  const totalCount =
+    liveMode && liveRows !== null && !usingFixtures
+      ? liveTotal
+      : filtered.length;
+  const pages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const slice =
+    liveMode && liveRows !== null && !usingFixtures
+      ? filtered
+      : filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const drawerRecord = drawerId ? all.find((r) => r.id === drawerId) : null;
 
   function setFilter(key: string, value: string) {
@@ -432,6 +562,18 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
         }
       />
 
+      {listError ? (
+        <Alert tone={usingFixtures ? "warn" : "danger"}>
+          {listError}
+          {usingFixtures
+            ? " Demo profile: showing presentation fixtures. Production never substitutes fixtures for Included List* entities."
+            : resolveUiProfile() === "production"
+              ? " Production profile: no fixture fallback."
+              : null}
+        </Alert>
+      ) : null}
+      {listLoading ? <Skeleton rows={3} /> : null}
+
       <FilterBar>
         <label className="erp-filter">
           <span>Search</span>
@@ -485,17 +627,21 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
         </div>
       ) : null}
 
-      {slice.length === 0 ? (
+      {!listLoading && slice.length === 0 ? (
         <EmptyState
           title={`No ${entity.plural.toLowerCase()}`}
-          body="Adjust filters or create a record. API-created rows appear after successful commands."
+          body={
+            listError && !usingFixtures
+              ? "Authorization or query failure — fixtures were not substituted."
+              : "Adjust filters or create a record. API-created rows appear after successful commands."
+          }
           action={
             <Link className="btn btn--primary" to={`${module.basePath}/${entity.key}/new`}>
               Create {entity.label.toLowerCase()}
             </Link>
           }
         />
-      ) : (
+      ) : !listLoading ? (
         <AdvancedDataTable
           scope={`${module.id}:${entity.key}`}
           columns={entity.columns.map((c) => ({
@@ -536,7 +682,7 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
             </Toolbar>
           )}
         />
-      )}
+      ) : null}
 
       <div className="erp-pager row">
         <Button
@@ -551,7 +697,8 @@ function EntityListPage({ module }: { readonly module: ModuleDefinition }) {
           Previous
         </Button>
         <span>
-          Page {page} / {pages} · {filtered.length} records
+          Page {page} / {pages} · {totalCount} records
+          {liveMode && !usingFixtures ? " (authorized)" : ""}
         </span>
         <Button
           variant="ghost"

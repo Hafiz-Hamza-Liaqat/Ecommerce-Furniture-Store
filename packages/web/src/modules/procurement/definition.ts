@@ -78,6 +78,7 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
         createCommandType: "procurement.CreateSupplier",
         updateCommandType: "procurement.UpdateSupplier",
         getQueryType: "procurement.GetSupplier",
+        listQueryType: "procurement.ListSupplier",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           name: v.name,
@@ -123,6 +124,7 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "procurement.CreatePurchaseRequisition",
         getQueryType: "procurement.GetPurchaseRequisition",
+        listQueryType: "procurement.ListPurchaseRequisition",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,
@@ -176,6 +178,7 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "procurement.CreatePurchaseOrder",
         getQueryType: "procurement.GetPurchaseOrder",
+        listQueryType: "procurement.ListPurchaseOrder",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,

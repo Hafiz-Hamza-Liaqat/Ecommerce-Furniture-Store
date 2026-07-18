@@ -155,6 +155,7 @@ export const SALES_MODULE: ModuleDefinition = {
         createCommandType: "sales.CreateOpportunity",
         updateCommandType: "sales.UpdateOpportunity",
         getQueryType: "sales.GetOpportunity",
+        listQueryType: "sales.ListOpportunity",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           title: v.title,
@@ -216,6 +217,7 @@ export const SALES_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "sales.CreateQuote",
         getQueryType: "sales.GetQuote",
+        listQueryType: "sales.ListQuote",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,
@@ -285,6 +287,7 @@ export const SALES_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "sales.CreateSalesOrder",
         getQueryType: "sales.GetSalesOrder",
+        listQueryType: "sales.ListSalesOrder",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,

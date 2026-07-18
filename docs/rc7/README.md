@@ -3,7 +3,7 @@
 - **Version:** 1.0
 - **Created:** 2026-07-18
 - **Last Updated:** 2026-07-18
-- **Status:** RC7.0–RC7.2d committed; **RC7.2e–g CRM/Projects/Service List* implemented — awaiting review (not committed). Do not start RC7.3.**
+- **Status:** RC7.0–RC7.2g committed; **RC7.3 Production UI de-fixturing implemented — awaiting review (not committed). Do not start RC7.4.**
 - **Depends on:** RC5 (authorization), RC6 (workflow/approval) — both release-ready (`rc6` / `v0.6.0`).
 - **Canonical product scope:** `docs/productization/01-productization-roadmap.md` §RC7
 - **V1 freeze:** [`03-V1-Scope-Freeze.md`](./03-V1-Scope-Freeze.md) — **single source of truth** for Included / Excluded / Deferred / Future. No RC7 engineering slice may expand Included scope without an approved amendment to that document.
@@ -68,10 +68,10 @@ RC7 is complete only when:
 4. **RC7.2b** — Procurement `List*` — committed
 5. **RC7.2c** — Inventory `List*` — committed
 6. **RC7.2d** — Finance `List*` — committed
-7. **RC7.2e** — CRM `List*` — **implementation complete; awaiting review**
-8. **RC7.2f** — Projects `List*` — **implementation complete; awaiting review**
-9. **RC7.2g** — Service `List*` — **implementation complete; awaiting review**
-10. **RC7.3** — Production UI de-fixturing — **not started**
+7. **RC7.2e** — CRM `List*` — committed
+8. **RC7.2f** — Projects `List*` — committed
+9. **RC7.2g** — Service `List*` — committed
+10. **RC7.3** — Production UI de-fixturing — **implementation complete; awaiting review**
 11. **RC7.4** — Validation, concurrency, audit, scope completion
 12. **RC7.5** — DAM foundation (binary/object where V1 claims)
 13. **RC7.6** — Attachments, notes, comments, activity

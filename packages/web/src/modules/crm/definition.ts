@@ -84,6 +84,7 @@ export const CRM_MODULE: ModuleDefinition = {
         createCommandType: "crm.CreateLead",
         updateCommandType: "crm.UpdateLead",
         getQueryType: "crm.GetLead",
+        listQueryType: "crm.ListLead",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           title: v.title,
@@ -155,6 +156,7 @@ export const CRM_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "crm.CreateContact",
         getQueryType: "crm.GetContact",
+        listQueryType: "crm.ListContact",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           displayName: v.displayName,
@@ -191,6 +193,7 @@ export const CRM_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "crm.CreateAccount",
         getQueryType: "crm.GetAccount",
+        listQueryType: "crm.ListAccount",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           name: v.name,
@@ -248,6 +251,7 @@ export const CRM_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "crm.LogActivity",
         getQueryType: "crm.GetActivity",
+        listQueryType: "crm.ListActivity",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           subject: v.subject,
@@ -355,6 +359,7 @@ export const CRM_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "crm.CreateCampaign",
         getQueryType: "crm.GetCampaign",
+        listQueryType: "crm.ListCampaign",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           name: v.name,

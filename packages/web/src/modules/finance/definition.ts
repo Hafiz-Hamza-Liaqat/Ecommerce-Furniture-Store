@@ -88,6 +88,7 @@ export const FINANCE_MODULE: ModuleDefinition = {
         createCommandType: "finance.CreateFinancialAccount",
         updateCommandType: "finance.UpdateFinancialAccount",
         getQueryType: "finance.GetFinancialAccount",
+        listQueryType: "finance.ListFinancialAccount",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           code: v.code,
@@ -137,6 +138,7 @@ export const FINANCE_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "finance.CreateLedger",
         getQueryType: "finance.GetLedger",
+        listQueryType: "finance.ListLedger",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           code: v.code || `LED-${Date.now()}`,
@@ -147,10 +149,20 @@ export const FINANCE_MODULE: ModuleDefinition = {
         buildGetPayload: (companyId, id) => ({ companyId, ledgerId: id, includeEntries: true }),
         extractCreateId: (data) => (data as { ledgerId?: string }).ledgerId ?? null,
         mapEntity: (data) => {
-          const wrap = data as { ledger?: { id?: string; name?: string; status?: string; currencyCode?: string } };
-          const l = wrap.ledger ?? (data as { id?: string; name?: string; status?: string; currencyCode?: string });
+          const wrap = data as {
+            ledger?: { id?: string; name?: string; code?: string; kind?: string; status?: string; currencyCode?: string };
+          };
+          const l =
+            wrap.ledger ??
+            (data as { id?: string; name?: string; code?: string; kind?: string; status?: string; currencyCode?: string });
           if (!l.id) return null;
-          return row(l.id, l.name ?? l.id, l.status ?? "Open", { Currency: l.currencyCode ?? "PKR" }, { source: "api" });
+          return row(
+            l.id,
+            l.name ?? l.code ?? l.id,
+            l.status ?? "Open",
+            { Currency: l.currencyCode ?? "PKR", Code: l.code ?? "—", Kind: l.kind ?? "—" },
+            { source: "api" },
+          );
         },
       },
     }),
@@ -224,6 +236,7 @@ export const FINANCE_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "finance.CreateInvoice",
         getQueryType: "finance.GetInvoice",
+        listQueryType: "finance.ListInvoice",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,
@@ -314,6 +327,7 @@ export const FINANCE_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "finance.RecordPayment",
         getQueryType: "finance.GetPayment",
+        listQueryType: "finance.ListPayment",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           invoiceId: v.invoiceId,

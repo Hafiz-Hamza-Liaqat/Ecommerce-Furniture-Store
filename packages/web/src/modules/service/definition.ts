@@ -73,6 +73,7 @@ export const SERVICE_MODULE: ModuleDefinition = {
         createCommandType: "service.CreateServiceRequest",
         updateCommandType: "service.UpdateServiceRequest",
         getQueryType: "service.GetServiceRequest",
+        listQueryType: "service.ListServiceRequest",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,
@@ -133,6 +134,7 @@ export const SERVICE_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "service.CreateServiceRequest",
         getQueryType: "service.GetServiceRequest",
+        listQueryType: "service.ListServiceRequest",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,
@@ -141,6 +143,11 @@ export const SERVICE_MODULE: ModuleDefinition = {
         }),
         buildGetPayload: (companyId, id) => ({ companyId, serviceRequestId: id }),
         extractCreateId: (data) => (data as { serviceRequestId?: string }).serviceRequestId ?? null,
+        mapEntity: (data) => {
+          const d = data as { id?: string; title?: string; number?: string; status?: string; priority?: string };
+          if (!d.id) return null;
+          return row(d.id, d.title ?? d.number ?? d.id, d.status ?? "Open", { Priority: d.priority ?? "—" }, { source: "api" });
+        },
       },
     }),
     e({
@@ -167,6 +174,7 @@ export const SERVICE_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "service.CreateWorkOrder",
         getQueryType: "service.GetWorkOrder",
+        listQueryType: "service.ListWorkOrder",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           number: v.number,
@@ -207,6 +215,7 @@ export const SERVICE_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "service.ScheduleAppointment",
         getQueryType: "service.GetAppointment",
+        listQueryType: "service.ListAppointment",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           startAt: v.startAt,
@@ -216,6 +225,22 @@ export const SERVICE_MODULE: ModuleDefinition = {
         }),
         buildGetPayload: (companyId, id) => ({ companyId, appointmentId: id }),
         extractCreateId: (data) => (data as { appointmentId?: string }).appointmentId ?? null,
+        mapEntity: (data) => {
+          const d = data as {
+            id?: string;
+            status?: string;
+            window?: { startAt?: string };
+            notes?: string | null;
+          };
+          if (!d.id) return null;
+          return row(
+            d.id,
+            d.notes ?? `Appointment ${d.id}`,
+            d.status ?? "scheduled",
+            { Start: d.window?.startAt ?? "—", Technician: "—" },
+            { source: "api" },
+          );
+        },
       },
     }),
     e({
@@ -237,6 +262,31 @@ export const SERVICE_MODULE: ModuleDefinition = {
         Load: `${50 + i * 10}%`,
         Region: ["North", "South", "Central", "North"][i]!,
       })),
+      api: {
+        listQueryType: "service.ListTechnicianAssignment",
+        mapEntity: (data) => {
+          const d = data as {
+            assignmentId?: string;
+            technician?: { displayName?: string | null };
+            assignedAt?: string | null;
+            workOrderId?: string | null;
+            appointmentId?: string | null;
+          };
+          if (!d.assignmentId) return null;
+          const displayName = d.technician?.displayName ?? d.assignmentId;
+          const status = d.assignedAt ? "Assigned" : "Pending";
+          return row(
+            d.assignmentId,
+            displayName,
+            status,
+            {
+              Load: d.workOrderId || d.appointmentId ? "Scheduled" : "—",
+              Region: "—",
+            },
+            { source: "api" },
+          );
+        },
+      },
     }),
     e({
       key: "history",

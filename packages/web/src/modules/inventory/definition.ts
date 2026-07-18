@@ -96,6 +96,7 @@ export const INVENTORY_MODULE: ModuleDefinition = {
         createCommandType: "inventory.CreateInventoryItem",
         updateCommandType: "inventory.UpdateInventoryItem",
         getQueryType: "inventory.GetInventoryItem",
+        listQueryType: "inventory.ListInventoryItem",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           code: v.code,
@@ -203,6 +204,7 @@ export const INVENTORY_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "inventory.CreateWarehouse",
         getQueryType: "inventory.GetWarehouse",
+        listQueryType: "inventory.ListWarehouse",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           code: v.code,
@@ -279,7 +281,33 @@ export const INVENTORY_MODULE: ModuleDefinition = {
       ),
       api: {
         getQueryType: "inventory.GetStock",
+        listQueryType: "inventory.ListStock",
         buildGetPayload: (companyId, id) => ({ companyId, inventoryItemId: id }),
+        mapEntity: (data) => {
+          const d = data as {
+            id?: string;
+            inventoryItemId?: string;
+            warehouseId?: string;
+            onHand?: number;
+            available?: number;
+            reserved?: number;
+          };
+          if (!d.id) return null;
+          const onHand = d.onHand ?? 0;
+          const available = d.available ?? onHand;
+          const level = available < 50 ? "Low" : "Healthy";
+          return row(
+            d.id,
+            d.inventoryItemId ?? d.id,
+            level,
+            {
+              Warehouse: d.warehouseId ?? "—",
+              OnHand: onHand,
+              Reserved: d.reserved ?? Math.floor(onHand * 0.1),
+            },
+            { source: "api" },
+          );
+        },
       },
     }),
     e({

@@ -85,6 +85,7 @@ export const PROJECTS_MODULE: ModuleDefinition = {
         createCommandType: "projects.CreateProject",
         updateCommandType: "projects.UpdateProject",
         getQueryType: "projects.GetProject",
+        listQueryType: "projects.ListProject",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           code: v.code,
@@ -148,6 +149,7 @@ export const PROJECTS_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "projects.CreateTask",
         getQueryType: "projects.GetTask",
+        listQueryType: "projects.ListTask",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           title: v.title,
@@ -196,6 +198,7 @@ export const PROJECTS_MODULE: ModuleDefinition = {
       api: {
         createCommandType: "projects.CreateMilestone",
         getQueryType: "projects.GetMilestone",
+        listQueryType: "projects.ListMilestone",
         buildCreatePayload: (companyId, v) => ({
           companyId,
           projectId: v.projectId,

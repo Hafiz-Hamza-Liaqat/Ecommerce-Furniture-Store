@@ -78,6 +78,26 @@ export type ApiBinding = {
   readonly updateCommandType?: string;
   readonly getQueryType?: string;
   readonly summaryQueryType?: string;
+  /**
+   * RC7.3 — live List* query type (e.g. sales.ListOpportunity).
+   * When set, ModuleApp EntityListPage uses CQRS instead of fixtures
+   * (Production: fail-closed; Demo: fixtures only as explicit fallback).
+   */
+  readonly listQueryType?: string;
+  /** Build ListQueryRequest payload; defaults to shared buildDefaultListPayload. */
+  readonly buildListPayload?: (
+    companyId: string,
+    args: {
+      readonly page: number;
+      readonly pageSize: number;
+      readonly q?: string;
+      readonly filters: Readonly<Record<string, string>>;
+      readonly sortField?: string;
+      readonly sortDir?: "asc" | "desc";
+    },
+  ) => Record<string, unknown>;
+  /** Map a List* row; defaults to mapEntity. */
+  readonly mapListEntity?: (data: unknown) => RecordRow | null;
   /** Build create payload from form values + companyId */
   readonly buildCreatePayload?: (
     companyId: string,
