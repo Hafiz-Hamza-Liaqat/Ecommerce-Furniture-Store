@@ -116,8 +116,8 @@ export class SqlApprovalStore implements ApprovalStore {
     const row = this.client.get<DefinitionRow>(
       `SELECT * FROM approval_definitions
        WHERE type = ?
-         AND (company_id IS ? OR company_id IS NULL)
-       ORDER BY CASE WHEN company_id IS ? THEN 0 ELSE 1 END
+         AND (company_id = ? OR company_id IS NULL)
+       ORDER BY CASE WHEN company_id = ? THEN 0 ELSE 1 END
        LIMIT 1`,
       [type, companyId, companyId],
     );
@@ -130,7 +130,7 @@ export class SqlApprovalStore implements ApprovalStore {
     let sql = "SELECT * FROM approval_definitions WHERE 1 = 1";
     const params: unknown[] = [];
     if (filter?.companyId !== undefined) {
-      sql += " AND (company_id IS ? OR company_id IS NULL)";
+      sql += " AND (company_id = ? OR company_id IS NULL)";
       params.push(filter.companyId);
     }
     sql += " ORDER BY type ASC";

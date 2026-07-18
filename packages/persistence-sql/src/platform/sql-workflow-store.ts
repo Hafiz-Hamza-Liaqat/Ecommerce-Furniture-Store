@@ -207,7 +207,7 @@ export class SqlWorkflowStore implements WorkflowStore {
       `SELECT * FROM workflow_definitions
        WHERE code = ?
          AND is_active = 1
-         AND (company_id IS ? OR company_id IS NULL)
+         AND (company_id = ? OR company_id IS NULL)
        ORDER BY version DESC`,
       [code, companyId],
     );
@@ -229,7 +229,7 @@ export class SqlWorkflowStore implements WorkflowStore {
       sql += " AND is_active = 1";
     }
     if (filter?.companyId !== undefined) {
-      sql += " AND (company_id IS ? OR company_id IS NULL)";
+      sql += " AND (company_id = ? OR company_id IS NULL)";
       params.push(filter.companyId);
     }
     sql += " ORDER BY code ASC, version DESC";
