@@ -85,8 +85,8 @@ See **Definition of Done** above for the one-page finish line.
 
 | Slice | Title | Status |
 |---|---|---|
-| RC7.0 | V1 Product Freeze & Planning | Documentation complete — awaiting review (no code) |
-| RC7.1 | Shared List Foundation (`List*` contracts only — **no** entity handlers) | Not started |
+| RC7.0 | V1 Product Freeze & Planning | Committed (`9762047`) — documentation only |
+| RC7.1 | Shared List Foundation | Implemented (pending review/commit) — ADR D56 |
 | RC7.2a | Sales List | Not started |
 | RC7.2b | Procurement List | Not started |
 | RC7.2c | Inventory List | Not started |

@@ -65,6 +65,7 @@ Canonical business decision IDs D01–D36 originated in Phase 0A Decision Regist
 | [D53](./ADR-D53-workflow-approval-engine-completion.md) | Rules guards + assignment resolver; SLA/escalation foundations; outbox notification events; status projections; catalog v2 | Accepted | RC6.5 completes roadmap item 4 without delivery workers or ownership moves | `@afh/platform` engines/catalog/composition | D04, D49–D52, RC6.5 |
 | [D54](./ADR-D54-workflow-status-projection-proof.md) | Required StatusProjectionUpdater; consistency helpers; acceptance proof that entity status is read-only projection of Workflow | Accepted | RC6.6 closes roadmap item 5 without handler mass-rewrite or recovery suites | `@afh/platform` status-projection + proof tests | D04, D49–D53, RC6.6 |
 | [D55](./ADR-D55-workflow-approval-recovery-acceptance.md) | Prove restart/retry/logical-idempotency/concurrency via existing engine guards + SQL reopen; no new idempotency framework or distributed lock | Accepted | RC6.7 closes roadmap item 6 | platform + persistence-sql acceptance tests | D04, D49–D54, RC6.7 |
+| [D56](./ADR-D56-authorized-list-totals.md) | List* `totalCount` is authorized-only via bounded Policy scan; repository totals never exposed; shared-kernel contracts + application Policy integration; no module alternatives | Accepted | RC7.1 Shared List Foundation | `@afh/shared-kernel` list-query; `@afh/application` buildAuthorizedListPage | D43, D45–D47, RC7.1 |
 
 ---
 
