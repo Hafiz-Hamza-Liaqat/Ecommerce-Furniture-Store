@@ -32,7 +32,7 @@ export function ProjectsPage() {
       <div className="site-section site-project-grid">
         {items.map((p) => (
           <Link key={p.id} to={`/projects/${p.id}`} className="site-project">
-            <img src={p.image} alt="" loading="lazy" />
+            <img src={p.image} alt={p.title} loading="lazy" />
             <div>
               <p className="site-product__meta">{p.category}</p>
               <h2>{p.title}</h2>
@@ -87,7 +87,7 @@ export function ProjectDetailPage() {
               <span>Project film · Walkthrough</span>
             </div>
           </div>
-          <img src={project.image} alt="" loading="lazy" />
+          <img src={project.image} alt={project.title} loading="lazy" />
         </div>
         <div className="site-hero__actions site-section">
           <Link to="/quote" className="site-btn site-btn--primary">

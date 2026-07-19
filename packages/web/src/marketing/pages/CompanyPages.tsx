@@ -45,7 +45,7 @@ function ContentLayout({
       </header>
       <div className="site-section site-prose">
         {page.image ? (
-          <img className="site-prose__image" src={page.image} alt="" loading="lazy" />
+          <img className="site-prose__image" src={page.image} alt={page.title} loading="lazy" />
         ) : null}
         {page.body.map((para) => (
           <p key={para.slice(0, 24)}>{para}</p>
@@ -83,7 +83,7 @@ export function ManufacturingPage() {
       <ol className="site-process">
         {PROCESS.map((step, i) => (
           <li key={step.title}>
-            <img src={step.image} alt="" loading="lazy" />
+            <img src={step.image} alt={step.title} loading="lazy" />
             <span>{String(i + 1).padStart(2, "0")}</span>
             <h3>{step.title}</h3>
             <p>{step.body}</p>
@@ -182,7 +182,7 @@ export function DemoPage() {
   return (
     <ContentLayout page={mustPage("demo")} path="/demo">
       <InquiryForm intent="Book demo" />
-      <img src={IMG.lounge} alt="" loading="lazy" className="site-prose__image" />
+      <img src={IMG.lounge} alt="Artisan Furnish Hub showroom lounge" loading="lazy" className="site-prose__image" />
     </ContentLayout>
   );
 }

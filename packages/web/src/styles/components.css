@@ -18,12 +18,12 @@
 }
 
 .btn--primary {
-  background: var(--afh-copper);
+  background: var(--afh-copper-deep);
   color: white;
 }
 
 .btn--primary:hover {
-  background: var(--afh-copper-deep);
+  background: var(--afh-copper);
 }
 
 .btn--ghost {
@@ -209,6 +209,16 @@
 .auth-card p {
   margin: 0 0 1.25rem;
   color: var(--afh-ink-soft);
+}
+
+.auth-card__link {
+  color: var(--afh-copper-deep);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.auth-card__link:hover {
+  color: var(--afh-ink);
 }
 
 .widget {

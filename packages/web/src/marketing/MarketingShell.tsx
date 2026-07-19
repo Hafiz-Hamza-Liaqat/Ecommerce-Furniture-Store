@@ -1,10 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { BRAND, COLLECTIONS, NEWS, PROJECTS } from "./data/content";
 import { CATALOGUE } from "./data/catalogue";
 import { FURNITURE_TAXONOMY, flattenTaxonomy } from "./data/taxonomy";
 import { pushRecentSearch, getRecentSearches } from "./cx/stores";
 import { useSession } from "../state/session";
+import { useFocusTrap } from "../a11y/useFocusTrap";
 
 export function MarketingShell() {
   const { pathname, hash } = useLocation();
@@ -44,11 +45,26 @@ export function MarketingShell() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setSearchOpen(true);
       }
-      if (e.key === "Escape") setSearchOpen(false);
+      // `/` opens search when not typing (does not conflict with browser Find when Ctrl/Cmd held)
+      if (!typing && !e.metaKey && !e.ctrlKey && !e.altKey && e.key === "/") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setChatOpen(false);
+        setMegaOpen(false);
+        setMenuOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -100,7 +116,18 @@ export function MarketingShell() {
                 type="button"
                 className="site-nav__link"
                 aria-expanded={megaOpen}
+                aria-haspopup="true"
                 onClick={() => setMegaOpen((v) => !v)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setMegaOpen(true);
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setMegaOpen(false);
+                  }
+                }}
               >
                 Furniture
               </button>
@@ -295,21 +322,7 @@ export function MarketingShell() {
         Furniture consultant
       </button>
       {chatOpen ? (
-        <div className="site-chat-panel" role="dialog" aria-label="Furniture consultant">
-          <p>
-            Open the AI Furniture Consultant for a showroom-style conversation, or leave a contact
-            message for sales.
-          </p>
-          <Link to="/consultant" className="site-btn site-btn--primary" onClick={() => setChatOpen(false)}>
-            Open consultant
-          </Link>
-          <Link to="/contact" className="site-btn site-btn--ghost" onClick={() => setChatOpen(false)}>
-            Contact form
-          </Link>
-          <button type="button" className="site-btn site-btn--ghost" onClick={() => setChatOpen(false)}>
-            Close
-          </button>
-        </div>
+        <ChatPanel onClose={() => setChatOpen(false)} />
       ) : null}
 
       {showTop ? (
@@ -323,24 +336,13 @@ export function MarketingShell() {
       ) : null}
 
       {!cookieOk ? (
-        <div className="site-cookies" role="dialog" aria-label="Cookie notice">
-          <p>
-            We use essential cookies for session and preferences, and optional analytics to improve the site.
-          </p>
-          <button
-            type="button"
-            className="site-btn site-btn--primary"
-            onClick={() => {
-              localStorage.setItem("afh.site.cookies", "1");
-              setCookieOk(true);
-            }}
-          >
-            Accept essential
-          </button>
-          <Link to="/cookies" className="site-btn site-btn--ghost" onClick={() => setCookieOk(true)}>
-            Preferences
-          </Link>
-        </div>
+        <CookieBanner
+          onAccept={() => {
+            localStorage.setItem("afh.site.cookies", "1");
+            setCookieOk(true);
+          }}
+          onDismiss={() => setCookieOk(true)}
+        />
       ) : null}
     </div>
   );
@@ -409,8 +411,70 @@ function PageSkeleton({ path }: { path: string }) {
   );
 }
 
+function ChatPanel({ onClose }: { onClose: () => void }) {
+  const close = useCallback(() => onClose(), [onClose]);
+  const trapRef = useFocusTrap(true, close);
+  return (
+    <div
+      ref={trapRef}
+      className="site-chat-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Furniture consultant"
+      tabIndex={-1}
+    >
+      <p>
+        Open the AI Furniture Consultant for a showroom-style conversation, or leave a contact message for
+        sales.
+      </p>
+      <Link to="/consultant" className="site-btn site-btn--primary" onClick={onClose}>
+        Open consultant
+      </Link>
+      <Link to="/contact" className="site-btn site-btn--ghost" onClick={onClose}>
+        Contact form
+      </Link>
+      <button type="button" className="site-btn site-btn--ghost" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  );
+}
+
+function CookieBanner({
+  onAccept,
+  onDismiss,
+}: {
+  onAccept: () => void;
+  onDismiss: () => void;
+}) {
+  const close = useCallback(() => onDismiss(), [onDismiss]);
+  const trapRef = useFocusTrap(true, close);
+  return (
+    <div
+      ref={trapRef}
+      className="site-cookies"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Cookie notice"
+      tabIndex={-1}
+    >
+      <p>
+        We use essential cookies for session and preferences, and optional analytics to improve the site.
+      </p>
+      <button type="button" className="site-btn site-btn--primary" onClick={onAccept}>
+        Accept essential
+      </button>
+      <Link to="/cookies" className="site-btn site-btn--ghost" onClick={onDismiss}>
+        Preferences
+      </Link>
+    </div>
+  );
+}
+
 function SiteSearch({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const close = useCallback(() => onClose(), [onClose]);
+  const trapRef = useFocusTrap(true, close);
   const inputRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -481,10 +545,12 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
 
   return (
     <div
+      ref={trapRef}
       className={`site-search${isMobile ? " site-search--drawer" : ""} cx-motion-fade`}
       role="dialog"
       aria-modal="true"
       aria-label="Site search"
+      tabIndex={-1}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -550,7 +616,7 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
           ) : null}
         </ul>
         <p className="site-search__hint">
-          Press <kbd>Esc</kbd> to close · <kbd>⌘/Ctrl K</kbd> to open · Filters on category pages
+          Press <kbd>/</kbd> or <kbd>⌘/Ctrl K</kbd> to open · <kbd>Esc</kbd> to close
         </p>
         <button type="button" className="site-btn site-btn--ghost" onClick={onClose}>
           Close

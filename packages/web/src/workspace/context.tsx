@@ -230,6 +230,12 @@ export function WorkspaceUiProvider({ children }: { readonly children: ReactNode
         e.preventDefault();
         setShortcutsOpen(true);
       }
+      // `/` opens command palette when not typing (aligned with marketing search)
+      if (!typing && !meta && !e.altKey && e.key === "/") {
+        e.preventDefault();
+        setPaletteOpen(true);
+        setCreateOpen(false);
+      }
       if (e.key === "Escape") {
         setPaletteOpen(false);
         setCreateOpen(false);

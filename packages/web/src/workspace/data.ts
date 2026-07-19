@@ -333,6 +333,7 @@ export const COMMANDS = [
 
 export const SHORTCUTS = [
   { keys: "⌘/Ctrl K", action: "Command center" },
+  { keys: "/", action: "Open search / command palette" },
   { keys: "⌘/Ctrl B", action: "Toggle sidebar" },
   { keys: "⌘/Ctrl Shift N", action: "Notifications" },
   { keys: "⌘/Ctrl Shift C", action: "Quick create" },
@@ -340,6 +341,8 @@ export const SHORTCUTS = [
   { keys: "⌘/Ctrl J", action: "AI assistant panel" },
   { keys: "?", action: "Shortcuts overlay" },
   { keys: "Esc", action: "Close overlays" },
+  { keys: "Enter", action: "Submit focused form control" },
+  { keys: "Tab", action: "Move focus (consistent order)" },
 ] as const;
 
 export type WidgetSize = "sm" | "md" | "lg";

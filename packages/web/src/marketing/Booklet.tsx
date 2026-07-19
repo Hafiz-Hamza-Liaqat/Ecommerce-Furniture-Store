@@ -97,7 +97,7 @@ export function LuxuryBooklet() {
           onTouchEnd={(e) => onPointerUp(e.changedTouches[0]?.clientX ?? 0)}
         >
           <article className={`booklet__page booklet__page--left page-${page}`}>
-            <img src={current.image} alt="" loading="lazy" />
+            <img src={current.image} alt={current.title} loading="lazy" />
             <button
               type="button"
               className="booklet__hotspot"

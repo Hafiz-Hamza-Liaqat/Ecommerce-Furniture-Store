@@ -1,11 +1,12 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Seo } from "../Seo";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { CATALOGUE, productsForTaxonomySlug, type CatalogueProduct } from "../data/catalogue";
 import { COLLECTIONS, IMG } from "../data/content";
 import { findTaxonomyBySlug, taxonomyPath, FURNITURE_TAXONOMY } from "../data/taxonomy";
 import { getRecentlyViewed, toggleCompare, toggleWishlist, getCompareIds, getWishlistIds } from "../cx/stores";
+import { useFocusTrap } from "../../a11y/useFocusTrap";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name" | "newest";
 
@@ -39,6 +40,10 @@ export function FurnitureHubPage() {
         description="Browse AFH furniture by room and product family."
         path="/furniture"
         image={IMG.lounge}
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Furniture", path: "/furniture" },
+        ]}
       />
       <header className="site-page-hero">
         <Breadcrumbs items={[{ label: "Furniture" }]} />
@@ -49,7 +54,7 @@ export function FurnitureHubPage() {
       <div className="site-section site-category-grid">
         {FURNITURE_TAXONOMY.map((n) => (
           <Link key={n.id} to={`/furniture/${n.slug}`} className="site-category cx-motion-card">
-            <img src={n.image ?? IMG.lounge} alt="" loading="lazy" />
+            <img src={n.image ?? IMG.lounge} alt={`${n.name} furniture`} loading="lazy" width={640} height={480} />
             <span>{n.name}</span>
           </Link>
         ))}
@@ -345,6 +350,16 @@ export function CategoryPage() {
         description={node.blurb}
         path={parent ? `/furniture/${parent.slug}/${node.slug}` : `/furniture/${node.slug}`}
         image={node.image ?? IMG.lounge}
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Furniture", path: "/furniture" },
+          ...(parent
+            ? [
+                { name: parent.name, path: `/furniture/${parent.slug}` },
+                { name: node.name, path: `/furniture/${parent.slug}/${node.slug}` },
+              ]
+            : [{ name: node.name, path: `/furniture/${node.slug}` }]),
+        ]}
       />
       <header className="site-page-hero cx-category-hero">
         <Breadcrumbs items={crumbs} />
@@ -505,26 +520,11 @@ export function CategoryPage() {
       </div>
 
       {filtersOpen ? (
-        <div
-          className="cx-filters-drawer"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Filters"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setFiltersOpen(false);
-          }}
-        >
-          <div className="cx-filters-drawer__panel cx-motion-fade">
-            {filterPanel}
-            <button
-              type="button"
-              className="site-btn site-btn--primary"
-              onClick={() => setFiltersOpen(false)}
-            >
-              Show {total} results
-            </button>
-          </div>
-        </div>
+        <FiltersDrawer
+          total={total}
+          onClose={() => setFiltersOpen(false)}
+          filterPanel={filterPanel}
+        />
       ) : null}
 
       {related.length ? (
@@ -586,6 +586,39 @@ function FilterSelect({
         ))}
       </select>
     </label>
+  );
+}
+
+function FiltersDrawer({
+  total,
+  onClose,
+  filterPanel,
+}: {
+  total: number;
+  onClose: () => void;
+  filterPanel: React.ReactNode;
+}) {
+  const close = useCallback(() => onClose(), [onClose]);
+  const trapRef = useFocusTrap(true, close);
+  return (
+    <div
+      ref={trapRef}
+      className="cx-filters-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Filters"
+      tabIndex={-1}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="cx-filters-drawer__panel cx-motion-fade">
+        {filterPanel}
+        <button type="button" className="site-btn site-btn--primary" onClick={onClose}>
+          Show {total} results
+        </button>
+      </div>
+    </div>
   );
 }
 

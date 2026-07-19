@@ -35,7 +35,10 @@ export function HomePage() {
           <img
             src={IMG.hero}
             alt="Contemporary living room furnished with Artisan Furnish Hub pieces"
+            width={1600}
+            height={1067}
             fetchPriority="high"
+            decoding="async"
           />
         </div>
         <div className="site-hero__content">
@@ -86,7 +89,7 @@ export function HomePage() {
         <div className="site-category-grid">
           {CATEGORIES.map((c) => (
             <Link key={c.id} to={`/furniture/${c.id === "lounge" ? "living-room" : c.id === "workspace" ? "office" : c.id}`} className="site-category cx-hover-lift">
-              <img src={c.image} alt="" loading="lazy" />
+              <img src={c.image} alt={c.name} loading="lazy" />
               <span>{c.name}</span>
             </Link>
           ))}
@@ -101,7 +104,7 @@ export function HomePage() {
         <div className="site-product-grid">
           {PRODUCTS.filter((p) => p.featured).map((p) => (
             <Link key={p.id} to={`/products/${p.id}`} className="site-product">
-              <img src={p.image} alt="" loading="lazy" />
+              <img src={p.image} alt={p.name} loading="lazy" />
               <div>
                 <p className="site-product__meta">{p.collection}</p>
                 <h3>{p.name}</h3>
@@ -124,7 +127,7 @@ export function HomePage() {
         <div className="site-project-grid">
           {PROJECTS.map((p) => (
             <Link key={p.id} to={`/projects/${p.id}`} className="site-project">
-              <img src={p.image} alt="" loading="lazy" />
+              <img src={p.image} alt={p.title} loading="lazy" />
               <div>
                 <p className="site-product__meta">{p.category}</p>
                 <h3>{p.title}</h3>
@@ -143,7 +146,7 @@ export function HomePage() {
         <ol className="site-process">
           {PROCESS.map((step, i) => (
             <li key={step.title}>
-              <img src={step.image} alt="" loading="lazy" />
+              <img src={step.image} alt={step.title} loading="lazy" />
               <span>{String(i + 1).padStart(2, "0")}</span>
               <h3>{step.title}</h3>
               <p>{step.body}</p>

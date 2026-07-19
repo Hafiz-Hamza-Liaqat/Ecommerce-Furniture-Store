@@ -1,38 +1,7 @@
-import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { EnterpriseError, errorKindFromApi, type EnterpriseErrorKind } from "../components/EnterpriseError";
-
-function useFocusTrap(active: boolean, onClose: () => void) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!active) return;
-    const root = rootRef.current;
-    if (!root) return;
-    const focusable = root.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    first?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab" || focusable.length === 0) return;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last?.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first?.focus();
-      }
-    };
-    root.addEventListener("keydown", onKey);
-    return () => root.removeEventListener("keydown", onKey);
-  }, [active, onClose]);
-  return rootRef;
-}
+import { useFocusTrap } from "../a11y/useFocusTrap";
 
 export function StatCard({
   label,
@@ -228,13 +197,16 @@ export function KanbanPreview({
 export function DataTable({
   columns,
   rows,
+  caption,
 }: {
   readonly columns: readonly string[];
   readonly rows: readonly (readonly string[])[];
+  readonly caption?: string;
 }) {
   return (
-    <div className="ws-table-wrap">
+    <div className="ws-table-wrap" role="region" aria-label={caption ?? "Data table"} tabIndex={0}>
       <table className="ws-table">
+        {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead>
           <tr>
             {columns.map((c) => (

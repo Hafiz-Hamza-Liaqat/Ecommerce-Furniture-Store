@@ -1,0 +1,119 @@
+/**
+ * RC8.3 production quality surfaces — dark mode gaps, responsive tables,
+ * accessible focus rings, offline banner, reduced-motion reinforcement.
+ * Imported after base styles; does not redesign tokens.
+ */
+
+/* Offline banner */
+.afh-offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10000;
+  padding: 0.55rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  background: color-mix(in srgb, var(--afh-warn, #b45309) 18%, var(--afh-surface, #fff));
+  color: var(--afh-ink, #1a1a1a);
+  border-bottom: 1px solid color-mix(in srgb, var(--afh-warn, #b45309) 40%, transparent);
+}
+
+[data-theme="dark"] .afh-offline-banner,
+.site[data-site-theme="dark"] .afh-offline-banner {
+  background: color-mix(in srgb, #f59e0b 22%, #1a1a1a);
+  color: #fef3c7;
+  border-bottom-color: color-mix(in srgb, #f59e0b 45%, transparent);
+}
+
+/* Ensure table overflow on ERP / workspace lists */
+.ws-table-wrap,
+.afh-table-wrap,
+.cx-compare-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* Dialog / modal surface contrast in dark mode */
+[data-theme="dark"] .ws-modal,
+[data-theme="dark"] .ws-drawer,
+[data-theme="dark"] .ws-palette {
+  background: var(--afh-elevated, #1e1e1e);
+  color: var(--afh-ink, #f5f5f5);
+}
+
+.site[data-site-theme="dark"] .site-search__panel,
+.site[data-site-theme="dark"] .site-chat-panel,
+.site[data-site-theme="dark"] .site-cookies {
+  background: var(--site-surface, #1a1a1a);
+  color: var(--site-ink, #f5f5f5);
+  border-color: color-mix(in srgb, var(--site-ink, #fff) 16%, transparent);
+}
+
+.site[data-site-theme="dark"] .site-search input,
+.site[data-site-theme="dark"] .site-nav.is-open {
+  background: var(--site-surface, #1a1a1a);
+  color: var(--site-ink, #f5f5f5);
+}
+
+/* Form controls readable in dark theme */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+.site[data-site-theme="dark"] input,
+.site[data-site-theme="dark"] select,
+.site[data-site-theme="dark"] textarea {
+  color: inherit;
+  background-color: color-mix(in srgb, var(--afh-surface, #111) 88%, #000);
+  border-color: color-mix(in srgb, currentColor 22%, transparent);
+}
+
+/* Chart / card text on dark surfaces */
+[data-theme="dark"] .ws-card,
+[data-theme="dark"] .ws-stat {
+  background: var(--afh-elevated, #1e1e1e);
+}
+
+/* Accessible focus for marketing interactive chrome */
+.site-nav-toggle:focus-visible,
+.site-theme-toggle:focus-visible,
+.site-chat:focus-visible,
+.site-top:focus-visible,
+.site-whatsapp:focus-visible {
+  outline: 2px solid var(--site-accent, #8b6914);
+  outline-offset: 3px;
+}
+
+/* Sticky mobile chrome collision: lift consultant above WhatsApp */
+@media (max-width: 720px) {
+  .site-chat {
+    bottom: 5.5rem;
+  }
+  .site-whatsapp {
+    bottom: 1.25rem;
+  }
+  .site-cookies {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .ws-mobile-nav + .ws-shell,
+  .ws-shell {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prefer reduced motion globally for production quality */
+@media (prefers-reduced-motion: reduce) {
+  .cx-motion-fade,
+  .site-page-transition,
+  .ws-toast,
+  .afh-offline-banner {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High-DPI image crispness for catalogue thumbs */
+.cx-product-card img,
+.site-card img,
+.cx-gallery img {
+  image-rendering: auto;
+}
