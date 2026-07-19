@@ -1,5 +1,13 @@
 import type { EntityDef, FilterDef, ModuleDefinition } from "../erp/types";
-import { makeRows } from "../erp/fixtures";
+import { makeRows, row } from "../erp/fixtures";
+
+function mapModuleToIndex(module: string): string {
+  const key = module.trim().toLowerCase();
+  if (key.includes("inventory") || key === "inventory.items") return "inventory.items";
+  if (key.includes("procurement") || key.includes("supplier")) return "procurement.suppliers";
+  if (key.includes("project")) return "projects.projects";
+  return "crm.leads";
+}
 
 const filters: FilterDef[] = [
   { key: "type", label: "Type", options: ["Module", "Record", "Document", "Person", "Report"] },
@@ -15,10 +23,10 @@ function e(p: Omit<EntityDef, "filters"> & { filters?: EntityDef["filters"] }): 
 export const SEARCH_MODULE: ModuleDefinition = {
   id: "search",
   title: "Enterprise Search",
-  lead: "Search workspace presentation — indexing and ranking remain server-owned Search APIs.",
+  lead: "Global search via Search Application CQRS (bounded index allow-list). Use the query box on Results.",
   basePath: "/app/search",
   kpis: [
-    { label: "Indexed docs", value: "128k", trend: 3.0, href: "results" },
+    { label: "Indexed docs", value: "Live", trend: 3.0, href: "results" },
     { label: "Saved searches", value: "24", trend: 1.0, href: "saved" },
     { label: "Recent", value: "12", trend: 0, href: "recent" },
     { label: "Suggestions", value: "On", trend: 0, href: "suggestions" },
@@ -47,12 +55,54 @@ export const SEARCH_MODULE: ModuleDefinition = {
       ],
       fields: [
         { name: "title", label: "Query / title", type: "text", required: true },
-        { name: "module", label: "Module", type: "select", options: ["Sales", "Inventory", "Finance", "Projects", "CRM"] },
+        {
+          name: "indexCode",
+          label: "Index",
+          type: "select",
+          options: ["inventory.items", "crm.leads", "procurement.suppliers", "projects.projects"],
+        },
       ],
       records: makeRows("SR", ["SO-31001", "Indus HQ fit-out", "Meridian Sofa frame", "INV-9001", "Sara Ahmed"], (i) => ({
         Module: ["Sales", "Projects", "Inventory", "Finance", "CRM"][i]!,
         Score: 0.92 - i * 0.05,
       })),
+      api: {
+        listQueryType: "search.SearchQuery",
+        buildListPayload: (companyId, args) => ({
+          companyId,
+          indexCode: args.filters.module
+            ? mapModuleToIndex(args.filters.module)
+            : "crm.leads",
+          queryText: args.q?.trim() || null,
+          page: { page: args.page, pageSize: args.pageSize },
+        }),
+        mapListEntity: (data) => {
+          const d = data as {
+            documentId?: string;
+            entityType?: string;
+            entityId?: string;
+            score?: number | null;
+            fields?: Record<string, unknown>;
+          };
+          const id = d.documentId ?? d.entityId;
+          if (!id) return null;
+          const title =
+            (typeof d.fields?.title === "string" && d.fields.title) ||
+            (typeof d.fields?.name === "string" && d.fields.name) ||
+            d.entityId ||
+            id;
+          return row(id, title, d.entityType ?? "hit", {
+            Module: d.entityType ?? "—",
+            Score: d.score ?? "—",
+          }, { source: "api" });
+        },
+        mapEntity: (data) => {
+          const d = data as { documentId?: string; entityType?: string; entityId?: string; score?: number | null };
+          const id = d.documentId ?? d.entityId;
+          if (!id) return null;
+          return row(id, d.entityId ?? id, d.entityType ?? "hit", { Score: d.score ?? "—" }, { source: "api" });
+        },
+      },
     }),
     e({
       key: "advanced",

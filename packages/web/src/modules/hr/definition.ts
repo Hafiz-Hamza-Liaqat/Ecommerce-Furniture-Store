@@ -1,5 +1,5 @@
 import type { EntityDef, FilterDef, ModuleDefinition } from "../erp/types";
-import { makeRows } from "../erp/fixtures";
+import { makeRows, row } from "../erp/fixtures";
 
 const filters: FilterDef[] = [
   { key: "status", label: "Status", options: ["Active", "On leave", "Probation", "Exited"] },
@@ -15,10 +15,10 @@ function e(p: Omit<EntityDef, "filters"> & { filters?: EntityDef["filters"] }): 
 export const HR_MODULE: ModuleDefinition = {
   id: "hr",
   title: "HR",
-  lead: "People operations presentation over the HR foundation — handlers dispatch when registered; records persist locally until then.",
+  lead: "People operations — employees via HR Application CQRS; other directories remain presentation until handlers expand.",
   basePath: "/app/hr",
   kpis: [
-    { label: "Employees", value: "418", trend: 1.2, href: "employees" },
+    { label: "Employees", value: "Live", trend: 1.2, href: "employees" },
     { label: "Open leave", value: "22", trend: 0, href: "leave" },
     { label: "Open roles", value: "9", trend: 2.0, href: "recruitment" },
     { label: "Training due", value: "14", trend: -1.0, href: "training" },
@@ -55,14 +55,51 @@ export const HR_MODULE: ModuleDefinition = {
         { key: "Role", label: "Role" },
       ],
       fields: [
-        { name: "title", label: "Full name", type: "text", required: true },
-        { name: "department", label: "Department", type: "select", options: ["Operations", "Design", "Sales", "Finance", "Plant"] },
-        { name: "role", label: "Role", type: "text" },
+        { name: "displayName", label: "Full name", type: "text", required: true },
+        { name: "employeeCode", label: "Employee code", type: "text" },
+        {
+          name: "employmentType",
+          label: "Employment type",
+          type: "select",
+          options: ["full_time", "part_time", "contract", "temporary", "intern", "other"],
+        },
+        { name: "departmentId", label: "Department ID", type: "text" },
+        { name: "hireDate", label: "Hire date", type: "date" },
       ],
       records: makeRows("EMP", ["Nadia Farooq", "Hassan Ali", "Maya Chen", "Imran Shah", "Farah Noor"], (i) => ({
         Department: ["Operations", "Plant", "Design", "Plant", "Service"][i]!,
         Role: ["CEO", "Head of Mfg", "Design Director", "Technician", "Technician"][i]!,
       })),
+      api: {
+        createCommandType: "hr.CreateEmployee",
+        getQueryType: "hr.GetEmployee",
+        listQueryType: "hr.ListEmployee",
+        buildCreatePayload: (companyId, v) => ({
+          companyId,
+          displayName: v.displayName,
+          employeeCode: v.employeeCode || null,
+          employmentType: v.employmentType || "full_time",
+          departmentId: v.departmentId || null,
+          hireDate: v.hireDate || null,
+        }),
+        buildGetPayload: (companyId, id) => ({ companyId, employeeId: id }),
+        extractCreateId: (data) => (data as { employeeId?: string }).employeeId ?? null,
+        mapEntity: (data) => {
+          const wrapped = data as { employee?: Record<string, unknown> };
+          const d = (wrapped.employee ?? data) as {
+            id?: string;
+            displayName?: string;
+            status?: string;
+            employeeCode?: string;
+            employmentType?: string;
+          };
+          if (!d.id) return null;
+          return row(d.id, d.displayName ?? d.employeeCode ?? d.id, d.status ?? "draft", {
+            Department: "—",
+            Role: d.employmentType ?? "—",
+          }, { source: "api" });
+        },
+      },
     }),
     e({
       key: "departments",

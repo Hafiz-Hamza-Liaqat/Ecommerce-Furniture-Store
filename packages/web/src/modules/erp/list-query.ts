@@ -106,9 +106,29 @@ export function readListPage(data: unknown): {
   if (!data || typeof data !== "object") {
     return { items: [], totalCount: 0 };
   }
-  const page = data as ListPageDto;
-  const items = Array.isArray(page.items) ? page.items : [];
+  const page = data as ListPageDto & {
+    readonly jobs?: readonly unknown[];
+    readonly hits?: readonly unknown[];
+    readonly notes?: readonly unknown[];
+    readonly attachments?: readonly unknown[];
+    readonly total?: number;
+  };
+  const items = Array.isArray(page.items)
+    ? page.items
+    : Array.isArray(page.jobs)
+      ? page.jobs
+      : Array.isArray(page.hits)
+        ? page.hits
+        : Array.isArray(page.notes)
+          ? page.notes
+          : Array.isArray(page.attachments)
+            ? page.attachments
+            : [];
   const totalCount =
-    typeof page.totalCount === "number" ? page.totalCount : items.length;
+    typeof page.totalCount === "number"
+      ? page.totalCount
+      : typeof page.total === "number"
+        ? page.total
+        : items.length;
   return { items, totalCount };
 }

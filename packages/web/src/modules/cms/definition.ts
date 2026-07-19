@@ -1,5 +1,5 @@
 import type { EntityDef, FilterDef, ModuleDefinition } from "../erp/types";
-import { makeRows } from "../erp/fixtures";
+import { makeRows, row } from "../erp/fixtures";
 
 const filters: FilterDef[] = [
   { key: "status", label: "Status", options: ["Draft", "Published", "Scheduled", "Archived"] },
@@ -16,11 +16,11 @@ function e(p: Omit<EntityDef, "filters"> & { filters?: EntityDef["filters"] }): 
 export const CMS_MODULE: ModuleDefinition = {
   id: "cms",
   title: "CMS",
-  lead: "Content presentation shell — CMS mutations remain backend-owned when handlers are registered.",
+  lead: "Content entries via CMS Application CQRS — pages create/update/list/get; other chrome remains presentation.",
   basePath: "/app/cms",
   kpis: [
-    { label: "Published pages", value: "48", trend: 2.0, href: "pages" },
-    { label: "Drafts", value: "11", trend: -1.0, href: "articles" },
+    { label: "Published pages", value: "Live", trend: 2.0, href: "pages" },
+    { label: "Drafts", value: "—", trend: -1.0, href: "articles" },
     { label: "Locales", value: "3", trend: 0, href: "localization" },
     { label: "Redirects", value: "26", trend: 1.0, href: "redirects" },
   ],
@@ -58,13 +58,66 @@ export const CMS_MODULE: ModuleDefinition = {
       ],
       fields: [
         { name: "title", label: "Title", type: "text", required: true },
-        { name: "path", label: "Path", type: "text" },
-        { name: "locale", label: "Locale", type: "select", options: ["en", "ur", "ar"] },
+        { name: "slug", label: "Slug / path", type: "text", required: true },
+        {
+          name: "kind",
+          label: "Kind",
+          type: "select",
+          options: ["page", "article", "news", "landing_page", "static", "policy", "faq", "other"],
+        },
+        { name: "summary", label: "Summary", type: "textarea" },
+        { name: "localeCode", label: "Locale", type: "select", options: ["en", "ur", "ar"] },
+        {
+          name: "publish",
+          label: "Publish now",
+          type: "select",
+          options: ["false", "true"],
+        },
       ],
       records: makeRows("PG", ["Home", "About", "Manufacturing", "Contact"], (i) => ({
         Path: ["/", "/about", "/manufacturing", "/contact"][i]!,
         Locale: "en",
       })),
+      api: {
+        createCommandType: "cms.CreateCmsEntry",
+        updateCommandType: "cms.UpdateCmsEntry",
+        getQueryType: "cms.GetCmsEntry",
+        listQueryType: "cms.ListCmsEntry",
+        buildCreatePayload: (companyId, v) => ({
+          companyId,
+          kind: v.kind || "page",
+          slug: v.slug,
+          title: v.title,
+          summary: v.summary || null,
+          localeCode: v.localeCode || "en",
+          publish: v.publish === "true",
+        }),
+        buildUpdatePayload: (companyId, contentId, v) => ({
+          companyId,
+          contentId,
+          title: v.title || null,
+          summary: v.summary || null,
+          localeCode: v.localeCode || null,
+          publish: v.publish === "true",
+        }),
+        buildGetPayload: (companyId, id) => ({ companyId, contentId: id }),
+        extractCreateId: (data) => (data as { contentId?: string }).contentId ?? null,
+        mapEntity: (data) => {
+          const wrapped = data as { content?: Record<string, unknown> };
+          const d = (wrapped.content ?? data) as {
+            id?: string;
+            title?: string;
+            status?: string;
+            slug?: string;
+            localeCode?: string | null;
+          };
+          if (!d.id) return null;
+          return row(d.id, d.title ?? d.slug ?? d.id, d.status ?? "draft", {
+            Path: d.slug ?? "—",
+            Locale: d.localeCode ?? "en",
+          }, { source: "api" });
+        },
+      },
     }),
     e({
       key: "blogs",

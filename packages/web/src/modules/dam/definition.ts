@@ -16,16 +16,17 @@ function e(p: Omit<EntityDef, "filters"> & { filters?: EntityDef["filters"] }): 
 export const DAM_MODULE: ModuleDefinition = {
   id: "dam",
   title: "Digital Asset Management",
-  lead: "Assets via DAM upload API and presentation catalogue — storage ownership remains backend DAM.",
+  lead: "Assets via DAM Application List/Get and upload API — storage ownership remains backend DAM.",
   basePath: "/app/dam",
   kpis: [
-    { label: "Assets", value: "6,420", trend: 4.0, href: "images" },
+    { label: "Assets", value: "Live", trend: 4.0, href: "assets" },
     { label: "Pending approval", value: "17", trend: -2.0, href: "approvals" },
     { label: "Downloads (30d)", value: "890", trend: 6.0, href: "downloads" },
     { label: "Collections", value: "64", trend: 1.0, href: "collections" },
   ],
   nav: [
     { to: "", label: "Dashboard" },
+    { to: "assets", label: "Asset browser", entityKey: "assets" },
     { to: "images", label: "Images", entityKey: "images" },
     { to: "videos", label: "Videos", entityKey: "videos" },
     { to: "documents", label: "Documents", entityKey: "documents" },
@@ -41,14 +42,13 @@ export const DAM_MODULE: ModuleDefinition = {
     { to: "usage", label: "Usage tracking", entityKey: "usage" },
     { to: "approvals", label: "Approval status", entityKey: "approvals" },
     { to: "preview", label: "Asset preview", entityKey: "preview" },
-    { to: "assets", label: "Upload asset", entityKey: "assets" },
   ],
   entities: [
     e({
       key: "assets",
       label: "Asset",
-      plural: "Upload asset",
-      description: "Create asset metadata through the upload API.",
+      plural: "Assets",
+      description: "Browse, upload, and preview digital assets.",
       columns: [
         { key: "title", label: "Asset" },
         { key: "status", label: "Status" },
@@ -63,12 +63,23 @@ export const DAM_MODULE: ModuleDefinition = {
       records: [],
       api: {
         uploadAsset: true,
+        getQueryType: "dam.GetAsset",
+        listQueryType: "dam.ListAsset",
+        buildGetPayload: (companyId, id) => ({ companyId, assetId: id, includeCurrentVersion: true }),
         extractCreateId: (data) => {
           const d = data as { assetId?: string; id?: string };
           return d.assetId ?? d.id ?? null;
         },
         mapEntity: (data) => {
-          const d = data as { id?: string; assetId?: string; name?: string; status?: string; assetType?: string; mimeType?: string };
+          const wrapped = data as { asset?: Record<string, unknown> };
+          const d = (wrapped.asset ?? data) as {
+            id?: string;
+            assetId?: string;
+            name?: string;
+            status?: string;
+            assetType?: string;
+            mimeType?: string;
+          };
           const id = d.id ?? d.assetId;
           if (!id) return null;
           return row(id, d.name ?? id, d.status ?? "Draft", {

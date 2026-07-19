@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { PageHeader } from "../components/ui";
-import { EmptyState, Tabs, Toolbar } from "../workspace/widgets";
+import { EmptyState, Skeleton, StatusBadge, Tabs, Toolbar } from "../workspace/widgets";
 import { BarChart, DonutChart, LineChart } from "../workspace/charts";
 import { SERIES } from "../workspace/data";
 import { REPORT_CATALOG, REPORT_TABLE_ROWS } from "./data";
@@ -20,6 +20,91 @@ import {
   saveFavoriteReports,
   saveSavedReportViews,
 } from "./prefs";
+import { useSession } from "../state/session";
+import { ApiClientError } from "../api/types";
+import { dedupeAsync } from "../api/dedupe";
+import { readListPage } from "../modules/erp/list-query";
+
+function LiveReportLibrary() {
+  const { api, user, setLastCorrelationId } = useSession();
+  const [rows, setRows] = useState<
+    { id: string; title: string; status: string }[] | null
+  >(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.companyId) {
+      setRows([]);
+      setError("Company-scoped session required for live report definitions.");
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await dedupeAsync(`reports-live:${user.companyId}`, () =>
+          api.dispatchQuery({
+            queryType: "reporting.ListReportDefinition",
+            payload: {
+              companyId: user.companyId,
+              criteria: { page: { page: 1, pageSize: 25 } },
+            },
+          }),
+        );
+        if (cancelled) return;
+        setLastCorrelationId(res.correlationId);
+        const { items } = readListPage(res.data);
+        setRows(
+          items.map((item) => {
+            const d = item as { id?: string; name?: string; code?: string; status?: string };
+            return {
+              id: d.id ?? "—",
+              title: d.name ?? d.code ?? d.id ?? "Report",
+              status: d.status ?? "Ready",
+            };
+          }),
+        );
+        setError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setRows([]);
+        setError(
+          err instanceof ApiClientError
+            ? `${err.message} (${err.code})`
+            : "Unable to load report definitions",
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, setLastCorrelationId, user?.companyId]);
+
+  return (
+    <section className="ws-card stack">
+      <header className="ws-card__head">
+        <h2>Live report definitions</h2>
+        <Link className="btn btn--ghost" to="/app/reporting/library">
+          Open reporting module
+        </Link>
+      </header>
+      {error ? <p className="muted">{error}</p> : null}
+      {!rows ? <Skeleton rows={3} /> : null}
+      {rows && rows.length === 0 && !error ? (
+        <EmptyState title="No definitions yet" body="Seed or create report definitions via Reporting CQRS." />
+      ) : null}
+      {rows && rows.length > 0 ? (
+        <ul className="stack" style={{ listStyle: "none", padding: 0, margin: 0, gap: "0.35rem" }}>
+          {rows.map((r) => (
+            <li key={r.id} className="row" style={{ justifyContent: "space-between" }}>
+              <Link to={`/app/reporting/library/${r.id}`}>{r.title}</Link>
+              <StatusBadge status={r.status} tone="neutral" />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
+}
 
 function ReportsHome() {
   const [filters, setFilters] = useState<AnalyticsFilters>(DEFAULT_FILTERS);
@@ -60,6 +145,7 @@ function ReportsHome() {
         }
       />
       <AnalyticsFilterBar value={filters} onChange={setFilters} />
+      <LiveReportLibrary />
       <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem" }}>
         <input
           className="field__input"

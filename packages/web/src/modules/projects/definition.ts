@@ -65,6 +65,7 @@ export const PROJECTS_MODULE: ModuleDefinition = {
       label: "Project",
       plural: "Projects",
       description: "Project portfolio and delivery programs.",
+      collaborationEntityType: "projects.project",
       columns: [
         { key: "title", label: "Project", sortable: true },
         { key: "status", label: "Status" },
@@ -127,6 +128,7 @@ export const PROJECTS_MODULE: ModuleDefinition = {
       plural: "Tasks",
       description: "Work breakdown tasks.",
       kanban: true,
+      collaborationEntityType: "projects.task",
       columns: [
         { key: "title", label: "Task", sortable: true },
         { key: "status", label: "Status" },

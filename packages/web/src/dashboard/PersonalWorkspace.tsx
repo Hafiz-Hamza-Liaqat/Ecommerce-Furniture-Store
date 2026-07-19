@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/ui";
 import {
@@ -16,12 +16,83 @@ import {
   EmptyState,
   FilterBar,
   SidePanel,
+  Skeleton,
   StatusBadge,
   Tabs,
   Toolbar,
 } from "../workspace/widgets";
 import { EnterpriseCalendar } from "../productivity/EnterpriseCalendar";
 import { useWorkspaceUi } from "../workspace/context";
+import { useSession } from "../state/session";
+import { ApiClientError } from "../api/types";
+import { readListPage } from "../modules/erp/list-query";
+
+function LiveInboxPreview() {
+  const { api, user, setLastCorrelationId } = useSession();
+  const [items, setItems] = useState<{ id: string; title: string; status: string }[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.companyId) {
+      setItems([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await api.dispatchQuery({
+          queryType: "notifications.ListInAppNotifications",
+          payload: {
+            companyId: user.companyId,
+            criteria: { page: { page: 1, pageSize: 5 } },
+          },
+        });
+        if (cancelled) return;
+        setLastCorrelationId(res.correlationId);
+        const { items: pageItems } = readListPage(res.data);
+        setItems(
+          pageItems.map((raw) => {
+            const n = raw as { id?: string; title?: string; subject?: string; readAt?: string | null };
+            return {
+              id: n.id ?? "—",
+              title: n.title ?? n.subject ?? n.id ?? "Notification",
+              status: n.readAt ? "Read" : "Unread",
+            };
+          }),
+        );
+      } catch (err) {
+        if (cancelled) return;
+        setItems([]);
+        setError(err instanceof ApiClientError ? err.message : "Notifications unavailable");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, setLastCorrelationId, user?.companyId]);
+
+  return (
+    <section className="ws-card">
+      <header className="ws-card__head">
+        <h2>Notifications</h2>
+        <Link className="btn btn--ghost" to="/app/notifications/center">
+          Open center
+        </Link>
+      </header>
+      {error ? <p className="muted">{error}</p> : null}
+      {!items ? <Skeleton rows={2} /> : null}
+      {items && items.length === 0 ? (
+        <EmptyState title="Inbox clear" body="No in-app notifications for this session." />
+      ) : null}
+      {items && items.length > 0 ? (
+        <DataTable
+          columns={["Notification", "Status"]}
+          rows={items.map((n) => [n.title, n.status])}
+        />
+      ) : null}
+    </section>
+  );
+}
 
 export function PersonalWorkspacePage() {
   const [tab, setTab] = useState("tasks");
@@ -31,9 +102,15 @@ export function PersonalWorkspacePage() {
     <div className="stack ws-personal">
       <PageHeader
         title="My workspace"
-        lead="Personal queue for tasks, calendar, approvals, and recent work — presentation layer over existing assignment and notification streams."
+        lead="Personal queue for tasks, calendar, approvals, notifications, and recent work — live inbox via Notifications CQRS when available."
         actions={
           <Toolbar>
+            <Link className="btn btn--ghost" to="/app/preferences">
+              Settings
+            </Link>
+            <Link className="btn btn--ghost" to="/app/account/security">
+              Profile security
+            </Link>
             <button
               type="button"
               className="btn btn--primary"
@@ -46,6 +123,8 @@ export function PersonalWorkspacePage() {
           </Toolbar>
         }
       />
+
+      <LiveInboxPreview />
 
       <Tabs
         tabs={[

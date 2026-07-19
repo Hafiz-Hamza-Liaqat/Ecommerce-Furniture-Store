@@ -14,6 +14,7 @@ import { DAM_MODULE } from "./dam/definition";
 import { NOTIFICATIONS_MODULE } from "./notifications/definition";
 import { SEARCH_MODULE } from "./search/definition";
 import { REPORTING_MODULE } from "./reporting/definition";
+import { JOBS_MODULE } from "./jobs/definition";
 
 export const MODULES = {
   workflow: {
@@ -66,6 +67,9 @@ export function SearchModulePage() {
 }
 export function ReportingModulePage() {
   return <ModuleApp module={REPORTING_MODULE} />;
+}
+export function JobsModulePage() {
+  return <ModuleApp module={JOBS_MODULE} />;
 }
 
 /** Kept for non-P4 platform shells if needed */

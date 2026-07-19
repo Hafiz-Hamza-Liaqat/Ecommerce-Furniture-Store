@@ -44,6 +44,7 @@ import {
   saveTickets,
 } from "./store";
 import type { HealthProbeResult, PlanId, SubscriptionState } from "./types";
+import { JobsModulePage } from "../modules/pages";
 
 const SUBNAV = [
   { to: "/app/platform", label: "Overview" },
@@ -53,6 +54,7 @@ const SUBNAV = [
   { to: "/app/platform/success", label: "Success" },
   { to: "/app/platform/deployment", label: "Deployment" },
   { to: "/app/platform/monitoring", label: "Monitoring" },
+  { to: "/app/platform/jobs", label: "Background jobs" },
   { to: "/app/platform/backups", label: "Backups" },
   { to: "/app/platform/audit", label: "Audit" },
   { to: "/app/platform/releases", label: "Releases" },
@@ -877,6 +879,7 @@ export function PlatformRoutes() {
       <Route path="success" element={<SuccessPage />} />
       <Route path="deployment" element={<DeploymentPage />} />
       <Route path="monitoring" element={<MonitoringPage />} />
+      <Route path="jobs/*" element={<JobsModulePage />} />
       <Route path="backups" element={<BackupsPage />} />
       <Route path="audit" element={<AuditPage />} />
       <Route path="releases" element={<ReleasesPage />} />

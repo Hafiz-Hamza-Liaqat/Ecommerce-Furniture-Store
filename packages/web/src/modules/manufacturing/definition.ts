@@ -1,5 +1,5 @@
 import type { EntityDef, FilterDef, ModuleDefinition } from "../erp/types";
-import { makeRows } from "../erp/fixtures";
+import { makeRows, row } from "../erp/fixtures";
 
 const filters: FilterDef[] = [
   { key: "status", label: "Status", options: ["Draft", "Released", "In progress", "Complete", "Hold"] },
@@ -16,10 +16,10 @@ function e(p: Omit<EntityDef, "filters"> & { filters?: EntityDef["filters"] }): 
 export const MANUFACTURING_MODULE: ModuleDefinition = {
   id: "manufacturing",
   title: "Manufacturing",
-  lead: "Production presentation over the manufacturing foundation — dispatch when Manufacturing Application handlers are registered.",
+  lead: "Production orders via Manufacturing Application CQRS; shop-floor chrome remains presentation until handlers expand.",
   basePath: "/app/manufacturing",
   kpis: [
-    { label: "Open production orders", value: "64", trend: 3.5, href: "production-orders" },
+    { label: "Open production orders", value: "Live", trend: 3.5, href: "production-orders" },
     { label: "Utilization", value: "86%", trend: 2.0, href: "capacity" },
     { label: "QC holds", value: "5", trend: -1.0, href: "quality" },
     { label: "Maintenance due", value: "3", trend: 0, href: "maintenance" },
@@ -76,14 +76,46 @@ export const MANUFACTURING_MODULE: ModuleDefinition = {
         { key: "Qty", label: "Qty" },
       ],
       fields: [
-        { name: "title", label: "Order number", type: "text", required: true },
-        { name: "product", label: "Product", type: "text" },
-        { name: "qty", label: "Quantity", type: "number" },
+        { name: "number", label: "Order number", type: "text", required: true },
+        { name: "quantity", label: "Quantity", type: "number" },
+        { name: "unitCode", label: "Unit", type: "text" },
+        { name: "warehouseId", label: "Warehouse ID", type: "text" },
+        { name: "finishedInventoryItemId", label: "Finished item ID", type: "text" },
       ],
       records: makeRows("MO", ["MO-4401", "MO-4412", "MO-4420", "MO-4428"], (i) => ({
         Product: ["Meridian Sofa", "Harbor Table", "Hardware pack", "Atelier Lounge"][i]!,
         Qty: 10 + i * 6,
       })),
+      api: {
+        createCommandType: "manufacturing.CreateProductionOrder",
+        getQueryType: "manufacturing.GetProductionOrder",
+        listQueryType: "manufacturing.ListProductionOrder",
+        buildCreatePayload: (companyId, v) => ({
+          companyId,
+          number: v.number,
+          quantity: v.quantity ? Number(v.quantity) : null,
+          unitCode: v.unitCode || null,
+          warehouseId: v.warehouseId || null,
+          finishedInventoryItemId: v.finishedInventoryItemId || null,
+        }),
+        buildGetPayload: (companyId, id) => ({ companyId, productionOrderId: id }),
+        extractCreateId: (data) => (data as { productionOrderId?: string }).productionOrderId ?? null,
+        mapEntity: (data) => {
+          const wrapped = data as { productionOrder?: Record<string, unknown> };
+          const d = (wrapped.productionOrder ?? data) as {
+            id?: string;
+            number?: string;
+            status?: string;
+            quantity?: number | null;
+            finishedInventoryItemId?: string | null;
+          };
+          if (!d.id) return null;
+          return row(d.id, d.number ?? d.id, d.status ?? "draft", {
+            Product: d.finishedInventoryItemId ?? "—",
+            Qty: d.quantity ?? "—",
+          }, { source: "api" });
+        },
+      },
     }),
     e({
       key: "work-orders",

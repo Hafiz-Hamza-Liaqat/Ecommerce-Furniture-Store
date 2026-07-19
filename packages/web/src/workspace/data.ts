@@ -234,7 +234,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { to: "/app/search", label: "Search" },
       { to: "/app/workflow", label: "Workflow" },
       { to: "/app/reporting", label: "Reporting" },
-      { to: "/app/preferences", label: "Preferences" },
+      { to: "/app/platform/jobs", label: "Background jobs" },
+      { to: "/app/preferences", label: "Settings & preferences" },
     ],
   },
   {

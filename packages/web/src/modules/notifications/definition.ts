@@ -1,5 +1,5 @@
 import type { EntityDef, FilterDef, ModuleDefinition } from "../erp/types";
-import { makeRows } from "../erp/fixtures";
+import { makeRows, row } from "../erp/fixtures";
 
 const filters: FilterDef[] = [
   { key: "status", label: "Status", options: ["Queued", "Sent", "Failed", "Scheduled"] },
@@ -14,12 +14,12 @@ function e(p: Omit<EntityDef, "filters"> & { filters?: EntityDef["filters"] }): 
 export const NOTIFICATIONS_MODULE: ModuleDefinition = {
   id: "notifications",
   title: "Notifications",
-  lead: "Notification center and templates — delivery transport remains backend Notifications.",
+  lead: "In-app notification center via Notifications Application CQRS; templates remain presentation chrome.",
   basePath: "/app/notifications",
   kpis: [
-    { label: "Unread", value: "8", trend: 0, href: "center" },
-    { label: "Sent (7d)", value: "1,240", trend: 5.0, href: "history" },
-    { label: "Failed", value: "6", trend: -2.0, href: "delivery" },
+    { label: "Inbox", value: "Live", trend: 0, href: "center" },
+    { label: "Sent (7d)", value: "—", trend: 5.0, href: "history" },
+    { label: "Failed", value: "—", trend: -2.0, href: "delivery" },
     { label: "Templates", value: "42", trend: 1.0, href: "email-templates" },
   ],
   nav: [
@@ -54,6 +54,80 @@ export const NOTIFICATIONS_MODULE: ModuleDefinition = {
         Channel: ["In-app", "Email", "Email", "In-app"][i]!,
         When: ["10m", "45m", "Today", "Yesterday"][i]!,
       })),
+      api: {
+        getQueryType: "notifications.GetNotification",
+        listQueryType: "notifications.ListInAppNotifications",
+        buildGetPayload: (companyId, id) => ({ companyId, notificationId: id }),
+        mapEntity: (data) => {
+          const wrapped = data as { notification?: Record<string, unknown> };
+          const d = (wrapped.notification ?? data) as {
+            id?: string;
+            title?: string;
+            subject?: string;
+            status?: string;
+            channel?: string;
+            createdAt?: string;
+            readAt?: string | null;
+          };
+          if (!d.id) return null;
+          return row(
+            d.id,
+            d.title ?? d.subject ?? d.id,
+            d.readAt ? "Read" : (d.status ?? "Unread"),
+            {
+              Channel: d.channel ?? "in_app",
+              When: d.createdAt ?? "—",
+            },
+            { source: "api" },
+          );
+        },
+      },
+    }),
+    e({
+      key: "preferences",
+      label: "Preference",
+      plural: "User preferences",
+      description: "Notification channel preferences (upsert via CQRS).",
+      columns: [
+        { key: "title", label: "Channel" },
+        { key: "status", label: "Status" },
+        { key: "Enabled", label: "Enabled" },
+      ],
+      fields: [
+        {
+          name: "channel",
+          label: "Channel",
+          type: "select",
+          required: true,
+          options: ["email", "sms", "whatsapp", "push", "in_app", "other"],
+        },
+        {
+          name: "enabled",
+          label: "Enabled",
+          type: "select",
+          options: ["true", "false"],
+        },
+      ],
+      records: makeRows("NP", ["email", "in_app", "push"], (i) => ({
+        Enabled: i === 1 ? "No" : "Yes",
+      })),
+      api: {
+        createCommandType: "notifications.UpsertNotificationPreference",
+        buildCreatePayload: (companyId, v) => ({
+          companyId,
+          channel: v.channel || "in_app",
+          enabled: v.enabled !== "false",
+        }),
+        extractCreateId: (data) => (data as { preferenceId?: string }).preferenceId ?? null,
+        mapEntity: (data) => {
+          const d = data as { preferenceId?: string; id?: string; channel?: string; enabled?: boolean };
+          const id = d.preferenceId ?? d.id ?? d.channel;
+          if (!id) return null;
+          return row(String(id), d.channel ?? String(id), d.enabled === false ? "Disabled" : "Enabled", {
+            Enabled: d.enabled === false ? "No" : "Yes",
+          }, { source: "api" });
+        },
+      },
     }),
     e({
       key: "email-templates",
@@ -137,26 +211,6 @@ export const NOTIFICATIONS_MODULE: ModuleDefinition = {
       ],
       records: makeRows("NDL", ["Approval email", "SMS OTP", "Push mention"], (i) => ({
         Channel: ["Email", "SMS", "Push"][i]!,
-      })),
-    }),
-    e({
-      key: "preferences",
-      label: "Preference",
-      plural: "User preferences",
-      description: "Per-user notification preferences.",
-      columns: [
-        { key: "title", label: "User" },
-        { key: "status", label: "Status" },
-        { key: "Email", label: "Email" },
-        { key: "Push", label: "Push" },
-      ],
-      fields: [
-        { name: "title", label: "User", type: "text", required: true },
-        { name: "email", label: "Email", type: "select", options: ["On", "Off"] },
-      ],
-      records: makeRows("PRF", ["admin@afh.local", "ops@afh.local"], (i) => ({
-        Email: "On",
-        Push: i ? "Off" : "On",
       })),
     }),
     e({

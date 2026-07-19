@@ -104,6 +104,7 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
       label: "Purchase request",
       plural: "Purchase requests",
       description: "Internal purchase requisitions.",
+      collaborationEntityType: "procurement.purchase_requisition",
       columns: [
         { key: "title", label: "PR", sortable: true },
         { key: "status", label: "Status" },
@@ -156,6 +157,7 @@ export const PROCUREMENT_MODULE: ModuleDefinition = {
       label: "Purchase order",
       plural: "Purchase orders",
       description: "Issued and draft purchase orders.",
+      collaborationEntityType: "procurement.purchase_order",
       columns: [
         { key: "title", label: "PO", sortable: true },
         { key: "status", label: "Status" },

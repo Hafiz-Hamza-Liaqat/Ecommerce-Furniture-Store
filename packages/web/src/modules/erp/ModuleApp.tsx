@@ -762,6 +762,8 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [reactionBoost, setReactionBoost] = useState<Record<string, Record<string, number>>>({});
   const [lifecycleBusy, setLifecycleBusy] = useState<string | null>(null);
+  const [liveNotes, setLiveNotes] = useState<CollabItem[] | null>(null);
+  const [liveAttachments, setLiveAttachments] = useState<string[] | null>(null);
   const recordKey = `${module.id}:${entityKey}:${recordId}`;
   const isPinned = pinned.includes(recordKey);
   const isWatched = watched.includes(recordKey);
@@ -816,6 +818,75 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
     };
   }, [api, entity, module.id, recordId, setLastCorrelationId, user?.companyId]);
 
+  useEffect(() => {
+    const collabType = entity?.collaborationEntityType;
+    if (!collabType || !recordId || !user?.companyId) {
+      setLiveNotes(null);
+      setLiveAttachments(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [notesRes, attachRes] = await Promise.all([
+          api.dispatchQuery({
+            queryType: "collaboration.ListEntityNotes",
+            payload: {
+              companyId: user.companyId,
+              entityType: collabType,
+              entityId: recordId,
+            },
+          }),
+          api.dispatchQuery({
+            queryType: "collaboration.ListEntityAttachments",
+            payload: {
+              companyId: user.companyId,
+              entityType: collabType,
+              entityId: recordId,
+            },
+          }),
+        ]);
+        if (cancelled) return;
+        setLastCorrelationId(notesRes.correlationId);
+        const notesPayload = notesRes.data as {
+          notes?: readonly {
+            id: string;
+            body: string;
+            authorUserId?: string | null;
+            createdAt?: string;
+            kind?: string;
+          }[];
+        };
+        setLiveNotes(
+          (notesPayload.notes ?? []).map((n) => ({
+            id: n.id,
+            author: n.authorUserId ?? "User",
+            text: n.body,
+            at: n.createdAt ?? "",
+            reactions: {},
+            shared: n.kind === "comment",
+          })),
+        );
+        const attachPayload = attachRes.data as {
+          attachments?: readonly { assetId?: string; label?: string | null }[];
+        };
+        setLiveAttachments(
+          (attachPayload.attachments ?? []).map(
+            (a) => a.label || a.assetId || "attachment",
+          ),
+        );
+      } catch {
+        if (!cancelled) {
+          setLiveNotes(null);
+          setLiveAttachments(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, entity?.collaborationEntityType, recordId, setLastCorrelationId, user?.companyId]);
+
   if (!entity || !recordId) {
     return <EmptyState title="Not found" body="Record or entity missing." />;
   }
@@ -835,7 +906,7 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
   }
 
   const collab = getCollab(module.id, entityDef.key, id);
-  const noteItems = parseCollabItems(collab.notes).map((n) => ({
+  const noteItems = (liveNotes ?? parseCollabItems(collab.notes)).map((n) => ({
     ...n,
     reactions: { ...n.reactions, ...(reactionBoost[n.id] ?? {}) },
   }));
@@ -843,6 +914,7 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
     ...c,
     reactions: { ...c.reactions, ...(reactionBoost[c.id] ?? {}) },
   }));
+  const attachmentNames = liveAttachments ?? collab.attachments;
   const activityItems = [
     ...noteItems.map((n) => ({
       id: `n-${n.id}`,
@@ -856,7 +928,7 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
       title: `Comment by ${c.author}`,
       place: c.text.slice(0, 48),
     })),
-    ...collab.attachments.map((a, i) => ({
+    ...attachmentNames.map((a, i) => ({
       id: `a-${i}`,
       time: "Earlier",
       title: "Attachment",
@@ -865,7 +937,59 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
     { id: "open", time: "Session", title: "Record opened", place: module.title },
   ];
 
-  function saveCollabItem(kind: "notes" | "comments", text: string) {
+  async function saveCollabItem(kind: "notes" | "comments", text: string) {
+    const collabType = entityDef.collaborationEntityType;
+    if (collabType && user?.companyId && kind === "notes") {
+      try {
+        const res = await api.dispatchCommand({
+          commandType: "collaboration.CreateEntityNote",
+          payload: {
+            companyId: user.companyId,
+            entityType: collabType,
+            entityId: id,
+            body: text,
+            kind: "note",
+          },
+          idempotencyKey: crypto.randomUUID(),
+        });
+        setLastCorrelationId(res.correlationId);
+        toast({ tone: "ok", title: "Note saved", body: "Persisted via Collaboration CQRS." });
+        const notesRes = await api.dispatchQuery({
+          queryType: "collaboration.ListEntityNotes",
+          payload: {
+            companyId: user.companyId,
+            entityType: collabType,
+            entityId: id,
+          },
+        });
+        const notesPayload = notesRes.data as {
+          notes?: readonly {
+            id: string;
+            body: string;
+            authorUserId?: string | null;
+            createdAt?: string;
+          }[];
+        };
+        setLiveNotes(
+          (notesPayload.notes ?? []).map((n) => ({
+            id: n.id,
+            author: n.authorUserId ?? "User",
+            text: n.body,
+            at: n.createdAt ?? "",
+            reactions: {},
+          })),
+        );
+        return;
+      } catch (err) {
+        if (err instanceof ApiClientError) {
+          toast({
+            tone: "warn",
+            title: "Collaboration API",
+            body: `${err.message} — falling back to local note.`,
+          });
+        }
+      }
+    }
     const item: CollabItem = {
       id: `${kind}-${Date.now()}`,
       author: "You",
@@ -1122,7 +1246,7 @@ function EntityDetailPage({ module }: { readonly module: ModuleDefinition }) {
             />
             <FilePreviewPanel files={stagedFiles} />
             <ul className="ws-feed">
-              {collab.attachments.map((a, i) => (
+              {attachmentNames.map((a, i) => (
                 <li key={`${a}-${i}`}>
                   <strong>{a}</strong>
                 </li>

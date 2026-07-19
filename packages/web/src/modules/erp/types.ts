@@ -136,6 +136,11 @@ export type EntityDef = {
   readonly api?: ApiBinding;
   readonly kanban?: boolean;
   readonly analytics?: boolean;
+  /**
+   * RC8.2 — V1 collaboration binding entity type (e.g. crm.lead).
+   * When set, detail notes/attachments prefer Collaboration CQRS.
+   */
+  readonly collaborationEntityType?: string;
 };
 
 export type ModuleNavItem = {
@@ -166,7 +171,8 @@ export type ModuleDefinition = {
     | "dam"
     | "notifications"
     | "search"
-    | "reporting";
+    | "reporting"
+    | "jobs";
   readonly title: string;
   readonly lead: string;
   readonly basePath: string;

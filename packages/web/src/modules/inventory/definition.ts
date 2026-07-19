@@ -77,6 +77,7 @@ export const INVENTORY_MODULE: ModuleDefinition = {
       label: "Product",
       plural: "Products",
       description: "Inventory items / SKUs.",
+      collaborationEntityType: "inventory.item",
       columns: [
         { key: "title", label: "Item", sortable: true },
         { key: "status", label: "Status" },

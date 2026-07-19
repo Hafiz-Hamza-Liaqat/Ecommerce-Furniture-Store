@@ -155,6 +155,7 @@ export const SERVICE_MODULE: ModuleDefinition = {
       label: "Work order",
       plural: "Work orders",
       description: "Field and shop work orders.",
+      collaborationEntityType: "service.work_order",
       columns: [
         { key: "title", label: "Work order" },
         { key: "status", label: "Status" },

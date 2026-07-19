@@ -136,6 +136,7 @@ export const SALES_MODULE: ModuleDefinition = {
       plural: "Opportunities",
       description: "Pipeline opportunities with stage tracking.",
       kanban: true,
+      collaborationEntityType: "sales.opportunity",
       columns: [
         { key: "title", label: "Opportunity", sortable: true },
         { key: "status", label: "Status" },
@@ -199,6 +200,7 @@ export const SALES_MODULE: ModuleDefinition = {
       label: "Quotation",
       plural: "Quotations",
       description: "Customer quotations and revisions.",
+      collaborationEntityType: "sales.quote",
       columns: [
         { key: "title", label: "Quote", sortable: true },
         { key: "status", label: "Status" },
@@ -269,6 +271,7 @@ export const SALES_MODULE: ModuleDefinition = {
       label: "Sales order",
       plural: "Sales orders",
       description: "Confirmed sales orders and fulfillment links.",
+      collaborationEntityType: "sales.order",
       columns: [
         { key: "title", label: "Order", sortable: true },
         { key: "status", label: "Status" },

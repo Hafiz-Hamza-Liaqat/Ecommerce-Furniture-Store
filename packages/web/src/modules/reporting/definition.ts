@@ -1,5 +1,5 @@
 import type { EntityDef, FilterDef, ModuleDefinition } from "../erp/types";
-import { makeRows } from "../erp/fixtures";
+import { makeRows, row } from "../erp/fixtures";
 
 const filters: FilterDef[] = [
   { key: "status", label: "Status", options: ["Ready", "Scheduled", "Draft", "Failed"] },
@@ -15,10 +15,10 @@ function e(p: Omit<EntityDef, "filters"> & { filters?: EntityDef["filters"] }): 
 export const REPORTING_MODULE: ModuleDefinition = {
   id: "reporting",
   title: "Reporting",
-  lead: "Report library presentation — snapshots and exports come from Reporting APIs; no client-side reporting engine.",
+  lead: "Report definitions via Reporting Application CQRS — run executions through lifecycle; domain packs remain presentation chrome.",
   basePath: "/app/reporting",
   kpis: [
-    { label: "Library reports", value: "86", trend: 2.0, href: "library" },
+    { label: "Library reports", value: "Live", trend: 2.0, href: "library" },
     { label: "Scheduled", value: "19", trend: 1.0, href: "scheduled" },
     { label: "Exports (30d)", value: "340", trend: 4.0, href: "exports" },
     { label: "Shared", value: "28", trend: 0, href: "library" },
@@ -244,6 +244,37 @@ export const REPORTING_MODULE: ModuleDefinition = {
       records: makeRows("LIB", ["Company scorecard", "Inventory aging", "SLA board"], (i) => ({
         Owner: ["Exec", "Ops", "Service"][i]!,
       })),
+      api: {
+        getQueryType: "reporting.GetReportDefinition",
+        listQueryType: "reporting.ListReportDefinition",
+        buildGetPayload: (companyId, id) => ({ companyId, reportDefinitionId: id }),
+        mapEntity: (data) => {
+          const wrapped = data as { reportDefinition?: Record<string, unknown> };
+          const d = (wrapped.reportDefinition ?? data) as {
+            id?: string;
+            name?: string;
+            code?: string;
+            status?: string;
+            ownerUserId?: string | null;
+          };
+          if (!d.id) return null;
+          return row(d.id, d.name ?? d.code ?? d.id, d.status ?? "Ready", {
+            Owner: d.ownerUserId ?? "—",
+          }, { source: "api" });
+        },
+        lifecycleActions: [
+          {
+            id: "run",
+            label: "Run report",
+            commandType: "reporting.RunReport",
+            tone: "primary",
+            buildPayload: (companyId, reportDefinitionId) => ({
+              companyId,
+              reportDefinitionId,
+            }),
+          },
+        ],
+      },
     }),
   ],
 };

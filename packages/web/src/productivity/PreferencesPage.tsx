@@ -54,12 +54,12 @@ export function PreferencesPage() {
   return (
     <div className="stack p5-prefs">
       <PageHeader
-        title="Preferences"
-        lead="Theme, locale, notifications, table defaults, keyboard shortcuts, and accessibility — persisted in this browser."
+        title="Settings & preferences"
+        lead="Workspace settings hub — preferences, security, notifications, AI, jobs, DAM, reporting, and organization links. Backend Policy remains authoritative for security actions."
         actions={
           <div className="row">
             <Button variant="ghost" onClick={onReset}>
-              Reset
+              Reset prefs
             </Button>
             <Button onClick={onSave}>Save preferences</Button>
           </div>
@@ -67,12 +67,65 @@ export function PreferencesPage() {
       />
       {saved ? <Alert tone="ok">Preferences applied.</Alert> : null}
 
+      <section className="ws-card stack" aria-label="Settings destinations">
+        <header className="ws-card__head">
+          <h2>Enterprise settings</h2>
+        </header>
+        <div className="row" style={{ flexWrap: "wrap", gap: "0.5rem" }}>
+          <Link className="btn btn--ghost" to="/app/account/security">
+            Security & devices
+          </Link>
+          <Link className="btn btn--ghost" to="/app/account/mfa">
+            MFA
+          </Link>
+          <Link className="btn btn--ghost" to="/app/account/email-verification">
+            Email verification
+          </Link>
+          <Link className="btn btn--ghost" to="/app/notifications/preferences">
+            Notification preferences
+          </Link>
+          <Link className="btn btn--ghost" to="/app/settings/ai">
+            AI / authentication providers
+          </Link>
+          <Link className="btn btn--ghost" to="/app/platform/jobs">
+            Background jobs
+          </Link>
+          <Link className="btn btn--ghost" to="/app/platform/monitoring">
+            System health
+          </Link>
+          <Link className="btn btn--ghost" to="/app/platform/audit">
+            Audit logs
+          </Link>
+          <Link className="btn btn--ghost" to="/app/platform/backups">
+            Backup
+          </Link>
+          <Link className="btn btn--ghost" to="/app/dam/assets">
+            Object storage / DAM
+          </Link>
+          <Link className="btn btn--ghost" to="/app/search">
+            Search
+          </Link>
+          <Link className="btn btn--ghost" to="/app/reporting/library">
+            Reporting
+          </Link>
+          <Link className="btn btn--ghost" to="/app/platform">
+            Organization / SaaS ops
+          </Link>
+          <Link className="btn btn--ghost" to="/admin/platform">
+            Administration
+          </Link>
+          <Link className="btn btn--ghost" to="/app/me">
+            User / company workspace
+          </Link>
+        </div>
+      </section>
+
       <Tabs
         tabs={[
-          { id: "general", label: "General" },
+          { id: "general", label: "Workspace" },
           { id: "notifications", label: "Notifications" },
           { id: "tables", label: "Tables & dashboard" },
-          { id: "accessibility", label: "Accessibility" },
+          { id: "accessibility", label: "Localization & a11y" },
           { id: "shortcuts", label: "Shortcuts" },
         ]}
         active={tab}

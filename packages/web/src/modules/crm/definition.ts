@@ -62,6 +62,7 @@ export const CRM_MODULE: ModuleDefinition = {
       plural: "Leads",
       description: "Inbound and outbound leads.",
       kanban: true,
+      collaborationEntityType: "crm.lead",
       columns: [
         { key: "title", label: "Lead", sortable: true },
         { key: "status", label: "Status" },
@@ -137,6 +138,7 @@ export const CRM_MODULE: ModuleDefinition = {
       label: "Contact",
       plural: "Contacts",
       description: "People associated with accounts and leads.",
+      collaborationEntityType: "crm.contact",
       columns: [
         { key: "title", label: "Contact", sortable: true },
         { key: "status", label: "Status" },
@@ -178,6 +180,7 @@ export const CRM_MODULE: ModuleDefinition = {
       label: "Account",
       plural: "Accounts",
       description: "Customer and prospect accounts.",
+      collaborationEntityType: "crm.account",
       columns: [
         { key: "title", label: "Account", sortable: true },
         { key: "status", label: "Status" },
