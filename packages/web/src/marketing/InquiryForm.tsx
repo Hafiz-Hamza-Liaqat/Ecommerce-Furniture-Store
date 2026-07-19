@@ -5,13 +5,14 @@ import { useSession } from "../state/session";
 type Props = {
   readonly intent: string;
   readonly meta?: Record<string, unknown>;
+  readonly defaultMessage?: string;
 };
 
 /**
  * Public inquiry form. Queues a lead locally always.
  * When authenticated, attempts crm.CreateLead (Policy-gated) with valid payload fields.
  */
-export function InquiryForm({ intent, meta }: Props) {
+export function InquiryForm({ intent, meta, defaultMessage }: Props) {
   const { api, tokens, user } = useSession();
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
@@ -81,7 +82,12 @@ export function InquiryForm({ intent, meta }: Props) {
       </label>
       <label>
         Message
-        <textarea name="message" rows={4} required defaultValue={`Regarding: ${intent}`} />
+        <textarea
+          name="message"
+          rows={6}
+          required
+          defaultValue={defaultMessage ?? `Regarding: ${intent}`}
+        />
       </label>
       <button type="submit" className="site-btn site-btn--primary" disabled={pending}>
         {pending ? "Sending…" : "Send inquiry"}

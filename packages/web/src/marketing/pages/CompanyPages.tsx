@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { EnterpriseError } from "../../components/EnterpriseError";
 import { Seo } from "../Seo";
 import {
@@ -11,6 +11,7 @@ import {
   SITE_PAGES,
   type SitePageContent,
 } from "../data/content";
+import { getCatalogueProduct } from "../data/catalogue";
 import { InquiryForm } from "../InquiryForm";
 
 function mustPage(key: keyof typeof SITE_PAGES): SitePageContent {
@@ -202,9 +203,49 @@ export function ContactPage() {
   );
 }
 export function QuotePage() {
+  const [params] = useSearchParams();
+  const from = params.get("from");
+  const linesParam = params.get("lines") ?? "";
+  const total = params.get("total");
+  const lineIds = linesParam
+    .split(",")
+    .map((part) => part.split(":")[0])
+    .filter((id): id is string => Boolean(id));
+  const lineSummary = lineIds
+    .map((id) => {
+      const p = getCatalogueProduct(id);
+      const qtyPart = linesParam.split(",").find((x) => x.startsWith(`${id}:`));
+      const qty = Number(qtyPart?.split(":")[1] ?? "1");
+      return p ? `• ${p.name} × ${qty} (${p.priceFrom})` : null;
+    })
+    .filter(Boolean)
+    .join("\n");
+  const seededMessage =
+    from === "consultant" || from === "planner"
+      ? [
+          from === "consultant" ? "Quotation request from AI Furniture Consultant." : "Quotation request from Budget Planner.",
+          lineSummary || undefined,
+          total ? `Estimated catalogue subtotal: PKR ${Number(total).toLocaleString("en-PK")}` : undefined,
+          "Please confirm formal pricing and lead times.",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : undefined;
+
   return (
     <ContentLayout page={mustPage("quote")} path="/quote">
-      <InquiryForm intent="Request quotation" />
+      {from === "consultant" && lineSummary ? (
+        <aside className="cx-quote-seed" aria-label="Consultant selection">
+          <h2>From your consultation</h2>
+          <pre>{lineSummary}</pre>
+          <p>Catalogue estimates only — Sales confirms the formal quotation.</p>
+        </aside>
+      ) : null}
+      <InquiryForm
+        intent="Request quotation"
+        meta={{ from, lines: linesParam, total }}
+        {...(seededMessage ? { defaultMessage: seededMessage } : {})}
+      />
     </ContentLayout>
   );
 }

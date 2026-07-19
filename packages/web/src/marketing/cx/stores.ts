@@ -127,10 +127,14 @@ export function listSavedPlans(): SavedPlan[] {
   return readJson<SavedPlan[]>(PLANNER_KEY, []);
 }
 
+import type { ConsultantCard } from "./intelligent/types";
+
 export type ConsultantMessage = {
   readonly role: "assistant" | "user";
   readonly text: string;
   readonly at: string;
+  /** RC9.2 structured cards (product / package / quote / actions). */
+  readonly cards?: readonly ConsultantCard[];
 };
 
 export function loadConsultantHistory(): ConsultantMessage[] {
