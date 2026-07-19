@@ -128,7 +128,7 @@ export function LuxuryBooklet() {
             <h3>{current.title}</h3>
             <p>{current.body}</p>
             <div className="booklet__video" aria-label="Material study preview">
-              <span>Film · 360° material study</span>
+              <span>Material study film</span>
               {product ? (
                 <Link className="site-btn site-btn--ghost" to={`/products/${product.id}`}>
                   Open product

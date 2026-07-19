@@ -1,6 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BRAND, CATEGORIES, COLLECTIONS, NEWS, PRODUCTS, PROJECTS } from "./data/content";
+import { BRAND, COLLECTIONS, NEWS, PROJECTS } from "./data/content";
+import { CATALOGUE } from "./data/catalogue";
+import { FURNITURE_TAXONOMY, flattenTaxonomy } from "./data/taxonomy";
+import { pushRecentSearch, getRecentSearches } from "./cx/stores";
 import { useSession } from "../state/session";
 
 export function MarketingShell() {
@@ -78,8 +81,20 @@ export function MarketingShell() {
           >
             <div
               className="site-nav__item"
-              onMouseEnter={() => setMegaOpen(true)}
-              onMouseLeave={() => setMegaOpen(false)}
+              onMouseEnter={() => {
+                window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
+                (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
+                  () => setMegaOpen(true),
+                  100,
+                );
+              }}
+              onMouseLeave={() => {
+                window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
+                (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
+                  () => setMegaOpen(false),
+                  160,
+                );
+              }}
             >
               <button
                 type="button"
@@ -87,31 +102,38 @@ export function MarketingShell() {
                 aria-expanded={megaOpen}
                 onClick={() => setMegaOpen((v) => !v)}
               >
-                Collections
+                Furniture
               </button>
               {megaOpen ? (
-                <div className="site-mega" role="region" aria-label="Collections menu">
-                  <div className="site-mega__col">
-                    <p className="site-mega__label">Lines</p>
-                    {COLLECTIONS.map((c) => (
-                      <Link key={c.id} to={`/products?collection=${c.id}`} onClick={() => setMegaOpen(false)}>
-                        <strong>{c.name}</strong>
-                        <span>{c.blurb}</span>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="site-mega__col">
-                    <p className="site-mega__label">Categories</p>
-                    {CATEGORIES.map((c) => (
-                      <Link key={c.id} to={`/products?category=${c.id}`} onClick={() => setMegaOpen(false)}>
-                        {c.name}
-                      </Link>
-                    ))}
-                  </div>
+                <div className="site-mega site-mega--furniture" role="region" aria-label="Furniture menu">
+                  {FURNITURE_TAXONOMY.map((col) => (
+                    <div key={col.id} className="site-mega__col">
+                      <p className="site-mega__label">
+                        <Link to={`/furniture/${col.slug}`} onClick={() => setMegaOpen(false)}>
+                          {col.name}
+                        </Link>
+                      </p>
+                      {(col.children ?? []).map((c) => (
+                        <Link
+                          key={c.id}
+                          to={`/furniture/${col.slug}/${c.slug}`}
+                          onClick={() => setMegaOpen(false)}
+                        >
+                          {c.name}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
                   <div className="site-mega__feature">
-                    <p>Digital booklet</p>
+                    <p>All furniture</p>
+                    <Link to="/furniture" className="site-btn site-btn--ghost" onClick={() => setMegaOpen(false)}>
+                      Browse hub
+                    </Link>
                     <Link to="/#booklet" className="site-btn site-btn--ghost" onClick={() => setMegaOpen(false)}>
-                      Open catalogue
+                      Digital booklet
+                    </Link>
+                    <Link to="/planner" className="site-btn site-btn--primary" onClick={() => setMegaOpen(false)}>
+                      Budget planner
                     </Link>
                   </div>
                 </div>
@@ -129,8 +151,14 @@ export function MarketingShell() {
             <NavLink to="/about" className="site-nav__link">
               Company
             </NavLink>
-            <NavLink to="/contact" className="site-nav__link">
-              Contact
+            <NavLink to="/consultant" className="site-nav__link">
+              Consultant
+            </NavLink>
+            <NavLink to="/wishlist" className="site-nav__link" aria-label="Wishlist">
+              Wishlist
+            </NavLink>
+            <NavLink to="/compare" className="site-nav__link" aria-label="Compare">
+              Compare
             </NavLink>
             <button
               type="button"
@@ -159,7 +187,7 @@ export function MarketingShell() {
       </header>
 
       <main id="site-main" className="site-main">
-        {!pageReady ? <PageSkeleton /> : null}
+        {!pageReady ? <PageSkeleton path={pathname} /> : null}
         <div
           className={`site-page-transition${pageReady ? " is-ready" : ""}`}
           aria-busy={!pageReady}
@@ -225,12 +253,16 @@ export function MarketingShell() {
           <FooterCol
             title="Explore"
             links={[
+              ["/furniture", "Furniture"],
               ["/products", "Catalogue"],
               ["/projects", "Projects"],
               ["/news", "News"],
               ["/blog", "Journal"],
               ["/events", "Events"],
               ["/faq", "FAQ"],
+              ["/downloads", "Downloads"],
+              ["/planner", "Budget planner"],
+              ["/consultant", "AI consultant"],
               ["/demo", "Book demo"],
               ["/quote", "Request quote"],
             ]}
@@ -240,6 +272,7 @@ export function MarketingShell() {
           <span>© {new Date().getFullYear()} {BRAND.name}</span>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
+          <Link to="/cookies">Cookies</Link>
           <a href="/sitemap.xml">Sitemap</a>
         </div>
       </footer>
@@ -259,12 +292,18 @@ export function MarketingShell() {
         aria-expanded={chatOpen}
         onClick={() => setChatOpen((v) => !v)}
       >
-        Live chat
+        Furniture consultant
       </button>
       {chatOpen ? (
-        <div className="site-chat-panel" role="dialog" aria-label="Live chat">
-          <p>Chat connects to our studio during business hours. Leave a message and we will follow up.</p>
-          <Link to="/contact" className="site-btn site-btn--primary" onClick={() => setChatOpen(false)}>
+        <div className="site-chat-panel" role="dialog" aria-label="Furniture consultant">
+          <p>
+            Open the AI Furniture Consultant for a showroom-style conversation, or leave a contact
+            message for sales.
+          </p>
+          <Link to="/consultant" className="site-btn site-btn--primary" onClick={() => setChatOpen(false)}>
+            Open consultant
+          </Link>
+          <Link to="/contact" className="site-btn site-btn--ghost" onClick={() => setChatOpen(false)}>
             Contact form
           </Link>
           <button type="button" className="site-btn site-btn--ghost" onClick={() => setChatOpen(false)}>
@@ -296,15 +335,68 @@ export function MarketingShell() {
               setCookieOk(true);
             }}
           >
-            Accept
+            Accept essential
           </button>
+          <Link to="/cookies" className="site-btn site-btn--ghost" onClick={() => setCookieOk(true)}>
+            Preferences
+          </Link>
         </div>
       ) : null}
     </div>
   );
 }
 
-function PageSkeleton() {
+function PageSkeleton({ path }: { path: string }) {
+  if (path.startsWith("/furniture")) {
+    return (
+      <div className="site-skeleton cx-skeleton-category" aria-live="polite" aria-label="Loading category">
+        <div className="site-skeleton__hero" />
+        <div className="cx-skeleton-category__body">
+          <div className="cx-skeleton-filters">
+            <div className="cx-skeleton-card__line" />
+            <div className="cx-skeleton-card__line" />
+            <div className="cx-skeleton-card__line cx-skeleton-card__line--short" />
+          </div>
+          <div className="cx-skeleton-grid">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="cx-skeleton-card">
+                <div className="cx-skeleton-card__media" />
+                <div className="cx-skeleton-card__line" />
+                <div className="cx-skeleton-card__line cx-skeleton-card__line--short" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (path.startsWith("/planner")) {
+    return (
+      <div className="site-skeleton cx-skeleton-planner" aria-live="polite" aria-label="Loading planner">
+        <div className="site-skeleton__hero" />
+        <div className="cx-skeleton-card__line" />
+        <div className="cx-skeleton-card__line" />
+      </div>
+    );
+  }
+  if (path.startsWith("/compare")) {
+    return (
+      <div className="site-skeleton cx-skeleton-compare" aria-live="polite" aria-label="Loading compare">
+        <div className="site-skeleton__hero" />
+        <div className="cx-skeleton-card__line" />
+        <div className="cx-skeleton-card__line" />
+      </div>
+    );
+  }
+  if (path.startsWith("/products/")) {
+    return (
+      <div className="site-skeleton cx-skeleton-gallery" aria-live="polite" aria-label="Loading product">
+        <div className="cx-skeleton-gallery__stage" />
+        <div className="cx-skeleton-card__line" />
+        <div className="cx-skeleton-card__line cx-skeleton-card__line--short" />
+      </div>
+    );
+  }
   return (
     <div className="site-skeleton" aria-live="polite" aria-label="Loading page">
       <div className="site-skeleton__hero" />
@@ -321,18 +413,46 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(false);
+  const recent = getRecentSearches();
+  const isMobile =
+    typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    if (q.trim().length < 2) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const t = window.setTimeout(() => setLoading(false), 220);
+    return () => window.clearTimeout(t);
+  }, [q]);
+
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (needle.length < 2) return [];
     const hits: { label: string; to: string; kind: string }[] = [];
-    for (const p of PRODUCTS) {
-      if (`${p.name} ${p.category} ${p.collection}`.toLowerCase().includes(needle)) {
+    for (const p of CATALOGUE) {
+      if (`${p.name} ${p.category} ${p.collection} ${p.tags.join(" ")}`.toLowerCase().includes(needle)) {
         hits.push({ label: p.name, to: `/products/${p.id}`, kind: "Product" });
+      }
+    }
+    for (const { node, parent } of flattenTaxonomy()) {
+      if (node.name.toLowerCase().includes(needle)) {
+        hits.push({
+          label: node.name,
+          to: parent ? `/furniture/${parent.slug}/${node.slug}` : `/furniture/${node.slug}`,
+          kind: "Category",
+        });
+      }
+    }
+    for (const c of COLLECTIONS) {
+      if (c.name.toLowerCase().includes(needle)) {
+        hits.push({ label: c.name, to: `/products?collection=${c.id}`, kind: "Collection" });
       }
     }
     for (const p of PROJECTS) {
@@ -342,20 +462,26 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
     }
     for (const n of NEWS) {
       if (`${n.title} ${n.summary}`.toLowerCase().includes(needle)) {
-        hits.push({ label: n.title, to: "/news", kind: "News" });
+        hits.push({ label: n.title, to: "/news", kind: "CMS" });
       }
     }
-    for (const c of CATEGORIES) {
-      if (c.name.toLowerCase().includes(needle)) {
-        hits.push({ label: c.name, to: `/products?category=${c.id}`, kind: "Category" });
+    const pages = [
+      { label: "Budget planner", to: "/planner" },
+      { label: "AI Furniture Consultant", to: "/consultant" },
+      { label: "Downloads", to: "/downloads" },
+      { label: "Manufacturing", to: "/manufacturing" },
+    ];
+    for (const page of pages) {
+      if (page.label.toLowerCase().includes(needle)) {
+        hits.push({ label: page.label, to: page.to, kind: "Page" });
       }
     }
-    return hits.slice(0, 8);
+    return hits.slice(0, 10);
   }, [q]);
 
   return (
     <div
-      className="site-search"
+      className={`site-search${isMobile ? " site-search--drawer" : ""} cx-motion-fade`}
       role="dialog"
       aria-modal="true"
       aria-label="Site search"
@@ -365,39 +491,66 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
     >
       <div className="site-search__panel">
         <label htmlFor="site-search-q" className="site-sr">
-          Search products, projects, and pages
+          Search products, categories, projects, and pages
         </label>
-        <input
-          id="site-search-q"
-          ref={inputRef}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search catalogue, projects, news…"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && results[0]) {
-              navigate(results[0].to);
-              onClose();
-            }
-          }}
-        />
-        <ul className="site-search__results">
+        <div className="site-search__input-wrap">
+          <input
+            id="site-search-q"
+            ref={inputRef}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search catalogue, categories, projects…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && results[0]) {
+                pushRecentSearch(q);
+                navigate(results[0].to);
+                onClose();
+              }
+            }}
+          />
+          {loading ? (
+            <span className="site-search__loading" role="status" aria-live="polite">
+              Searching…
+            </span>
+          ) : null}
+        </div>
+        {q.trim().length < 2 && recent.length ? (
+          <ul className="site-search__results" aria-label="Recent searches">
+            {recent.map((r) => (
+              <li key={r}>
+                <button
+                  type="button"
+                  className="site-search__recent"
+                  onClick={() => setQ(r)}
+                >
+                  <span>Recent</span>
+                  <strong>{r}</strong>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <ul className={`site-search__results${loading ? " is-loading" : ""}`}>
           {results.map((r) => (
             <li key={`${r.kind}-${r.to}-${r.label}`}>
               <Link
                 to={r.to}
-                onClick={onClose}
+                onClick={() => {
+                  pushRecentSearch(q);
+                  onClose();
+                }}
               >
                 <span>{r.kind}</span>
                 <strong>{r.label}</strong>
               </Link>
             </li>
           ))}
-          {q.trim().length >= 2 && results.length === 0 ? (
-            <li className="site-search__empty">No matches — try a product or project name.</li>
+          {!loading && q.trim().length >= 2 && results.length === 0 ? (
+            <li className="site-search__empty">No matches — try a product or category name.</li>
           ) : null}
         </ul>
         <p className="site-search__hint">
-          Press <kbd>Esc</kbd> to close · <kbd>⌘/Ctrl K</kbd> to open
+          Press <kbd>Esc</kbd> to close · <kbd>⌘/Ctrl K</kbd> to open · Filters on category pages
         </p>
         <button type="button" className="site-btn site-btn--ghost" onClick={onClose}>
           Close

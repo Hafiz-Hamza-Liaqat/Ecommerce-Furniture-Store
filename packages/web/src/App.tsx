@@ -72,6 +72,14 @@ import {
   LazySecurityCenterPage,
   LazyServicePage,
   LazyWorkflowPage,
+  LazyFurnitureHubPage,
+  LazyCategoryPage,
+  LazyComparePage,
+  LazyWishlistPage,
+  LazyBudgetPlannerPage,
+  LazyConsultantPage,
+  LazyDownloadsPage,
+  LazyCookiesPage,
 } from "./routes/lazy";
 
 function RequireAuth() {
@@ -393,6 +401,30 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="furniture"
+          element={
+            <Lazy>
+              <LazyFurnitureHubPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="furniture/:categorySlug"
+          element={
+            <Lazy>
+              <LazyCategoryPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="furniture/:categorySlug/:subSlug"
+          element={
+            <Lazy>
+              <LazyCategoryPage />
+            </Lazy>
+          }
+        />
+        <Route
           path="products"
           element={
             <Lazy>
@@ -405,6 +437,54 @@ export function AppRoutes() {
           element={
             <Lazy>
               <LazyProductDetailPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="compare"
+          element={
+            <Lazy>
+              <LazyComparePage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="wishlist"
+          element={
+            <Lazy>
+              <LazyWishlistPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="planner"
+          element={
+            <Lazy>
+              <LazyBudgetPlannerPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="consultant"
+          element={
+            <Lazy>
+              <LazyConsultantPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="downloads"
+          element={
+            <Lazy>
+              <LazyDownloadsPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="cookies"
+          element={
+            <Lazy>
+              <LazyCookiesPage />
             </Lazy>
           }
         />

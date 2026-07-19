@@ -45,6 +45,7 @@ export type Product = {
   readonly featured?: boolean;
 };
 
+/** @deprecated Prefer CATALOGUE from ./catalogue — kept for booklet/home compatibility. */
 export const PRODUCTS: readonly Product[] = [
   {
     id: "meridian-sofa",
@@ -132,6 +133,33 @@ export const PRODUCTS: readonly Product[] = [
       { label: "Width", value: "2000 mm" },
       { label: "Finish", value: "Smoked oak" },
       { label: "Hardware", value: "Concealed" },
+    ],
+  },
+  {
+    id: "harbor-conference",
+    name: "Harbor Conference Table",
+    category: "Workspace",
+    collection: "Studio",
+    summary: "Cable-ready conference table for twelve with quiet power integration.",
+    priceFrom: "PKR 520,000",
+    image: IMG.projectA,
+    featured: true,
+    specs: [
+      { label: "Length", value: "3600 mm" },
+      { label: "Seats", value: "12" },
+    ],
+  },
+  {
+    id: "atrium-reception",
+    name: "Atrium Reception Desk",
+    category: "Workspace",
+    collection: "Studio",
+    summary: "Sculpted reception desk with accessible transaction height and storage.",
+    priceFrom: "PKR 380,000",
+    image: IMG.projectC,
+    specs: [
+      { label: "Width", value: "2800 mm" },
+      { label: "Finish", value: "Stone + timber" },
     ],
   },
 ];

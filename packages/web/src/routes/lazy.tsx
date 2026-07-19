@@ -173,3 +173,35 @@ export const LazyNotFoundPage = lazyNamed(
   () => import("../marketing/pages/CompanyPages"),
   "NotFoundPage",
 );
+export const LazyFurnitureHubPage = lazyNamed(
+  () => import("../marketing/pages/CategoryPage"),
+  "FurnitureHubPage",
+);
+export const LazyCategoryPage = lazyNamed(
+  () => import("../marketing/pages/CategoryPage"),
+  "CategoryPage",
+);
+export const LazyComparePage = lazyNamed(
+  () => import("../marketing/pages/ComparePage"),
+  "ComparePage",
+);
+export const LazyWishlistPage = lazyNamed(
+  () => import("../marketing/pages/WishlistPage"),
+  "WishlistPage",
+);
+export const LazyBudgetPlannerPage = lazyNamed(
+  () => import("../marketing/pages/BudgetPlannerPage"),
+  "BudgetPlannerPage",
+);
+export const LazyConsultantPage = lazyNamed(
+  () => import("../marketing/pages/ConsultantPage"),
+  "ConsultantPage",
+);
+export const LazyDownloadsPage = lazyNamed(
+  () => import("../marketing/pages/DownloadsPage"),
+  "DownloadsPage",
+);
+export const LazyCookiesPage = lazyNamed(
+  () => import("../marketing/pages/DownloadsPage"),
+  "CookiesPage",
+);

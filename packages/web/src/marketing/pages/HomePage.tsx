@@ -85,7 +85,7 @@ export function HomePage() {
         </div>
         <div className="site-category-grid">
           {CATEGORIES.map((c) => (
-            <Link key={c.id} to={`/products?category=${c.id}`} className="site-category">
+            <Link key={c.id} to={`/furniture/${c.id === "lounge" ? "living-room" : c.id === "workspace" ? "office" : c.id}`} className="site-category cx-hover-lift">
               <img src={c.image} alt="" loading="lazy" />
               <span>{c.name}</span>
             </Link>
