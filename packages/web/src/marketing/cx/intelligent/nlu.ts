@@ -35,7 +35,13 @@ const ROOM_ALIASES: Record<string, EndUse> = {
   hospitality: "hotel",
   restaurant: "restaurant",
   cafe: "restaurant",
+  café: "restaurant",
   dining: "restaurant",
+  jahez: "home",
+  wedding: "home",
+  dowry: "home",
+  showroom: "home",
+  retail: "home",
   school: "school",
   classroom: "school",
   hospital: "hospital",
@@ -97,6 +103,15 @@ function parseSeats(text: string): number | undefined {
   return undefined;
 }
 
+function parseCount(text: string, patterns: RegExp[]): number | undefined {
+  const lower = text.toLowerCase();
+  for (const re of patterns) {
+    const m = lower.match(re);
+    if (m?.[1]) return Math.round(Number(m[1]));
+  }
+  return undefined;
+}
+
 function parseDimensions(text: string): { widthM?: number; depthM?: number } {
   const m = text.toLowerCase().match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)/);
   if (m?.[1] && m?.[2]) return { widthM: Number(m[1]), depthM: Number(m[2]) };
@@ -112,9 +127,11 @@ function detectEndUse(lower: string): { endUse?: EndUse; roomType?: string; indu
   for (const [alias, endUse] of Object.entries(ROOM_ALIASES)) {
     if (!lower.includes(alias)) continue;
     const roomType = alias.includes("living") ? "living room" : endUse;
+    if (/jahez|wedding|dowry|bride/.test(lower)) return { endUse: "home", roomType: "jahez", industry: "jahez" };
     if (/software|tech|it\b/.test(lower)) return { endUse, roomType, industry: "software" };
     if (/hotel|hospitality/.test(lower)) return { endUse, roomType, industry: "hospitality" };
-    if (/restaurant|cafe/.test(lower)) return { endUse, roomType, industry: "fnb" };
+    if (/restaurant|cafe|café/.test(lower)) return { endUse, roomType, industry: "fnb" };
+    if (/retail|showroom/.test(lower)) return { endUse, roomType, industry: "retail" };
     return { endUse, roomType };
   }
   for (const eu of END_USES) {
@@ -159,6 +176,10 @@ export type ExtractedSlots = {
   materials?: readonly string[];
   budgetPkr?: number;
   preference?: string;
+  managers?: number;
+  executiveCabins?: number;
+  bedrooms?: number;
+  spaceFlags?: Record<string, boolean>;
 };
 
 export function extractSlots(userText: string, prior: ConsultantMemory = {}): ExtractedSlots {
@@ -175,6 +196,19 @@ export function extractSlots(userText: string, prior: ConsultantMemory = {}): Ex
   const pref = detectPreference(lower);
   const colours = COLOURS.filter((c) => lower.includes(c));
   const materials = MATERIALS.filter((m) => lower.includes(m));
+  const managers = parseCount(lower, [/(\d+)\s*managers?\b/, /managers?\s*[:=]?\s*(\d+)/]);
+  const cabins = parseCount(lower, [/(\d+)\s*(?:executive\s*)?cabins?\b/, /cabins?\s*[:=]?\s*(\d+)/]);
+  const bedrooms = parseCount(lower, [/(\d+)\s*bedrooms?\b/, /bedrooms?\s*[:=]?\s*(\d+)/]);
+
+  const spaceFlags: Record<string, boolean> = { ...(prior.spaceFlags ?? {}) };
+  if (/no reception|without reception/.test(lower)) spaceFlags.reception = false;
+  else if (/\breception\b/.test(lower)) spaceFlags.reception = true;
+  if (/no (waiting|wait area)|without waiting/.test(lower)) spaceFlags.waitingArea = false;
+  else if (/waiting/.test(lower)) spaceFlags.waitingArea = true;
+  if (/no conference|without conference/.test(lower)) spaceFlags.conference = false;
+  else if (/conference|boardroom/.test(lower)) spaceFlags.conference = true;
+  if (/open office/.test(lower)) spaceFlags.openOffice = true;
+  if (/\bcabins?\b/.test(lower)) spaceFlags.cabins = true;
 
   let endUse = room.endUse;
   let roomType = room.roomType;
@@ -199,11 +233,15 @@ export function extractSlots(userText: string, prior: ConsultantMemory = {}): Ex
     ...(dims.widthM != null ? { widthM: dims.widthM } : {}),
     ...(dims.depthM != null ? { depthM: dims.depthM } : {}),
     ...(pref ? { preference: pref } : {}),
+    ...(managers != null ? { managers } : {}),
+    ...(cabins != null ? { executiveCabins: cabins } : {}),
+    ...(bedrooms != null ? { bedrooms } : {}),
+    ...(Object.keys(spaceFlags).length ? { spaceFlags } : {}),
     ...(colours.length ? { colours: [...new Set([...(prior.colours ?? []), ...colours])] } : {}),
     ...(materials.length ? { materials: [...new Set([...(prior.materials ?? []), ...materials])] } : {}),
     ...(/quote|quotation|proposal/.test(lower) ? { wantsQuote: true } : {}),
     ...(/whatsapp|sales|handoff|contact|call me|speak/.test(lower) ? { wantsHandoff: true } : {}),
-    ...(/package|furnish|entire|complete set|full room|solution/.test(lower) ? { wantsPackage: true } : {}),
+    ...(/package|furnish|entire|complete set|full room|solution|planner/.test(lower) ? { wantsPackage: true } : {}),
     ...(/alternative|other option|instead|similar/.test(lower) ? { wantsAlternatives: true } : {}),
   };
 }
@@ -221,6 +259,10 @@ export function mergeMemory(prior: ConsultantMemory, slots: ExtractedSlots): Con
     ...(slots.style ? { style: slots.style } : {}),
     ...(slots.budgetPkr != null ? { budgetPkr: slots.budgetPkr } : {}),
     ...(slots.preference ? { preference: slots.preference } : {}),
+    ...(slots.managers != null ? { managers: slots.managers } : {}),
+    ...(slots.executiveCabins != null ? { executiveCabins: slots.executiveCabins } : {}),
+    ...(slots.bedrooms != null ? { bedrooms: slots.bedrooms } : {}),
+    ...(slots.spaceFlags ? { spaceFlags: slots.spaceFlags } : {}),
     ...(slots.colours ? { colours: slots.colours } : {}),
     ...(slots.materials ? { materials: slots.materials } : {}),
     ...(slots.lastQuery ? { lastQuery: slots.lastQuery } : {}),
@@ -230,11 +272,33 @@ export function mergeMemory(prior: ConsultantMemory, slots: ExtractedSlots): Con
 
 export function missingFollowUps(memory: ConsultantMemory): string | null {
   if (!memory.endUse && !memory.roomType) {
-    return "What type of space are you furnishing? (office, home, hotel, restaurant, school…)";
+    return "What type of space are you furnishing? (office, home, hotel, restaurant, school, jahez…)";
+  }
+  if (memory.industry === "jahez" || memory.roomType === "jahez") {
+    if (memory.budgetPkr == null) {
+      return "What Jahez budget are you targeting in PKR?";
+    }
+    if (!memory.style) {
+      return "Preferred Jahez style — modern, heritage, Scandinavian, or luxury?";
+    }
+    return null;
+  }
+  if (memory.endUse === "office" || memory.endUse === "government") {
+    if (memory.seats == null && memory.employeeCount == null) {
+      return "How many employees will this office support?";
+    }
+    if (memory.managers == null && !memory.spaceFlags?.conference) {
+      return "How many managers / executive cabins, and do you need reception, waiting, and a conference room?";
+    }
+  }
+  if (memory.endUse === "home" && memory.bedrooms == null && memory.industry !== "jahez") {
+    if (!memory.preference?.includes("bedroom") && memory.seats == null) {
+      return "Is this an apartment or house, and how many bedrooms are you furnishing?";
+    }
   }
   if (memory.seats == null && memory.employeeCount == null) {
-    if (memory.endUse === "office" || memory.endUse === "coworking" || memory.endUse === "school") {
-      return "How many people should this space support?";
+    if (memory.endUse === "coworking" || memory.endUse === "school" || memory.endUse === "restaurant" || memory.endUse === "hotel") {
+      return "How many people / seats should this space support?";
     }
   }
   if (memory.budgetPkr == null) {
@@ -244,7 +308,7 @@ export function missingFollowUps(memory: ConsultantMemory): string | null {
     return "Any preferred style — modern, executive, heritage, Scandinavian, or luxury?";
   }
   if (memory.widthM == null && memory.depthM == null) {
-    if (!memory.preference && !memory.lastQuery?.match(/package|furnish|recommend/i)) {
+    if (!memory.preference && !memory.lastQuery?.match(/package|furnish|recommend|planner/i)) {
       return "Approximately how large is the room? (e.g. 20x15 metres) — optional but helpful.";
     }
   }

@@ -150,6 +150,9 @@ export function buildPackages(input: {
   ];
 }
 
+/** Alias kept for callers that want the explicit classic path. */
+export const buildClassicPackages = buildPackages;
+
 export function utilization(budgetPkr: number, totalPkr: number): {
   remaining: number;
   percent: number;

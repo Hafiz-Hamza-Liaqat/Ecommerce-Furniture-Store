@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Seo } from "../Seo";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { BRAND } from "../data/content";
 import {
+  bootstrapConsultantFromPlannerUrl,
   clearConsultantMemory,
+  consumePlannerHandoff,
   getConsultantProvider,
   initialAssistantMessage,
   loadConsultantMemory,
@@ -25,19 +27,38 @@ import { useReveal } from "../useReveal";
 /**
  * AI Furniture Consultant — showroom consultant UX (RC9.2).
  * Shell retained; conversation engine is grounded + provider-abstracted.
+ * RC9.3: hydrates from Budget Planner handoff when ?from=planner.
  */
 export function ConsultantPage() {
   useReveal();
   const threadId = useId();
+  const [params] = useSearchParams();
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Consume planner handoff once on first mount (URL ?from=planner).
+  const [plannerBoot] = useState(() =>
+    bootstrapConsultantFromPlannerUrl(
+      typeof window !== "undefined" ? window.location.search : params.toString(),
+    ),
+  );
+
   const [messages, setMessages] = useState<ConsultantMessage[]>(() => {
+    if (plannerBoot) return plannerBoot.messages;
     const hist = loadConsultantHistory();
     return hist.length ? hist : [initialAssistantMessage()];
   });
-  const [state, setState] = useState<ConsultantMemory>(() => loadConsultantMemory());
+  const [state, setState] = useState<ConsultantMemory>(() =>
+    plannerBoot ? plannerBoot.memory : loadConsultantMemory(),
+  );
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [streamPreview, setStreamPreview] = useState("");
+
+  useEffect(() => {
+    if (params.get("from") === "planner") {
+      consumePlannerHandoff();
+    }
+  }, [params]);
 
   useEffect(() => {
     saveConsultantHistory(messages);

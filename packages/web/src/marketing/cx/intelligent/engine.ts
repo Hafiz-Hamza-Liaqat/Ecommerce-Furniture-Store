@@ -64,7 +64,7 @@ function handoffActions(memory: ConsultantMemory, quoteHref?: string): Consultan
   )}`;
   return [
     { id: "quote", label: "Request quotation", kind: "quote", href: quoteHref ?? "/quote?from=consultant" },
-    { id: "planner", label: "Open budget planner", kind: "planner", href: "/planner" },
+    { id: "planner", label: "Open budget planner", kind: "planner", href: `/planner?template=${memory.spaceTemplateId ?? memory.endUse ?? "office"}` },
     { id: "whatsapp", label: "WhatsApp", kind: "whatsapp", href: wa },
     { id: "contact", label: "Contact sales", kind: "link", href: "/contact" },
     { id: "demo", label: "Book consultation", kind: "link", href: "/demo" },

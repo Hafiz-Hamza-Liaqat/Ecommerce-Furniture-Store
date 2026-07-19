@@ -18,10 +18,15 @@ export type ConsultantMemory = {
   readonly roomType?: string;
   readonly endUse?: EndUse;
   readonly industry?: string;
+  /** RC9.3 space template (office, jahez, cafe, …). */
+  readonly spaceTemplateId?: string;
   readonly widthM?: number;
   readonly depthM?: number;
   readonly seats?: number;
   readonly employeeCount?: number;
+  readonly managers?: number;
+  readonly executiveCabins?: number;
+  readonly bedrooms?: number;
   readonly style?: ConsultantStyle;
   readonly colours?: readonly string[];
   readonly materials?: readonly string[];
@@ -31,6 +36,8 @@ export type ConsultantMemory = {
   readonly rejectedProductIds?: readonly string[];
   readonly lastQuery?: string;
   readonly readyForQuote?: boolean;
+  /** Free-form space flags from discovery (reception, conference, …). */
+  readonly spaceFlags?: Readonly<Record<string, boolean>>;
 };
 
 /** Back-compat alias used by the page shell. */
