@@ -1315,8 +1315,8 @@
   align-content: start;
 }
 
-.cx-gallery { display: grid; grid-template-columns: 72px 1fr; gap: 0.75rem; }
-.cx-gallery--dual { grid-template-columns: 72px 1fr minmax(180px, 280px); }
+.cx-gallery { display: grid; grid-template-columns: 72px 1fr; gap: 0.75rem; position: relative; }
+.cx-gallery__main { min-width: 0; }
 .cx-gallery__thumbs { display: flex; flex-direction: column; gap: 0.4rem; max-height: 420px; overflow: auto; }
 .cx-gallery__thumb {
   border: 1px solid var(--site-line);
@@ -1337,30 +1337,61 @@
   outline: none;
   touch-action: pan-y;
 }
+.cx-gallery__stage--fs {
+  min-height: 60vh;
+  max-height: 72vh;
+  background: #0e1210;
+}
 .cx-gallery__media {
   width: 100%;
   height: 100%;
   max-height: 520px;
   object-fit: contain;
   display: block;
-  transition: transform 180ms var(--cx-ease);
 }
-.cx-gallery__stage.is-zoom .cx-gallery__media { cursor: crosshair; }
+.cx-gallery__stage--fs .cx-gallery__media {
+  max-height: 72vh;
+}
+.cx-gallery__stage.is-zoom .cx-gallery__media { cursor: none; }
 .cx-gallery__lens {
   position: absolute;
-  width: 96px;
-  height: 96px;
-  border: 1px solid rgba(255,255,255,0.7);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 2px;
   pointer-events: none;
-  box-shadow: 0 0 0 9999px rgba(20, 32, 26, 0.18);
+  box-shadow: 0 0 0 9999px rgba(20, 32, 26, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  z-index: 2;
 }
-.cx-gallery__pane {
-  min-height: 320px;
+.cx-gallery__pane--float {
+  position: fixed;
+  z-index: 90;
+  margin: 0;
+  min-height: 0;
   border: 1px solid var(--site-line);
-  background-repeat: no-repeat;
-  background-color: var(--site-mist);
+  background-color: var(--site-paper);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 18px 48px rgba(20, 32, 26, 0.22);
+  transition: opacity var(--cx-duration) var(--cx-ease);
+}
+.cx-gallery__pane--float.is-active {
+  opacity: 1;
+}
+.cx-gallery__pane-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+.cx-gallery__pane-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: none;
+  display: block;
+  pointer-events: none;
+  user-select: none;
 }
 .cx-gallery__skeleton {
   position: absolute;
@@ -1372,9 +1403,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  padding: 0.5rem;
+  padding: 0.5rem 0;
 }
-.cx-gallery__hint { margin: 0 0.5rem 0.5rem; font-size: 0.78rem; color: var(--site-ink-soft); }
+.cx-gallery__hint { margin: 0 0 0.25rem; font-size: 0.78rem; color: var(--site-ink-soft); }
 .cx-gallery__fs {
   position: fixed;
   inset: 0;
@@ -1391,9 +1422,12 @@
   position: relative;
   background: var(--site-mist);
   min-height: 280px;
-  touch-action: pan-y;
+  touch-action: none;
   user-select: none;
+  cursor: grab;
+  outline: none;
 }
+.cx-spin__stage:active { cursor: grabbing; }
 .cx-spin__img {
   width: 100%;
   max-height: 480px;
@@ -1403,7 +1437,17 @@
   transition: opacity var(--cx-duration) var(--cx-ease);
 }
 .cx-spin__img.is-ready { opacity: 1; }
-.cx-spin__hint, .cx-spin__loading, .cx-muted { color: var(--site-ink-soft); font-size: 0.85rem; }
+.cx-spin__hint, .cx-spin__loading, .cx-spin__model-hint, .cx-muted { color: var(--site-ink-soft); font-size: 0.85rem; }
+.cx-spin__meta {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.65rem;
+  font-size: 0.72rem;
+  color: var(--site-ink-soft);
+  background: color-mix(in srgb, var(--site-paper) 88%, transparent);
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+}
 .cx-spin__toolbar { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
 .cx-spin__spinner {
   position: absolute;
@@ -1621,10 +1665,10 @@
 
 @media (max-width: 980px) {
   .cx-gallery { grid-template-columns: 1fr; }
-  .cx-gallery--dual { grid-template-columns: 1fr; }
-  .cx-gallery__pane { display: none; }
+  .cx-gallery__pane--float { display: none; }
   .cx-gallery__thumbs { flex-direction: row; max-height: none; overflow-x: auto; }
   .cx-gallery__thumb { min-width: 64px; height: 64px; }
+  .cx-gallery__stage.is-zoom .cx-gallery__media { cursor: zoom-in; }
   .site-mega--furniture { min-width: 0; }
   .cx-category-layout { grid-template-columns: 1fr; }
   .cx-filters-desktop { display: none; }

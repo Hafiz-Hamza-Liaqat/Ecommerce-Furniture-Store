@@ -4,6 +4,8 @@
  */
 
 import { IMG } from "./content.js";
+import type { ProductModelAssets, SpinSequence } from "../media/types";
+import { meridianSofaDemoSpinSequence } from "../media/meridian-demo-spin";
 
 export type ProductMedia = {
   readonly id: string;
@@ -11,6 +13,8 @@ export type ProductMedia = {
   readonly url: string;
   readonly alt: string;
   readonly damAssetId?: string;
+  /** Optional high-resolution URL for Amazon magnifier (2000–6000px). */
+  readonly zoomUrl?: string;
 };
 
 export type ProductVariant = {
@@ -22,6 +26,9 @@ export type ProductVariant = {
   readonly specOverrides?: readonly { label: string; value: string }[];
   readonly priceDeltaPkr?: number;
 };
+
+/** Re-export media architecture types for catalogue authors. */
+export type { SpinSequence, ProductModelAssets } from "../media/types";
 
 export type CatalogueProduct = {
   readonly id: string;
@@ -38,7 +45,15 @@ export type CatalogueProduct = {
   readonly taxonomySlugs: readonly string[];
   readonly tags: readonly string[];
   readonly media: readonly ProductMedia[];
+  /**
+   * Legacy flat 360 frame list (single row). Prefer `spinSequence` for
+   * multi-row / configurable sequences. Still supported for compatibility.
+   */
   readonly spinFrames?: readonly string[];
+  /** Preferred 360° definition — frame count and rows are data-driven. */
+  readonly spinSequence?: SpinSequence;
+  /** Future GLB/GLTF/USDZ — detected by UI, not rendered in RC8.5. */
+  readonly models?: ProductModelAssets;
   readonly variants: readonly ProductVariant[];
   readonly warranty?: string;
   readonly availability?: string;
@@ -96,7 +111,11 @@ export const CATALOGUE: readonly CatalogueProduct[] = [
         alt: "Meridian material study film",
       },
     ],
-    spinFrames: [IMG.lounge, IMG.catalog2, IMG.catalog1, IMG.finish, IMG.wood, IMG.catalog3, IMG.lounge, IMG.catalog2],
+    spinFrames: meridianSofaDemoSpinSequence().rows[0]!.frames,
+    // Temporary isolated demo sequence (72 matching yaw frames). Replace URLs with
+    // production /product-media/.../frame*.jpg without changing the viewer engine.
+    spinSequence: meridianSofaDemoSpinSequence(),
+    models: {},
     variants: [
       { id: "sand", label: "Sand", group: "color", swatch: "#c4b59a", mediaIds: ["m1", "m2"] },
       { id: "ink", label: "Ink", group: "color", swatch: "#2a3238", mediaIds: ["m3", "m4"], priceDeltaPkr: 12000 },

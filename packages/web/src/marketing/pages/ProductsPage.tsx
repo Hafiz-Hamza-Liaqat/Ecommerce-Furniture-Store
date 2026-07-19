@@ -5,6 +5,10 @@ import { Breadcrumbs } from "../components/Breadcrumbs";
 import { ProductGallery } from "../components/ProductGallery";
 import { ProductSpinViewer } from "../components/ProductSpinViewer";
 import {
+  hasSpinSequence,
+  resolveProductMedia,
+} from "../media";
+import {
   CATALOGUE,
   formatPkr,
   getCatalogueProduct,
@@ -195,13 +199,11 @@ export function ProductDetailPage() {
   const activeMediaIds = product.variants
     .filter((v) => selected.has(v.id) && v.mediaIds?.length)
     .flatMap((v) => v.mediaIds ?? []);
-  const media =
-    activeMediaIds.length > 0
-      ? product.media.filter((m) => activeMediaIds.includes(m.id) || m.type === "video")
-      : product.media;
-  const galleryItems = media
-    .filter((m) => m.type === "image" || m.type === "video")
-    .map((m) => ({ id: m.id, type: m.type as "image" | "video", url: m.url, alt: m.alt }));
+  const productMedia = resolveProductMedia(product, {
+    variantMediaIds: activeMediaIds.length > 0 ? activeMediaIds : null,
+  });
+  const galleryItems = productMedia.gallery;
+  const hasSpin = hasSpinSequence(productMedia);
 
   const specMap = new Map(product.specs.map((s) => [s.label, s.value]));
   for (const v of product.variants) {
@@ -236,8 +238,15 @@ export function ProductDetailPage() {
         path={`/products/${product.id}`}
         image={product.image}
         type="product"
+        organizationSchema={false}
+        breadcrumbs={[
+          { name: "Home", path: "/" },
+          { name: "Furniture", path: "/furniture" },
+          { name: "Products", path: "/products" },
+          { name: product.name, path: `/products/${product.id}` },
+        ]}
+        extraJsonLd={[jsonLd]}
       />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <article className="site-pdp">
         <div className="site-pdp__gallery">
           <Breadcrumbs
@@ -263,7 +272,7 @@ export function ProductDetailPage() {
               aria-selected={tab === "spin"}
               className={tab === "spin" ? "is-active" : ""}
               onClick={() => setTab("spin")}
-              disabled={!product.spinFrames?.length}
+              disabled={!hasSpin}
             >
               360° Viewer
             </button>
@@ -271,7 +280,12 @@ export function ProductDetailPage() {
           {tab === "gallery" ? (
             <ProductGallery items={galleryItems} productName={product.name} />
           ) : (
-            <ProductSpinViewer frames={product.spinFrames ?? []} productName={product.name} />
+            <ProductSpinViewer
+              sequence={productMedia.spin}
+              {...(product.spinFrames ? { frames: product.spinFrames } : {})}
+              models={productMedia.models}
+              productName={product.name}
+            />
           )}
         </div>
         <div className="site-pdp__info">

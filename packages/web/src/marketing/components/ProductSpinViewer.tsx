@@ -1,54 +1,38 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusTrap } from "../../a11y/useFocusTrap";
+import {
+  hasModelAssets,
+  normalizeSpinSequence,
+  useImageSequenceEngine,
+  type ProductModelAssets,
+  type SpinSequence,
+} from "../media";
 
 type Props = {
-  readonly frames: readonly string[];
+  readonly frames?: readonly string[];
+  readonly sequence?: SpinSequence | null;
+  readonly models?: ProductModelAssets;
   readonly productName: string;
 };
 
 /**
- * 360° Product Viewer — image-sequence spin with inertia.
- * data-future-glb keeps a GLB/3D replacement hook without redesign.
+ * 360° image-sequence viewer — configurable frame count, multi-row ready,
+ * auto-spin of the current product only. GLB/USDZ are capability hooks only.
  */
-export function ProductSpinViewer({ frames, productName }: Props) {
-  const [index, setIndex] = useState(0);
-  const [auto, setAuto] = useState(false);
+export function ProductSpinViewer({
+  frames,
+  sequence,
+  models,
+  productName,
+}: Props) {
+  const resolved = useMemo(
+    () => normalizeSpinSequence(sequence) ?? normalizeSpinSequence(frames),
+    [sequence, frames],
+  );
+  const engine = useImageSequenceEngine(resolved);
   const [fullscreen, setFullscreen] = useState(false);
-  const [ready, setReady] = useState(false);
-  const dragging = useRef(false);
-  const lastX = useRef(0);
-  const velocity = useRef(0);
-  const inertiaRaf = useRef<number | null>(null);
-  const indexRef = useRef(0);
-
-  useEffect(() => {
-    indexRef.current = index;
-  }, [index]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let loaded = 0;
-    setReady(false);
-    for (const url of frames) {
-      const img = new Image();
-      img.onload = img.onerror = () => {
-        loaded += 1;
-        if (!cancelled && loaded >= frames.length) setReady(true);
-      };
-      img.src = url;
-    }
-    if (frames.length === 0) setReady(true);
-    return () => {
-      cancelled = true;
-    };
-  }, [frames]);
-
-  useEffect(() => {
-    if (!auto || frames.length < 2) return;
-    const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % frames.length);
-    }, 100);
-    return () => window.clearInterval(id);
-  }, [auto, frames.length]);
+  const closeFs = useCallback(() => setFullscreen(false), []);
+  const fsTrapRef = useFocusTrap(fullscreen, closeFs);
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -59,158 +43,146 @@ export function ProductSpinViewer({ frames, productName }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [fullscreen]);
 
-  useEffect(() => {
-    return () => {
-      if (inertiaRaf.current != null) cancelAnimationFrame(inertiaRaf.current);
-    };
-  }, []);
+  const modelHint = hasModelAssets(models ?? {})
+    ? "3D model assets detected (GLB/GLTF/USDZ) — renderer reserved for a future release."
+    : null;
 
-  function stopInertia() {
-    if (inertiaRaf.current != null) {
-      cancelAnimationFrame(inertiaRaf.current);
-      inertiaRaf.current = null;
-    }
-    velocity.current = 0;
-  }
-
-  function startInertia() {
-    if (frames.length < 2) return;
-    stopInertia();
-    const tick = () => {
-      if (Math.abs(velocity.current) < 0.15) {
-        velocity.current = 0;
-        inertiaRaf.current = null;
-        return;
-      }
-      const step = velocity.current > 0 ? 1 : -1;
-      setIndex((i) => (i + step + frames.length) % frames.length);
-      velocity.current *= 0.92;
-      inertiaRaf.current = requestAnimationFrame(tick);
-    };
-    inertiaRaf.current = requestAnimationFrame(tick);
-  }
-
-  function scrub(clientX: number) {
-    if (frames.length < 2) return;
-    const delta = clientX - lastX.current;
-    if (Math.abs(delta) < 6) return;
-    lastX.current = clientX;
-    velocity.current = delta / 8;
-    setIndex((i) => (i + (delta > 0 ? 1 : -1) + frames.length) % frames.length);
-  }
-
-  function resetView() {
-    stopInertia();
-    setAuto(false);
-    setIndex(0);
-  }
-
-  if (!frames.length) {
+  if (!resolved || engine.frameCount === 0) {
     return (
       <p className="cx-spin__empty" role="status">
         360° frames are not available for this product yet.
+        {modelHint ? ` ${modelHint}` : ""}
       </p>
     );
   }
-
-  const frame = frames[index] ?? frames[0]!;
 
   const stage = (
     <div
       className="cx-spin__stage"
       role="img"
-      aria-label={`${productName} 360 degree view, frame ${index + 1} of ${frames.length}`}
+      aria-label={`${productName} 360 degree view, frame ${engine.frameIndex + 1} of ${engine.frameCount}${
+        engine.rowCount > 1 ? `, elevation ${engine.rowIndex + 1} of ${engine.rowCount}` : ""
+      }`}
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "ArrowRight") setIndex((i) => (i + 1) % frames.length);
-        if (e.key === "ArrowLeft") setIndex((i) => (i - 1 + frames.length) % frames.length);
-        if (e.key === "Home" || e.key === "0") resetView();
+        if (e.key === "ArrowRight") {
+          engine.pauseInteraction();
+          engine.stepFrame(1);
+        }
+        if (e.key === "ArrowLeft") {
+          engine.pauseInteraction();
+          engine.stepFrame(-1);
+        }
+        if (e.key === "ArrowDown" && engine.rowCount > 1) {
+          engine.pauseInteraction();
+          engine.stepRow(1);
+        }
+        if (e.key === "ArrowUp" && engine.rowCount > 1) {
+          engine.pauseInteraction();
+          engine.stepRow(-1);
+        }
+        if (e.key === "Home" || e.key === "0") engine.reset();
         if (e.key === "Escape" && fullscreen) setFullscreen(false);
+        if (e.key.toLowerCase() === "a") engine.toggleAutoSpin();
       }}
-      onMouseDown={(e) => {
-        stopInertia();
-        dragging.current = true;
-        lastX.current = e.clientX;
-        setAuto(false);
-      }}
-      onMouseMove={(e) => {
-        if (!dragging.current) return;
-        scrub(e.clientX);
-      }}
-      onMouseUp={() => {
-        if (!dragging.current) return;
-        dragging.current = false;
-        startInertia();
-      }}
-      onMouseLeave={() => {
-        if (!dragging.current) return;
-        dragging.current = false;
-        startInertia();
-      }}
+      onMouseDown={(e) => engine.beginDrag(e.clientX, e.clientY)}
+      onMouseMove={(e) => engine.moveDrag(e.clientX, e.clientY)}
+      onMouseUp={() => engine.endDrag()}
+      onMouseLeave={() => engine.endDrag()}
       onTouchStart={(e) => {
-        stopInertia();
-        dragging.current = true;
-        lastX.current = e.touches[0]?.clientX ?? 0;
-        setAuto(false);
+        const t = e.touches[0];
+        if (t) engine.beginDrag(t.clientX, t.clientY);
       }}
       onTouchMove={(e) => {
-        if (!dragging.current) return;
-        scrub(e.touches[0]?.clientX ?? lastX.current);
+        const t = e.touches[0];
+        if (t) engine.moveDrag(t.clientX, t.clientY);
       }}
-      onTouchEnd={() => {
-        dragging.current = false;
-        startInertia();
-      }}
+      onTouchEnd={() => engine.endDrag()}
     >
-      {!ready ? (
+      {!engine.ready ? (
         <div className="cx-spin__spinner" role="status" aria-live="polite">
           <span className="cx-spin__spinner-ring" aria-hidden="true" />
           <span>Loading 360°</span>
         </div>
       ) : null}
-      <img
-        src={frame}
-        alt=""
-        draggable={false}
-        className={`cx-spin__img${ready ? " is-ready" : ""}`}
-      />
-      <p className="cx-spin__hint">Drag to rotate · inertia · Esc exits fullscreen · Reset available</p>
+      {engine.currentUrl ? (
+        <img
+          src={engine.currentUrl}
+          alt=""
+          draggable={false}
+          className={`cx-spin__img${engine.ready ? " is-ready" : ""}`}
+        />
+      ) : null}
+      <p className="cx-spin__hint">
+        Drag to rotate · Auto-spin this product · Esc exits fullscreen
+        {engine.rowCount > 1 ? " · ↑↓ elevation" : ""}
+      </p>
+      <span className="cx-spin__meta" aria-live="polite">
+        Frame {engine.frameIndex + 1}/{engine.frameCount}
+        {engine.rowCount > 1 ? ` · Row ${engine.rowIndex + 1}/${engine.rowCount}` : ""}
+      </span>
     </div>
   );
 
   return (
-    <div className="cx-spin" data-viewer="spin-sequence" data-future-glb="ready">
+    <div
+      className="cx-spin"
+      data-viewer="spin-sequence"
+      data-frame-count={engine.frameCount}
+      data-row-count={engine.rowCount}
+      data-future-glb={models?.glb ? "available" : "ready"}
+      data-future-usdz={models?.usdz ? "available" : "ready"}
+      data-future-gltf={models?.gltf ? "available" : "ready"}
+    >
       <div className="cx-spin__toolbar">
         <button
           type="button"
           className="site-btn site-btn--ghost"
-          aria-pressed={auto}
-          onClick={() => {
-            stopInertia();
-            setAuto((v) => !v);
-          }}
+          aria-pressed={engine.autoSpin}
+          disabled={engine.reducedMotion}
+          title={
+            engine.reducedMotion
+              ? "Auto-spin disabled by reduced-motion preference"
+              : "Rotate this product’s frame sequence"
+          }
+          onClick={() => engine.toggleAutoSpin()}
         >
-          {auto ? "Pause auto-spin" : "Auto-spin"}
+          {engine.autoSpin ? "Pause auto-spin" : "Auto-spin"}
         </button>
-        <button type="button" className="site-btn site-btn--ghost" onClick={resetView}>
+        <button type="button" className="site-btn site-btn--ghost" onClick={() => engine.reset()}>
           Reset
         </button>
-        <button type="button" className="site-btn site-btn--ghost" onClick={() => setFullscreen(true)}>
+        <button
+          type="button"
+          className="site-btn site-btn--ghost"
+          onClick={() => setFullscreen(true)}
+        >
           Fullscreen
         </button>
       </div>
+      {modelHint ? (
+        <p className="cx-spin__model-hint" role="note">
+          {modelHint}
+        </p>
+      ) : null}
       {stage}
       {fullscreen ? (
         <div
+          ref={fsTrapRef}
           className="cx-gallery__fs"
           role="dialog"
           aria-modal="true"
           aria-label="360 fullscreen"
+          tabIndex={-1}
           onClick={() => setFullscreen(false)}
         >
           <div className="cx-gallery__fs-inner" onClick={(e) => e.stopPropagation()}>
             {stage}
-            <button type="button" className="site-btn site-btn--primary" onClick={() => setFullscreen(false)}>
+            <button
+              type="button"
+              className="site-btn site-btn--primary"
+              onClick={() => setFullscreen(false)}
+            >
               Close (Esc)
             </button>
           </div>
