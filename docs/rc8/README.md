@@ -2,7 +2,21 @@
 
 - **Created:** 2026-07-19
 - **Last Updated:** 2026-07-19
-- **Status:** RC8.0 / RC8.0A audits complete; **RC8.1 committed**; **RC8.2 Enterprise Workspace implemented — awaiting review (not committed)**
+- **Status:** **COMPLETE AND FROZEN**
+- **Freeze rule:** Do not modify RC8 features except for bug fixes. New capabilities belong in a later release candidate.
+
+## Freeze
+
+RC8 (8.1–8.5) is the stable baseline for customer experience, enterprise workspace polish, production UI quality, release readiness packaging, and premium product media.
+
+| Constraint | Rule |
+|---|---|
+| Feature work | **Frozen** — no RC8 feature expansion |
+| Bug fixes | Allowed (targeted only) |
+| Architecture | Policy · Workflow · Approval · RC7.1 · CQRS ownership **unchanged** |
+| Next work | Start a new RC / phase only after explicit approval |
+
+Regression audit: [`docs/release/RC8.1-8.5-regression-audit.md`](../release/RC8.1-8.5-regression-audit.md)
 
 ## Document map
 
@@ -20,7 +34,7 @@ See files under `docs/rc8/` (`01`–`12` + README) and zip archive.
 | Priority matrix | `docs/release/RC8.0A-priority-matrix.md` |
 | Recommendations | `docs/release/RC8.0A-recommendations.md` |
 
-### RC8.1 implementation (committed)
+### RC8.1 — Customer Experience (committed)
 
 | Doc | Path |
 |---|---|
@@ -31,7 +45,7 @@ See files under `docs/rc8/` (`01`–`12` + README) and zip archive.
 | Test summary | `docs/release/RC8.1-test-summary.md` |
 | Polish reports | `docs/release/RC8.1-customer-polish-*.md` |
 
-### RC8.2 implementation (this phase — review)
+### RC8.2 — Enterprise Workspace (committed)
 
 | Doc | Path |
 |---|---|
@@ -40,15 +54,57 @@ See files under `docs/rc8/` (`01`–`12` + README) and zip archive.
 | Audit | `docs/release/RC8.2-audit-report.md` |
 | Test summary | `docs/release/RC8.2-test-summary.md` |
 
+### RC8.3 — Production Quality (committed)
+
+| Doc | Path |
+|---|---|
+| Production quality | `docs/release/RC8.3-production-quality-report.md` |
+| Accessibility | `docs/release/RC8.3-accessibility-report.md` |
+| Performance | `docs/release/RC8.3-performance-report.md` |
+| Responsive | `docs/release/RC8.3-responsive-report.md` |
+| Verification | `docs/release/RC8.3-verification-report.md` |
+| Test summary | `docs/release/RC8.3-test-summary.md` |
+
+### RC8.4 — Release Readiness (committed)
+
+| Doc | Path |
+|---|---|
+| Release readiness | `docs/release/RC8.4-release-readiness-report.md` |
+| Security review | `docs/release/RC8.4-security-review.md` |
+| Performance review | `docs/release/RC8.4-performance-review.md` |
+| UX consistency | `docs/release/RC8.4-ux-consistency-review.md` |
+| Final product audit | `docs/release/RC8.4-final-product-audit.md` |
+| Release candidate | `docs/release/RC8.4-release-candidate.md` |
+| Production follow-up | `docs/release/production-readiness-followup.md` |
+
+### RC8.5 — Premium Product Experience (committed)
+
+| Doc | Path |
+|---|---|
+| Premium product experience | `docs/release/RC8.5-premium-product-experience-report.md` |
+| Amazon viewer verification | `docs/release/RC8.5-amazon-viewer-verification-report.md` |
+| 360° viewer verification | `docs/release/RC8.5-360-viewer-verification-report.md` |
+| Media architecture | `docs/release/RC8.5-media-architecture-report.md` |
+| Responsive | `docs/release/RC8.5-responsive-report.md` |
+| Accessibility | `docs/release/RC8.5-accessibility-report.md` |
+| Test summary | `docs/release/RC8.5-test-summary.md` |
+| Runtime verification | `docs/release/RC8.5-runtime-verification-report.md` |
+| Final polish | `docs/release/RC8.5-final-polish-report.md` |
+| Amazon magnifier validation | `docs/release/Amazon-Magnifier-Validation.md` |
+| 360 viewer validation | `docs/release/360-Viewer-Validation.md` |
+| Final test summary | `docs/release/RC8.5-final-test-summary.md` |
+
 ## Execution roadmap
 
 | Release | Focus | Status |
 |---|---|---|
-| **RC8.1** | Customer Experience | **Committed** |
-| **RC8.2** | Enterprise Workspace | **Implemented — review (not committed)** |
-| **RC8.3** | Production Quality | Not started |
-| **RC8.4** | Release Readiness | Not started |
+| **RC8.1** | Customer Experience | **Complete (committed)** |
+| **RC8.2** | Enterprise Workspace | **Complete (committed)** |
+| **RC8.3** | Production Quality | **Complete (committed)** |
+| **RC8.4** | Release Readiness | **Complete (committed)** |
+| **RC8.5** | Premium Product Experience | **Complete (committed)** |
+| **RC8** | Full track | **COMPLETE AND FROZEN** |
 
 ## Architecture constraints
 
-Policy · Workflow · Approval · RC7.1 · CQRS ownership unchanged. Do not start RC8.3 until RC8.2 is explicitly approved and committed.
+Policy · Workflow · Approval · RC7.1 · CQRS ownership unchanged.

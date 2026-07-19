@@ -7,3 +7,4 @@ dist/
 packages/web/playwright-report/
 packages/web/test-results/
 docs/release/lighthouse/*.json
+packages/web/public/product-media/**/_source/
