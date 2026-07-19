@@ -7,6 +7,7 @@ import { COLLECTIONS, IMG } from "../data/content";
 import { findTaxonomyBySlug, taxonomyPath, FURNITURE_TAXONOMY } from "../data/taxonomy";
 import { getRecentlyViewed, toggleCompare, toggleWishlist, getCompareIds, getWishlistIds } from "../cx/stores";
 import { useFocusTrap } from "../../a11y/useFocusTrap";
+import { useReveal } from "../useReveal";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name" | "newest";
 
@@ -33,6 +34,7 @@ function uniqueSorted(values: readonly (string | undefined)[]): string[] {
 }
 
 export function FurnitureHubPage() {
+  useReveal();
   return (
     <>
       <Seo
@@ -51,13 +53,15 @@ export function FurnitureHubPage() {
         <h1>All Furniture</h1>
         <p>Explore rooms and product families — every destination is a live category journey.</p>
       </header>
-      <div className="site-section site-category-grid">
+      <div className="site-section site-reveal">
+        <div className="site-category-grid cx-stagger">
         {FURNITURE_TAXONOMY.map((n) => (
-          <Link key={n.id} to={`/furniture/${n.slug}`} className="site-category cx-motion-card">
+          <Link key={n.id} to={`/furniture/${n.slug}`} className="site-category">
             <img src={n.image ?? IMG.lounge} alt={`${n.name} furniture`} loading="lazy" width={640} height={480} />
             <span>{n.name}</span>
           </Link>
         ))}
+        </div>
       </div>
     </>
   );
@@ -85,13 +89,6 @@ export function CategoryPage() {
   const [wish, setWish] = useState(getWishlistIds);
   const [cmp, setCmp] = useState(getCompareIds);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [booting, setBooting] = useState(true);
-
-  useEffect(() => {
-    setBooting(true);
-    const t = window.setTimeout(() => setBooting(false), 320);
-    return () => window.clearTimeout(t);
-  }, [slug]);
 
   const path = taxonomyPath(slug);
 
@@ -154,11 +151,26 @@ export function CategoryPage() {
 
   const total = products.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const pageItems = products.slice((page - 1) * pageSize, page * pageSize);
+  const safePage = Math.min(page, pageCount);
+  const pageItems = products.slice((safePage - 1) * pageSize, safePage * pageSize);
   const recent = getRecentlyViewed()
     .map((id) => CATALOGUE.find((p) => p.id === id))
     .filter(Boolean)
     .slice(0, 4) as CatalogueProduct[];
+
+  // Catalogue is sync — reveal after products mount (no artificial boot delay).
+  useReveal([slug, safePage, sort, q, view, pageItems.length, total]);
+
+  // Drop stale out-of-range page query when filters shrink the result set.
+  useEffect(() => {
+    if (page === safePage) return;
+    const next = new URLSearchParams(params);
+    if (safePage <= 1) next.delete("page");
+    else next.set("page", String(safePage));
+    setParams(next, { replace: true });
+    // Intentionally omit `params` — only react when page bounds change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, safePage, setParams]);
 
   function patchParams(mutator: (next: URLSearchParams) => void) {
     const next = new URLSearchParams(params);
@@ -384,7 +396,10 @@ export function CategoryPage() {
         <h2>Featured collections</h2>
         <div className="site-filter-row">
           {COLLECTIONS.map((c) => (
-            <Link key={c.id} to={`?collection=${c.id}`}>
+            <Link
+              key={c.id}
+              to={`?collection=${encodeURIComponent(c.name.toLowerCase())}`}
+            >
               {c.name}
             </Link>
           ))}
@@ -446,9 +461,7 @@ export function CategoryPage() {
             </div>
           </div>
 
-          {booting ? (
-            <CategoryGridSkeleton />
-          ) : pageItems.length === 0 ? (
+          {pageItems.length === 0 ? (
             <div className="cx-empty" role="status">
               <h2>No products match</h2>
               <p>Try clearing filters or browse related categories.</p>
@@ -457,17 +470,17 @@ export function CategoryPage() {
               </button>
             </div>
           ) : (
-            <div className={`site-product-grid${view === "list" ? " is-list" : ""}`}>
+            <div className={`site-product-grid cx-stagger site-product-grid--catalogue${view === "list" ? " is-list" : ""}`}>
               {pageItems.map((p) => (
-                <article key={p.id} className="site-product cx-motion-card">
+                <article key={p.id} className="site-product">
                   <Link to={`/products/${p.id}`}>
-                    <img src={p.image} alt={p.name} loading="lazy" />
-                    <div>
+                    <img src={p.image} alt={p.name} loading="lazy" decoding="async" />
+                    <div className="site-product__body">
                       <p className="site-product__meta">
                         {p.category} · {p.collection}
                       </p>
-                      <h2>{p.name}</h2>
-                      <p>{p.summary}</p>
+                      <h2 className="site-product__title">{p.name}</h2>
+                      <p className="site-product__summary">{p.summary}</p>
                       <p className="site-product__price">{p.priceFrom}</p>
                       {p.rating ? (
                         <p className="cx-meta-line">★ {p.rating.toFixed(1)}</p>
@@ -504,7 +517,7 @@ export function CategoryPage() {
                 <button
                   key={n}
                   type="button"
-                  className={n === page ? "is-active" : ""}
+                  className={n === safePage ? "is-active" : ""}
                   onClick={() => {
                     const next = new URLSearchParams(params);
                     next.set("page", String(n));
@@ -546,9 +559,9 @@ export function CategoryPage() {
       {recent.length ? (
         <section className="site-section" aria-labelledby="recent-title">
           <h2 id="recent-title">Recently viewed</h2>
-          <div className="site-product-grid">
+          <div className="site-product-grid cx-stagger">
             {recent.map((p) => (
-              <Link key={p.id} to={`/products/${p.id}`} className="site-product cx-motion-card">
+              <Link key={p.id} to={`/products/${p.id}`} className="site-product">
                 <img src={p.image} alt={p.name} loading="lazy" />
                 <div>
                   <h3>{p.name}</h3>
@@ -622,16 +635,3 @@ function FiltersDrawer({
   );
 }
 
-function CategoryGridSkeleton() {
-  return (
-    <div className="cx-skeleton-grid" aria-live="polite" aria-label="Loading products">
-      {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className="cx-skeleton-card">
-          <div className="cx-skeleton-card__media" />
-          <div className="cx-skeleton-card__line" />
-          <div className="cx-skeleton-card__line cx-skeleton-card__line--short" />
-        </div>
-      ))}
-    </div>
-  );
-}

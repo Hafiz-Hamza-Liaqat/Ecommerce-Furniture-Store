@@ -86,9 +86,9 @@ export function HomePage() {
           <p className="site-eyebrow">Categories</p>
           <h2 id="cat-title">Interactive product categories</h2>
         </div>
-        <div className="site-category-grid">
+        <div className="site-category-grid cx-stagger">
           {CATEGORIES.map((c) => (
-            <Link key={c.id} to={`/furniture/${c.id === "lounge" ? "living-room" : c.id === "workspace" ? "office" : c.id}`} className="site-category cx-hover-lift">
+            <Link key={c.id} to={`/furniture/${c.id === "lounge" ? "living-room" : c.id === "workspace" ? "office" : c.id}`} className="site-category">
               <img src={c.image} alt={c.name} loading="lazy" />
               <span>{c.name}</span>
             </Link>
@@ -101,7 +101,7 @@ export function HomePage() {
           <p className="site-eyebrow">Collections</p>
           <h2 id="feat-title">Featured furniture</h2>
         </div>
-        <div className="site-product-grid">
+        <div className="site-product-grid cx-stagger">
           {PRODUCTS.filter((p) => p.featured).map((p) => (
             <Link key={p.id} to={`/products/${p.id}`} className="site-product">
               <img src={p.image} alt={p.name} loading="lazy" />
@@ -124,7 +124,7 @@ export function HomePage() {
             View portfolio
           </Link>
         </div>
-        <div className="site-project-grid">
+        <div className="site-project-grid cx-stagger">
           {PROJECTS.map((p) => (
             <Link key={p.id} to={`/projects/${p.id}`} className="site-project">
               <img src={p.image} alt={p.title} loading="lazy" />

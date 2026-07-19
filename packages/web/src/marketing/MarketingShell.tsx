@@ -20,6 +20,8 @@ export function MarketingShell() {
   const [showTop, setShowTop] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const menuId = useId();
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const drawerTrapRef = useFocusTrap(menuOpen, closeMenu);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -42,6 +44,15 @@ export function MarketingShell() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -70,6 +81,11 @@ export function MarketingShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const closeNavSurfaces = () => {
+    setMegaOpen(false);
+    setMenuOpen(false);
+  };
+
   return (
     <div className="site" data-site-theme={theme === "dark" ? "dark" : "light"}>
       <a className="site-skip" href="#site-main">
@@ -86,130 +102,165 @@ export function MarketingShell() {
             className="site-nav-toggle"
             aria-expanded={menuOpen}
             aria-controls={menuId}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((v) => !v)}
           >
-            Menu
+            <span className="site-nav-toggle__icon" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
           </button>
-          <nav
-            id={menuId}
-            className={`site-nav${menuOpen ? " is-open" : ""}`}
-            aria-label="Primary"
+          <button
+            type="button"
+            className={`site-nav-backdrop${menuOpen ? " is-open" : ""}`}
+            aria-label="Close menu"
+            tabIndex={menuOpen ? 0 : -1}
+            onClick={closeMenu}
+          />
+          <div
+            ref={drawerTrapRef}
+            className={`site-nav-drawer${menuOpen ? " is-open" : ""}`}
+            tabIndex={-1}
           >
-            <div
-              className="site-nav__item"
-              onMouseEnter={() => {
-                window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
-                (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
-                  () => setMegaOpen(true),
-                  100,
-                );
-              }}
-              onMouseLeave={() => {
-                window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
-                (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
-                  () => setMegaOpen(false),
-                  160,
-                );
-              }}
-            >
-              <button
-                type="button"
-                className="site-nav__link"
-                aria-expanded={megaOpen}
-                aria-haspopup="true"
-                onClick={() => setMegaOpen((v) => !v)}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setMegaOpen(true);
-                  }
-                  if (e.key === "Escape") {
-                    e.preventDefault();
-                    setMegaOpen(false);
-                  }
-                }}
-              >
-                Furniture
+            <div className="site-nav-drawer__head">
+              <p>Menu</p>
+              <button type="button" className="site-btn site-btn--ghost" onClick={closeMenu}>
+                Close
               </button>
-              {megaOpen ? (
-                <div className="site-mega site-mega--furniture" role="region" aria-label="Furniture menu">
-                  {FURNITURE_TAXONOMY.map((col) => (
-                    <div key={col.id} className="site-mega__col">
-                      <p className="site-mega__label">
-                        <Link to={`/furniture/${col.slug}`} onClick={() => setMegaOpen(false)}>
-                          {col.name}
-                        </Link>
-                      </p>
-                      {(col.children ?? []).map((c) => (
-                        <Link
-                          key={c.id}
-                          to={`/furniture/${col.slug}/${c.slug}`}
-                          onClick={() => setMegaOpen(false)}
-                        >
-                          {c.name}
-                        </Link>
-                      ))}
-                    </div>
-                  ))}
-                  <div className="site-mega__feature">
-                    <p>All furniture</p>
-                    <Link to="/furniture" className="site-btn site-btn--ghost" onClick={() => setMegaOpen(false)}>
-                      Browse hub
-                    </Link>
-                    <Link to="/#booklet" className="site-btn site-btn--ghost" onClick={() => setMegaOpen(false)}>
-                      Digital booklet
-                    </Link>
-                    <Link to="/planner" className="site-btn site-btn--primary" onClick={() => setMegaOpen(false)}>
-                      Budget planner
-                    </Link>
-                  </div>
-                </div>
-              ) : null}
             </div>
-            <NavLink to="/products" className="site-nav__link">
-              Products
-            </NavLink>
-            <NavLink to="/projects" className="site-nav__link">
-              Projects
-            </NavLink>
-            <NavLink to="/manufacturing" className="site-nav__link">
-              Manufacturing
-            </NavLink>
-            <NavLink to="/about" className="site-nav__link">
-              Company
-            </NavLink>
-            <NavLink to="/consultant" className="site-nav__link">
-              Consultant
-            </NavLink>
-            <NavLink to="/wishlist" className="site-nav__link" aria-label="Wishlist">
-              Wishlist
-            </NavLink>
-            <NavLink to="/compare" className="site-nav__link" aria-label="Compare">
-              Compare
-            </NavLink>
-            <button
-              type="button"
-              className="site-nav__link"
-              onClick={() => setSearchOpen(true)}
-              aria-haspopup="dialog"
-            >
-              Search
-            </button>
-            <Link to="/quote" className="site-btn site-btn--primary site-nav__cta">
-              Request quote
-            </Link>
-            <Link to="/app" className="site-nav__link site-nav__console">
-              Console
-            </Link>
-            <button
-              type="button"
-              className="site-theme-toggle"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              aria-label="Toggle color theme"
-            >
-              {theme === "dark" ? "Light" : "Dark"}
-            </button>
-          </nav>
+            <nav id={menuId} className="site-nav" aria-label="Primary">
+              <div className="site-nav__group">
+                <p className="site-nav__group-label">Collections</p>
+                <div
+                  className="site-nav__item"
+                  onMouseEnter={() => {
+                    window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
+                    (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
+                      () => setMegaOpen(true),
+                      100,
+                    );
+                  }}
+                  onMouseLeave={() => {
+                    window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
+                    (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
+                      () => setMegaOpen(false),
+                      160,
+                    );
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="site-nav__link"
+                    aria-expanded={megaOpen}
+                    aria-haspopup="true"
+                    onClick={() => setMegaOpen((v) => !v)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setMegaOpen(true);
+                      }
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setMegaOpen(false);
+                      }
+                    }}
+                  >
+                    Furniture
+                  </button>
+                  {megaOpen ? (
+                    <div className="site-mega site-mega--furniture" role="region" aria-label="Furniture menu">
+                      {FURNITURE_TAXONOMY.map((col) => (
+                        <div key={col.id} className="site-mega__col">
+                          <p className="site-mega__label">
+                            <Link to={`/furniture/${col.slug}`} onClick={closeNavSurfaces}>
+                              {col.name}
+                            </Link>
+                          </p>
+                          {(col.children ?? []).map((c) => (
+                            <Link
+                              key={c.id}
+                              to={`/furniture/${col.slug}/${c.slug}`}
+                              onClick={closeNavSurfaces}
+                            >
+                              {c.name}
+                            </Link>
+                          ))}
+                        </div>
+                      ))}
+                      <div className="site-mega__feature">
+                        <p>All furniture</p>
+                        <Link to="/furniture" className="site-btn site-btn--ghost" onClick={closeNavSurfaces}>
+                          Browse hub
+                        </Link>
+                        <Link to="/#booklet" className="site-btn site-btn--ghost" onClick={closeNavSurfaces}>
+                          Digital booklet
+                        </Link>
+                        <Link to="/planner" className="site-btn site-btn--primary" onClick={closeNavSurfaces}>
+                          Budget planner
+                        </Link>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+                <NavLink to="/products" className="site-nav__link" onClick={closeMenu}>
+                  Products
+                </NavLink>
+                <NavLink to="/projects" className="site-nav__link" onClick={closeMenu}>
+                  Projects
+                </NavLink>
+                <NavLink to="/manufacturing" className="site-nav__link" onClick={closeMenu}>
+                  Manufacturing
+                </NavLink>
+              </div>
+              <div className="site-nav__group">
+                <p className="site-nav__group-label">Tools</p>
+                <NavLink to="/consultant" className="site-nav__link" onClick={closeMenu}>
+                  Consultant
+                </NavLink>
+                <NavLink to="/wishlist" className="site-nav__link" aria-label="Wishlist" onClick={closeMenu}>
+                  Wishlist
+                </NavLink>
+                <NavLink to="/compare" className="site-nav__link" aria-label="Compare" onClick={closeMenu}>
+                  Compare
+                </NavLink>
+                <button
+                  type="button"
+                  className="site-nav__link"
+                  onClick={() => {
+                    setSearchOpen(true);
+                    setMenuOpen(false);
+                  }}
+                  aria-haspopup="dialog"
+                >
+                  Search
+                </button>
+              </div>
+              <div className="site-nav__group">
+                <p className="site-nav__group-label">Company</p>
+                <NavLink to="/about" className="site-nav__link" onClick={closeMenu}>
+                  Company
+                </NavLink>
+                <NavLink to="/blog" className="site-nav__link" onClick={closeMenu}>
+                  Journal
+                </NavLink>
+                <Link to="/quote" className="site-btn site-btn--primary site-nav__cta" onClick={closeMenu}>
+                  Request quote
+                </Link>
+                <Link to="/app" className="site-nav__link site-nav__console" onClick={closeMenu}>
+                  Console
+                </Link>
+                <button
+                  type="button"
+                  className="site-theme-toggle"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  aria-label="Toggle color theme"
+                >
+                  {theme === "dark" ? "Light" : "Dark"}
+                </button>
+              </div>
+            </nav>
+          </div>
         </div>
       </header>
 
@@ -264,6 +315,7 @@ export function MarketingShell() {
               ["/careers", "Careers"],
               ["/partners", "Partners"],
               ["/distributors", "Distributors"],
+              ["/blog", "Journal"],
             ]}
           />
           <FooterCol
@@ -284,7 +336,7 @@ export function MarketingShell() {
               ["/products", "Catalogue"],
               ["/projects", "Projects"],
               ["/news", "News"],
-              ["/blog", "Journal"],
+              ["/blog", "Blog"],
               ["/events", "Events"],
               ["/faq", "FAQ"],
               ["/downloads", "Downloads"],

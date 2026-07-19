@@ -43,17 +43,30 @@ export class AppErrorBoundary extends Component<Props, State> {
   override render() {
     if (this.state.error) {
       const message = this.state.error.message;
+      const chunkFail =
+        /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk|error loading dynamically imported module/i.test(
+          message,
+        );
       return (
         <EnterpriseError
-          kind="server"
-          title="Unexpected application error"
+          kind={chunkFail ? "network" : "server"}
+          title={chunkFail ? "Page failed to load" : "Unexpected application error"}
+          {...(chunkFail ? { code: "503" } : {})}
           {...(message
             ? {
-                body: `${message}. You can retry or return to a safe page.`,
+                body: chunkFail
+                  ? "A page module could not be loaded (often after a refresh or update). Retry or hard-refresh the browser."
+                  : `${message}. You can retry or return to a safe page.`,
               }
             : {})}
           homeHref={this.props.homeHref ?? "/"}
-          onRetry={() => this.setState({ error: null })}
+          onRetry={() => {
+            if (chunkFail) {
+              window.location.reload();
+              return;
+            }
+            this.setState({ error: null });
+          }}
         />
       );
     }

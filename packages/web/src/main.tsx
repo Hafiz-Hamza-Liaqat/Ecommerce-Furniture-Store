@@ -18,6 +18,8 @@ import "./styles/integrations.css";
 import "./styles/platform.css";
 import "./styles/marketing.css";
 import "./styles/production-quality.css";
+import "./styles/premium-ui.css";
+import "./styles/blog.css";
 import { registerPlatformServiceWorker, PwaUpdatePrompt } from "./platform/MobileReadiness";
 
 const root = document.getElementById("root");

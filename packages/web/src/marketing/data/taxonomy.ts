@@ -1,7 +1,6 @@
 /**
- * RC8.1 furniture taxonomy — presentation catalogue tree.
+ * RC8.1 / RC9.1.1 furniture taxonomy — presentation catalogue tree.
  * Destinations map to `/furniture/:slug` (and nested `/furniture/:parent/:slug`).
- * Future: replace with Commerce/CMS publish pipeline; do not fork Policy/CQRS.
  */
 
 export type TaxonomyNode = {
@@ -26,6 +25,7 @@ export const FURNITURE_TAXONOMY: readonly TaxonomyNode[] = [
       { id: "sofas", slug: "sofas", name: "Sofas", blurb: "Modular and fixed sofas.", productTags: ["Lounge", "Sofa"] },
       { id: "sectionals", slug: "sectionals", name: "Sectionals", blurb: "Corner and modular sectionals.", productTags: ["Lounge", "Sectional"] },
       { id: "recliners", slug: "recliners", name: "Recliners", blurb: "Reclining lounge seating.", productTags: ["Lounge", "Recliner"] },
+      { id: "lounge-chairs", slug: "lounge-chairs", name: "Lounge Chairs", blurb: "Accent and lounge chairs.", productTags: ["Lounge", "Chair"] },
       { id: "coffee-tables", slug: "coffee-tables", name: "Coffee Tables", blurb: "Centre tables for living rooms.", productTags: ["Table", "Coffee"] },
       { id: "side-tables", slug: "side-tables", name: "Side Tables", blurb: "Occasional side tables.", productTags: ["Table", "Side"] },
       { id: "tv-units", slug: "tv-units", name: "TV Units", blurb: "Media consoles and wall units.", productTags: ["Storage", "TV"] },
@@ -40,7 +40,8 @@ export const FURNITURE_TAXONOMY: readonly TaxonomyNode[] = [
     children: [
       { id: "beds", slug: "beds", name: "Beds", blurb: "Upholstered and platform beds.", productTags: ["Bedroom", "Bed"] },
       { id: "wardrobes", slug: "wardrobes", name: "Wardrobes", blurb: "Wardrobe systems.", productTags: ["Storage", "Wardrobe"] },
-      { id: "bedside-tables", slug: "bedside-tables", name: "Bedside Tables", blurb: "Nightstands.", productTags: ["Table", "Bedside"] },
+      { id: "bedside-tables", slug: "bedside-tables", name: "Nightstands", blurb: "Bedside tables.", productTags: ["Table", "Bedside"] },
+      { id: "dressers", slug: "dressers", name: "Dressers", blurb: "Bedroom dressers and chests.", productTags: ["Bedroom", "Dresser"] },
     ],
   },
   {
@@ -63,10 +64,11 @@ export const FURNITURE_TAXONOMY: readonly TaxonomyNode[] = [
     productTags: ["Workspace", "Office"],
     children: [
       { id: "workstations", slug: "workstations", name: "Workstations", blurb: "Collaborative desks.", productTags: ["Workspace", "Workstation"] },
-      { id: "executive", slug: "executive", name: "Executive Furniture", blurb: "Private office desks and credenzas.", productTags: ["Workspace", "Executive"] },
-      { id: "executive-chairs", slug: "executive-chairs", name: "Executive Chairs", blurb: "Task and executive seating.", productTags: ["Chair", "Executive"] },
-      { id: "conference", slug: "conference", name: "Conference", blurb: "Board and meeting tables.", productTags: ["Workspace", "Conference"] },
-      { id: "reception", slug: "reception", name: "Reception", blurb: "Reception desks and lounge.", productTags: ["Workspace", "Reception"] },
+      { id: "executive", slug: "executive", name: "Executive Desks", blurb: "Private office desks and credenzas.", productTags: ["Workspace", "Executive"] },
+      { id: "executive-chairs", slug: "executive-chairs", name: "Office Chairs", blurb: "Task and executive seating.", productTags: ["Chair", "Executive"] },
+      { id: "conference", slug: "conference", name: "Meeting Tables", blurb: "Board and meeting tables.", productTags: ["Workspace", "Conference"] },
+      { id: "reception", slug: "reception", name: "Reception Desks", blurb: "Reception desks and lounge.", productTags: ["Workspace", "Reception"] },
+      { id: "storage-cabinets", slug: "storage-cabinets", name: "Storage Cabinets", blurb: "Office storage cabinets.", productTags: ["Storage", "Cabinet", "Office"] },
     ],
   },
   {
@@ -76,7 +78,10 @@ export const FURNITURE_TAXONOMY: readonly TaxonomyNode[] = [
     blurb: "Weather-ready seating and tables.",
     productTags: ["Outdoor"],
     children: [
-      { id: "outdoor-seating", slug: "outdoor-seating", name: "Outdoor Seating", blurb: "Terrace lounges.", productTags: ["Outdoor"] },
+      { id: "outdoor-sofas", slug: "outdoor-sofas", name: "Outdoor Sofas", blurb: "Terrace lounges.", productTags: ["Outdoor", "Sofa"] },
+      { id: "outdoor-tables", slug: "outdoor-tables", name: "Outdoor Tables", blurb: "Outdoor dining and café tables.", productTags: ["Outdoor", "Table"] },
+      { id: "outdoor-chairs", slug: "outdoor-chairs", name: "Outdoor Chairs", blurb: "Outdoor dining and lounge chairs.", productTags: ["Outdoor", "Chair"] },
+      { id: "outdoor-seating", slug: "outdoor-seating", name: "Outdoor Seating", blurb: "All outdoor seating.", productTags: ["Outdoor"] },
     ],
   },
   {
@@ -87,7 +92,7 @@ export const FURNITURE_TAXONOMY: readonly TaxonomyNode[] = [
     productTags: ["Storage"],
     children: [
       { id: "cabinets", slug: "cabinets", name: "Cabinets", blurb: "Storage cabinets.", productTags: ["Storage", "Cabinet"] },
-      { id: "shelves", slug: "shelves", name: "Shelves", blurb: "Open shelving.", productTags: ["Storage", "Shelf"] },
+      { id: "shelves", slug: "shelves", name: "Shelving", blurb: "Open shelving.", productTags: ["Storage", "Shelf"] },
       { id: "bookcases", slug: "bookcases", name: "Bookcases", blurb: "Library bookcases.", productTags: ["Storage", "Bookcase"] },
     ],
   },
@@ -99,17 +104,18 @@ export const FURNITURE_TAXONOMY: readonly TaxonomyNode[] = [
     productTags: ["Table", "Dining"],
     children: [
       { id: "console-tables", slug: "console-tables", name: "Console Tables", blurb: "Hall and lobby consoles.", productTags: ["Table", "Console"] },
-      { id: "small-tables", slug: "small-tables", name: "Small Tables", blurb: "Compact occasional tables.", productTags: ["Table", "Side"] },
+      { id: "small-tables", slug: "small-tables", name: "Side Tables", blurb: "Compact occasional tables.", productTags: ["Table", "Side"] },
     ],
   },
   {
     id: "chairs",
     slug: "chairs",
     name: "Chairs",
-    blurb: "Lounge, dining, and task chairs.",
+    blurb: "Lounge, dining, task, and visitor chairs.",
     productTags: ["Chair", "Lounge"],
     children: [
-      { id: "accent-chairs", slug: "accent-chairs", name: "Accent Chairs", blurb: "Statement seating.", productTags: ["Lounge", "Chair"] },
+      { id: "accent-chairs", slug: "accent-chairs", name: "Lounge Chairs", blurb: "Statement lounge seating.", productTags: ["Lounge", "Chair"] },
+      { id: "visitor-chairs", slug: "visitor-chairs", name: "Visitor Chairs", blurb: "Guest and lobby seating.", productTags: ["Chair", "Visitor"] },
     ],
   },
   {
@@ -151,4 +157,16 @@ export function taxonomyPath(slug: string): readonly TaxonomyNode[] {
   const found = findTaxonomyBySlug(slug);
   if (!found) return [];
   return found.parent ? [found.parent, found.node] : [found.node];
+}
+
+/** Leaf nodes that should each have ≥2 demo products. */
+export function taxonomyLeaves(
+  nodes: readonly TaxonomyNode[] = FURNITURE_TAXONOMY,
+): readonly TaxonomyNode[] {
+  const leaves: TaxonomyNode[] = [];
+  for (const node of nodes) {
+    if (node.children?.length) leaves.push(...taxonomyLeaves(node.children));
+    else leaves.push(node);
+  }
+  return leaves;
 }

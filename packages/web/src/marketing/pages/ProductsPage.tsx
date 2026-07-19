@@ -25,6 +25,7 @@ import {
   toggleCompare,
   toggleWishlist,
 } from "../cx/stores";
+import { useReveal } from "../useReveal";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name";
 
@@ -56,6 +57,8 @@ export function ProductsPage() {
     return list;
   }, [category, collection, q, sort]);
 
+  useReveal([category, collection, sort, q, filtered.length]);
+
   return (
     <>
       <Seo
@@ -76,7 +79,7 @@ export function ProductsPage() {
           <Link to="/products">All</Link>
           <Link to="/furniture">Furniture hub</Link>
           {COLLECTIONS.map((c) => (
-            <Link key={c.id} to={`/products?collection=${c.id}`}>
+            <Link key={c.id} to={`/products?collection=${encodeURIComponent(c.name.toLowerCase())}`}>
               {c.name}
             </Link>
           ))}
@@ -119,20 +122,22 @@ export function ProductsPage() {
           <p>Try another filter or open the furniture hub.</p>
         </div>
       ) : (
-        <div className="site-section site-product-grid">
-          {filtered.map((p) => (
-            <Link key={p.id} to={`/products/${p.id}`} className="site-product cx-hover-lift">
-              <img src={p.image} alt={p.name} loading="lazy" />
-              <div>
-                <p className="site-product__meta">
-                  {p.category} · {p.collection}
-                </p>
-                <h2>{p.name}</h2>
-                <p>{p.summary}</p>
-                <p className="site-product__price">{p.priceFrom}</p>
-              </div>
-            </Link>
-          ))}
+        <div className="site-section">
+          <div className="site-product-grid cx-stagger site-product-grid--catalogue">
+            {filtered.map((p) => (
+              <Link key={p.id} to={`/products/${p.id}`} className="site-product">
+                <img src={p.image} alt={p.name} loading="lazy" decoding="async" />
+                <div className="site-product__body">
+                  <p className="site-product__meta">
+                    {p.category} · {p.collection}
+                  </p>
+                  <h2 className="site-product__title">{p.name}</h2>
+                  <p className="site-product__summary">{p.summary}</p>
+                  <p className="site-product__price">{p.priceFrom}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </>
@@ -164,6 +169,7 @@ export function ProductDetailPage() {
   const [tab, setTab] = useState<"gallery" | "spin">("gallery");
   const [wish, setWish] = useState(getWishlistIds);
   const [cmp, setCmp] = useState(getCompareIds);
+  useReveal([productId]);
 
   useEffect(() => {
     if (product) pushRecentlyViewed(product.id);
@@ -388,12 +394,12 @@ export function ProductDetailPage() {
         </div>
       </article>
 
-      <section className="site-section" aria-labelledby="related-title">
+      <section className="site-section site-reveal" aria-labelledby="related-title">
         <h2 id="related-title">Related products</h2>
         <p className="cx-muted">Similar, complementary, frequently paired, and recently viewed.</p>
-        <div className="site-product-grid">
+        <div className="site-product-grid cx-stagger">
           {related.map((p) => (
-            <Link key={p.id} to={`/products/${p.id}`} className="site-product cx-hover-lift">
+            <Link key={p.id} to={`/products/${p.id}`} className="site-product">
               <img src={p.image} alt={p.name} loading="lazy" />
               <div>
                 <h3>{p.name}</h3>

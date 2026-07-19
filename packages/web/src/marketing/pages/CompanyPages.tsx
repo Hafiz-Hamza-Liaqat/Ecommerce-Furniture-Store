@@ -51,8 +51,41 @@ function ContentLayout({
           <p key={para.slice(0, 24)}>{para}</p>
         ))}
         {children}
+        <CompanyExploreNav />
       </div>
     </>
+  );
+}
+
+/** Bottom-of-company navigation — does not replace the site footer. */
+function CompanyExploreNav() {
+  return (
+    <nav className="afh-company-explore" aria-label="Explore company">
+      <h2>Explore</h2>
+      <ul>
+        <li>
+          <Link to="/about">About</Link>
+        </li>
+        <li>
+          <Link to="/story">Our story</Link>
+        </li>
+        <li>
+          <Link to="/leadership">Leadership</Link>
+        </li>
+        <li>
+          <Link to="/news">News</Link>
+        </li>
+        <li>
+          <Link to="/blog">Journal / Blog</Link>
+        </li>
+        <li>
+          <Link to="/careers">Careers</Link>
+        </li>
+        <li>
+          <Link to="/contact">Contact</Link>
+        </li>
+      </ul>
+    </nav>
   );
 }
 
@@ -134,9 +167,6 @@ export function NewsPage() {
       </div>
     </ContentLayout>
   );
-}
-export function BlogPage() {
-  return <ContentLayout page={mustPage("blog")} path="/blog" />;
 }
 export function EventsPage() {
   return <ContentLayout page={mustPage("events")} path="/events" />;

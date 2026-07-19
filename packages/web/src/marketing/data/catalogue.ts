@@ -6,6 +6,7 @@
 import { IMG } from "./content.js";
 import type { ProductModelAssets, SpinSequence } from "../media/types";
 import { meridianSofaDemoSpinSequence } from "../media/meridian-demo-spin";
+import { DEMO_CATALOGUE } from "./catalogue-demo";
 
 export type ProductMedia = {
   readonly id: string;
@@ -72,7 +73,7 @@ function money(pkr: number): string {
   return `PKR ${pkr.toLocaleString("en-PK")}`;
 }
 
-export const CATALOGUE: readonly CatalogueProduct[] = [
+export const FEATURED_CATALOGUE: readonly CatalogueProduct[] = [
   {
     id: "meridian-sofa",
     name: "Meridian Sofa",
@@ -83,8 +84,8 @@ export const CATALOGUE: readonly CatalogueProduct[] = [
     priceFrom: money(285000),
     image: IMG.lounge,
     featured: true,
-    taxonomySlugs: ["living-room", "sofas", "sectionals", "fabric-sofas", "sofas-family"],
-    tags: ["Lounge", "Sofa", "Sectional", "Living"],
+    taxonomySlugs: ["living-room", "sofas", "fabric-sofas", "sofas-family"],
+    tags: ["Lounge", "Sofa", "Living"],
     warranty: "5 years structural",
     availability: "Made to order",
     leadTime: "6–8 weeks",
@@ -187,7 +188,7 @@ export const CATALOGUE: readonly CatalogueProduct[] = [
     priceFrom: money(195000),
     image: IMG.office,
     featured: true,
-    taxonomySlugs: ["office", "executive", "workstations"],
+    taxonomySlugs: ["office", "executive"],
     tags: ["Workspace", "Executive", "Office"],
     warranty: "3 years",
     availability: "Made to order",
@@ -269,7 +270,7 @@ export const CATALOGUE: readonly CatalogueProduct[] = [
     pricePkr: 148000,
     priceFrom: money(148000),
     image: IMG.catalog2,
-    taxonomySlugs: ["living-room", "chairs", "accent-chairs", "executive-chairs"],
+    taxonomySlugs: ["living-room", "chairs", "accent-chairs", "lounge-chairs"],
     tags: ["Lounge", "Chair"],
     warranty: "5 years",
     availability: "In stock samples",
@@ -306,8 +307,8 @@ export const CATALOGUE: readonly CatalogueProduct[] = [
     pricePkr: 265000,
     priceFrom: money(265000),
     image: IMG.catalog1,
-    taxonomySlugs: ["storage", "cabinets", "sideboards", "dining", "tv-units"],
-    tags: ["Storage", "Sideboard", "Cabinet", "TV"],
+    taxonomySlugs: ["dining", "sideboards", "storage"],
+    tags: ["Storage", "Sideboard", "Dining"],
     warranty: "3 years",
     availability: "Made to order",
     leadTime: "5–7 weeks",
@@ -407,6 +408,16 @@ export const CATALOGUE: readonly CatalogueProduct[] = [
     complementaryIds: ["harbor-conference", "grove-lounge"],
   },
 ];
+
+/** Featured heroes + RC9.1.1 demo fill (dedupe by id). */
+export const CATALOGUE: readonly CatalogueProduct[] = (() => {
+  const byId = new Map<string, CatalogueProduct>();
+  for (const p of FEATURED_CATALOGUE) byId.set(p.id, p);
+  for (const p of DEMO_CATALOGUE) {
+    if (!byId.has(p.id)) byId.set(p.id, p);
+  }
+  return [...byId.values()];
+})();
 
 export function getCatalogueProduct(id: string): CatalogueProduct | undefined {
   return CATALOGUE.find((p) => p.id === id);

@@ -1,10 +1,31 @@
 import { lazy, type ComponentType } from "react";
 
+function isChunkLoadError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  return /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk [\d]+ failed|error loading dynamically imported module/i.test(
+    msg,
+  );
+}
+
+/**
+ * Named lazy import with one retry on stale-chunk failures (common after
+ * Vite HMR / redeploy). Hard refresh recovers; this soft-retries first.
+ */
 function lazyNamed<T extends Record<string, unknown>, K extends keyof T>(
   factory: () => Promise<T>,
   name: K,
 ) {
-  return lazy(() => factory().then((m) => ({ default: m[name] as ComponentType })));
+  return lazy(async () => {
+    try {
+      const m = await factory();
+      return { default: m[name] as ComponentType };
+    } catch (err) {
+      if (!isChunkLoadError(err)) throw err;
+      await new Promise((r) => setTimeout(r, 250));
+      const m = await factory();
+      return { default: m[name] as ComponentType };
+    }
+  });
 }
 
 export const LazyDashboardPage = lazyNamed(
@@ -152,7 +173,11 @@ export const LazyDistributorsPage = lazyNamed(
   "DistributorsPage",
 );
 export const LazyNewsPage = lazyNamed(() => import("../marketing/pages/CompanyPages"), "NewsPage");
-export const LazyBlogPage = lazyNamed(() => import("../marketing/pages/CompanyPages"), "BlogPage");
+export const LazyBlogPage = lazyNamed(() => import("../marketing/pages/BlogPages"), "BlogIndexPage");
+export const LazyBlogArticlePage = lazyNamed(
+  () => import("../marketing/pages/BlogPages"),
+  "BlogArticlePage",
+);
 export const LazyEventsPage = lazyNamed(
   () => import("../marketing/pages/CompanyPages"),
   "EventsPage",

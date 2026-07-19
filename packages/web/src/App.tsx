@@ -20,6 +20,7 @@ import {
   LazyCalendarHubPage,
   LazyAboutPage,
   LazyBlogPage,
+  LazyBlogArticlePage,
   LazyCareersPage,
   LazyCertificationsPage,
   LazyCmsPage,
@@ -518,6 +519,7 @@ export function AppRoutes() {
         <Route path="distributors" element={<Lazy><LazyDistributorsPage /></Lazy>} />
         <Route path="news" element={<Lazy><LazyNewsPage /></Lazy>} />
         <Route path="blog" element={<Lazy><LazyBlogPage /></Lazy>} />
+        <Route path="blog/:slug" element={<Lazy><LazyBlogArticlePage /></Lazy>} />
         <Route path="events" element={<Lazy><LazyEventsPage /></Lazy>} />
         <Route path="faq" element={<Lazy><LazyFaqPage /></Lazy>} />
         <Route path="privacy" element={<Lazy><LazyPrivacyPage /></Lazy>} />

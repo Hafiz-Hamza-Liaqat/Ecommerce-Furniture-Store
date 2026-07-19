@@ -12,12 +12,14 @@ import {
   removeWishlist,
 } from "../cx/stores";
 import { useSession } from "../../state/session";
+import { useReveal } from "../useReveal";
 
 export function WishlistPage() {
   const { tokens } = useSession();
   const [ids, setIds] = useState(getWishlistIds);
   const [compareIds, setCompareIds] = useState(getCompareIds);
   const [msg, setMsg] = useState("");
+  useReveal([ids.length]);
 
   return (
     <>
@@ -86,13 +88,14 @@ export function WishlistPage() {
           </Link>
         </div>
       ) : (
-        <div className="site-section site-product-grid">
+        <div className="site-section site-reveal">
+          <div className="site-product-grid cx-stagger">
           {ids.map((id) => {
             const p = getCatalogueProduct(id);
             if (!p) return null;
             const inCompare = compareIds.includes(id);
             return (
-              <article key={id} className="site-product cx-motion-card">
+              <article key={id} className="site-product">
                 <Link to={`/products/${p.id}`}>
                   <img src={p.image} alt={p.name} loading="lazy" />
                   <div>
@@ -129,6 +132,7 @@ export function WishlistPage() {
               </article>
             );
           })}
+          </div>
         </div>
       )}
     </>

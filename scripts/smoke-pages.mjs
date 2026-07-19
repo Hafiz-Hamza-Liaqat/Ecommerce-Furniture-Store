@@ -37,6 +37,7 @@ const marketing = [
   "/distributors",
   "/news",
   "/blog",
+  "/blog/quiet-luxury-in-contract-furniture",
   "/events",
   "/faq",
   "/privacy",
