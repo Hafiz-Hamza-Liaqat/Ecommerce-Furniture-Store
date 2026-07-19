@@ -251,6 +251,43 @@ describe("seedRbacCatalog", () => {
     }
   });
 
+  it("backfills newly catalogued permissions onto an existing admin role", async () => {
+    const store = new InMemoryIdentityStore();
+    const first = await seedRbacCatalog({ store });
+    assert.ok(first.ok);
+
+    const admin = await store.getRoleByCode(null, "admin");
+    assert.ok(admin);
+
+    const hrRead = await store.getPermissionByCode("hr.employees.read");
+    const jobsRead = await store.getPermissionByCode("jobs.jobs.read");
+    assert.ok(hrRead && jobsRead);
+
+    // Simulate a stale DB: drop HR/Jobs grants that older seeds missed.
+    const links = await store.listRolePermissions(admin.id);
+    store.rolePermissions.set(
+      admin.id,
+      links.filter(
+        (link) =>
+          link.permissionId !== hrRead.id && link.permissionId !== jobsRead.id,
+      ),
+    );
+
+    const afterDrop = await store.listRolePermissions(admin.id);
+    assert.equal(
+      afterDrop.some((l) => l.permissionId === hrRead.id),
+      false,
+    );
+
+    const second = await seedRbacCatalog({ store });
+    assert.ok(second.ok);
+    assert.ok(second.value.rolePermissionLinks.created >= 2);
+
+    const restored = await store.listRolePermissions(admin.id);
+    assert.ok(restored.some((l) => l.permissionId === hrRead.id));
+    assert.ok(restored.some((l) => l.permissionId === jobsRead.id));
+  });
+
   it("does not create or modify user role assignments", async () => {
     const store = new InMemoryIdentityStore();
     const result = await seedRbacCatalog({ store });

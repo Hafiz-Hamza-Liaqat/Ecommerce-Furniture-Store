@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Alert, TextField } from "../components/ui";
 import { FormShell } from "../forms/FormShell";
 import { useSession } from "../state/session";
 import { ApiClientError } from "../api/types";
+import { Seo } from "../marketing/Seo";
 
 export function LoginPage() {
   const { api, setSession, setLastCorrelationId } = useSession();
@@ -25,8 +26,14 @@ export function LoginPage() {
         ...(mfaToken ? { mfaToken } : {}),
       });
       setLastCorrelationId(result.correlationId);
+      // Commit session first, then navigate in a transition so AppShell /
+      // permission providers mount against a settled React tree (avoids the
+      // intermittent "Cannot read properties of null (reading 'useState')"
+      // race seen on login → /app under StrictMode + Vite HMR).
       setSession(result.data.user, result.data.tokens);
-      void navigate("/app");
+      startTransition(() => {
+        void navigate("/app", { replace: true });
+      });
     } catch (err) {
       if (err instanceof ApiClientError) {
         setLastCorrelationId(err.correlationId);
@@ -45,10 +52,19 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-layout">
+    <main className="auth-layout">
+      <Seo
+        title="Sign in"
+        description="Sign in to the Artisan Furnish Hub enterprise operations console."
+        path="/login"
+        organizationSchema={false}
+      />
       <div className="panel auth-card">
         <h1>Artisan Furnish Hub</h1>
-        <p>Sign in to the enterprise operations console. Authorization is enforced by backend Policy.</p>
+        <p>
+          Sign in to the enterprise operations console. Authorization is enforced by
+          backend Policy.
+        </p>
         {error ? <Alert tone="danger">{error}</Alert> : null}
         <FormShell
           submitLabel="Sign in"
@@ -56,10 +72,10 @@ export function LoginPage() {
           onSubmit={() => onSubmit()}
           footer={
             <span className="row" style={{ gap: "0.75rem", flexWrap: "wrap" }}>
-              <Link to="/password-reset" className="nav-link" style={{ color: "var(--afh-copper)" }}>
+              <Link to="/password-reset" className="nav-link auth-card__link">
                 Reset password
               </Link>
-              <Link to="/register" className="nav-link" style={{ color: "var(--afh-copper)" }}>
+              <Link to="/register" className="nav-link auth-card__link">
                 Create account
               </Link>
             </span>
@@ -94,6 +110,6 @@ export function LoginPage() {
           ) : null}
         </FormShell>
       </div>
-    </div>
+    </main>
   );
 }

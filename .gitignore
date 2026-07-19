@@ -4,3 +4,6 @@ dist/
 .DS_Store
 .env
 .env.*
+packages/web/playwright-report/
+packages/web/test-results/
+docs/release/lighthouse/*.json

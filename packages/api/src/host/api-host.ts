@@ -3,6 +3,7 @@
  * No business logic.
  */
 
+import { seedRbacCatalog } from "@afh/identity";
 import { seedPlatformDefinitions } from "@afh/platform";
 import type { RouteDefinition } from "../transport/contracts.js";
 import {
@@ -113,6 +114,36 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
       return started;
     },
     async start() {
+      // RC5.1 — idempotent RBAC catalog seed so existing DBs pick up new
+      // permissions (e.g. hr.employees.*, jobs.jobs.*) on admin/system roles.
+      const rbacSeeded = await seedRbacCatalog({
+        store: composition.identity.store,
+        audit: composition.identity.audit,
+      });
+      if (!rbacSeeded.ok) {
+        composition.infrastructure.logger.error(
+          "api.host.rbac_catalog_seed_failed",
+          {
+            service: API_SERVICE_NAME,
+            code: rbacSeeded.error.code,
+            message: rbacSeeded.error.message,
+          },
+        );
+        throw rbacSeeded.error;
+      }
+      composition.infrastructure.logger.info("api.host.rbac_catalog_seeded", {
+        service: API_SERVICE_NAME,
+        catalogVersion: rbacSeeded.value.catalogVersion,
+        permissionsCreated:
+          rbacSeeded.value.canonicalPermissions.created +
+          rbacSeeded.value.platformPermissions.created +
+          rbacSeeded.value.apiPermissions.created +
+          rbacSeeded.value.routePermissions.created +
+          rbacSeeded.value.legacyCompatibilityPermissions.created,
+        rolePermissionLinksCreated:
+          rbacSeeded.value.rolePermissionLinks.created,
+      });
+
       // RC6.1 — register default workflow/approval definitions before serving.
       const seeded = await seedPlatformDefinitions({
         workflow: composition.platform.workflow,
