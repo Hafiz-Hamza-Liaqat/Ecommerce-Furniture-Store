@@ -1,4 +1,5 @@
 import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { BRAND } from "../brand";
 import { PageHeader } from "../components/ui";
 import { StatusBadge, EmptyState } from "../workspace/widgets";
 import { PLANS } from "./catalog";
@@ -47,7 +48,7 @@ function PlatformAdminPage() {
         </div>
       </div>
 
-      <SectionCard title="Tenant management" lead="Companies on the AFH SaaS platform (presentation fixtures).">
+      <SectionCard title="Tenant management" lead={`Companies on the ${BRAND.name} SaaS platform (presentation fixtures).`}>
         <div className="ws-table-wrap">
           <table className="ws-table">
             <thead>
@@ -140,7 +141,7 @@ export function AdminRoutes() {
       <Route
         element={
           <PlatformPublicShell
-            brand="AFH Platform Admin"
+            brand={BRAND.name}
             homeTo="/admin/platform"
             nav={[
               { to: "/admin/platform", label: "Overview" },

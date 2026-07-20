@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
+import { BRAND } from "../brand";
 import { MobileReadinessBar } from "./MobileReadiness";
 
 export function PlatformPublicShell({
@@ -46,7 +47,7 @@ export function PlatformPublicShell({
         <Outlet />
       </main>
       <footer className="plt-shell__footer">
-        <span>Artisan Furnish Hub · SaaS operations</span>
+        <span>{BRAND.name} · SaaS operations</span>
         <Link to="/">Marketing site</Link>
       </footer>
     </div>

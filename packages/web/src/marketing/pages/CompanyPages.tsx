@@ -13,6 +13,7 @@ import {
 } from "../data/content";
 import { getCatalogueProduct } from "../data/catalogue";
 import { InquiryForm } from "../InquiryForm";
+import { BRAND, whatsappUrl } from "../../brand";
 
 function mustPage(key: keyof typeof SITE_PAGES): SitePageContent {
   const page = SITE_PAGES[key];
@@ -195,6 +196,30 @@ export function FaqPage() {
 export function ContactPage() {
   return (
     <ContentLayout page={mustPage("contact")} path="/contact">
+      <div className="contact-details">
+        <p>
+          <strong>{BRAND.name}</strong>
+        </p>
+        <p>
+          Phone:{" "}
+          <a href={`tel:${BRAND.phone.replace(/\s/g, "")}`}>{BRAND.phone}</a>
+          {" · "}
+          <a href={`tel:${BRAND.phoneSecondary.replace(/\s/g, "")}`}>{BRAND.phoneSecondary}</a>
+        </p>
+        <p>
+          WhatsApp:{" "}
+          <a href={whatsappUrl()}>{BRAND.whatsappDisplay}</a>
+        </p>
+        <p>
+          Email: <a href={`mailto:${BRAND.email}`}>{BRAND.email}</a>
+        </p>
+      </div>
+      <div className="contact-map-placeholder" aria-label="Showroom map — coming soon">
+        <p>{BRAND.showroomNotice}</p>
+        <p className="type-caption">
+          A Google Maps embed and showroom address will appear here before production launch.
+        </p>
+      </div>
       <InquiryForm intent="General contact" />
       <p>
         <Link to="/quote">Request a quote</Link> · <Link to="/demo">Book a demo</Link>
@@ -253,7 +278,7 @@ export function DemoPage() {
   return (
     <ContentLayout page={mustPage("demo")} path="/demo">
       <InquiryForm intent="Book demo" />
-      <img src={IMG.lounge} alt="Artisan Furnish Hub showroom lounge" loading="lazy" className="site-prose__image" />
+      <img src={IMG.lounge} alt="Rao Liaqat Furniture showroom lounge" loading="lazy" className="site-prose__image" />
     </ContentLayout>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { BRAND } from "../brand";
 import { PageHeader, Button, Alert } from "../components/ui";
 import { Tabs, Toolbar, EmptyState, StatusBadge } from "../workspace/widgets";
 import { ChatShell } from "./ChatShell";
@@ -153,7 +154,7 @@ function WritingStudioPage() {
   const params = new URLSearchParams(window.location.search);
   const [kind, setKind] = useState(params.get("kind") ?? "email");
   const [brief, setBrief] = useState("");
-  const seed = `Draft a ${kind} for Artisan Furnish Hub. Brief: ${brief || "(add brief)"}. Keep professional enterprise tone.`;
+  const seed = `Draft a ${kind} for ${BRAND.name}. Brief: ${brief || "(add brief)"}. Keep professional enterprise tone.`;
 
   return (
     <div className="stack ai-page">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { BRAND } from "../brand";
 import { Alert, PageHeader } from "../components/ui";
 import { EmptyState, StatusBadge, Tabs } from "../workspace/widgets";
 import { PlatformPublicShell, SectionCard } from "./PlatformShell";
@@ -144,7 +145,7 @@ export function PortalRoutes() {
       <Route
         element={
           <PlatformPublicShell
-            brand="AFH Customer Portal"
+            brand={`${BRAND.name} Customer Portal`}
             homeTo="/portal"
             nav={[
               { to: "/portal", label: "Home" },

@@ -67,7 +67,7 @@ export function ComparePage() {
 
   return (
     <>
-      <Seo title="Compare products" description="Compare 2–4 AFH furniture products." path="/compare" />
+      <Seo title="Compare products" description="Compare 2–4 Rao Liaqat Furniture products." path="/compare" />
       <header className="site-page-hero">
         <Breadcrumbs items={[{ label: "Compare" }]} />
         <h1>Compare</h1>

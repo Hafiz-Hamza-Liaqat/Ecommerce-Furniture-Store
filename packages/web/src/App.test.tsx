@@ -174,34 +174,41 @@ describe("RequireAuth behavior is preserved", () => {
 });
 
 describe("unauthorized access (authenticated, missing permission)", () => {
-  it("shows Access denied on a protected module route", async () => {
+  it("shows Permission denied on a protected module route", async () => {
     const screen = renderAuthenticatedAt("/app/finance", []);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
     expect(screen.queryByTestId("page-LazyFinancePage")).toBeNull();
   });
 
   it("keeps the app shell visible (no nav filtering) while denying", async () => {
     const screen = renderAuthenticatedAt("/app/finance", []);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
     expect(screen.getByTestId("app-shell")).toBeTruthy();
   });
 
   it("denies the workspace dashboard without executive.dashboard.read", async () => {
     const screen = renderAuthenticatedAt("/app", ["sales.dashboard.read"]);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
   });
 
   it("denies /admin/platform without platform.administration.read", async () => {
     const screen = renderAuthenticatedAt("/admin/platform", [
       "finance.dashboard.read",
     ]);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
     expect(screen.queryByTestId("page-LazyAdminRoutes")).toBeNull();
   });
 
-  it("denies /portal without portal.customer_portal.read", async () => {
+  it("soft-lands authenticated users without portal permission on role home", async () => {
     const screen = renderAuthenticatedAt("/portal", []);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByTestId("page-LazyCustomerProjectsPage")).toBeTruthy();
+    expect(screen.queryByText("Permission denied")).toBeNull();
+  });
+
+  it("redirects unauthenticated /portal to login", async () => {
+    stubSessionFetch([]);
+    const screen = renderAt("/portal");
+    expect(await screen.findByTestId("login-page")).toBeTruthy();
   });
 });
 
@@ -222,7 +229,7 @@ describe("authorized access renders the documented route", () => {
     const screen = renderAuthenticatedAt("/portal", [
       "portal.customer_portal.read",
     ]);
-    expect(await screen.findByTestId("page-LazyPortalRoutes")).toBeTruthy();
+    expect(await screen.findAllByText(/Customer portal/i)).not.toHaveLength(0);
   });
 
   it("renders /admin/platform with platform.administration.read", async () => {
@@ -245,7 +252,7 @@ describe("direct URL authorization follows the same checks", () => {
     const screen = renderAuthenticatedAt("/app/sales/orders/ord-1/edit", [
       "finance.dashboard.read",
     ]);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
   });
 
   it("allows a deep module URL with the module permission", async () => {
@@ -259,7 +266,7 @@ describe("direct URL authorization follows the same checks", () => {
     const denied = renderAuthenticatedAt("/app/analytics/builder", [
       "analytics.dashboards.read",
     ]);
-    expect(await denied.findByText("Access denied")).toBeTruthy();
+    expect(await denied.findByText("Permission denied")).toBeTruthy();
   });
 
   it("allows the analytics builder deep link with both permissions", async () => {

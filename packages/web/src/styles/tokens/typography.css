@@ -1,0 +1,94 @@
+/**
+ * RC9.4.2 — Typography utility classes (canonical scale).
+ */
+
+.type-hero-xl {
+  font-family: var(--brand-font-display);
+  font-size: var(--type-hero-xl);
+  font-weight: var(--type-weight-hero);
+  line-height: var(--brand-line-tight, 1.15);
+  letter-spacing: -0.02em;
+}
+
+.type-hero-l {
+  font-family: var(--brand-font-display);
+  font-size: var(--type-hero-l);
+  font-weight: var(--type-weight-display);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.type-h1 {
+  font-family: var(--brand-font-display);
+  font-size: var(--type-h1);
+  font-weight: var(--type-weight-display);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.type-h2 {
+  font-family: var(--brand-font-display);
+  font-size: var(--type-h2);
+  font-weight: var(--type-weight-display);
+  line-height: 1.25;
+}
+
+.type-h3 {
+  font-family: var(--brand-font-display);
+  font-size: var(--type-h3);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.type-body-l {
+  font-size: var(--type-body-l);
+  line-height: 1.65;
+}
+
+.type-body {
+  font-size: var(--type-body);
+  line-height: 1.5;
+}
+
+.type-caption {
+  font-size: var(--type-caption);
+  line-height: 1.45;
+  color: var(--brand-ink-muted);
+}
+
+.type-eyebrow {
+  font-size: var(--type-eyebrow);
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-brass-deep);
+}
+
+[data-theme="dark"] .type-eyebrow,
+.site[data-site-theme="dark"] .type-eyebrow {
+  color: var(--brand-brass);
+}
+
+.site-hero__keyword {
+  display: inline-block;
+  font-weight: 650;
+  color: var(--brand-brass);
+  opacity: 0;
+  transform: translateY(0.35rem);
+  transition:
+    opacity var(--brand-motion-slow) var(--brand-ease),
+    transform var(--brand-motion-slow) var(--brand-ease);
+}
+
+.site-hero__keyword.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-hero__keyword {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

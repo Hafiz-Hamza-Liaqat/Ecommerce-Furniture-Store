@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BRAND } from "./data/content";
+import { BRAND } from "../brand";
 
 export type SeoProps = {
   readonly title: string;
@@ -15,7 +15,7 @@ export type SeoProps = {
   readonly extraJsonLd?: readonly Record<string, unknown>[];
 };
 
-export const SEO_SITE = "https://artisanfurnish.example";
+export const SEO_SITE = BRAND.web;
 
 export function buildBreadcrumbJsonLd(
   crumbs: readonly { readonly name: string; readonly path: string }[],

@@ -1,31 +1,87 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { BRAND, COLLECTIONS, NEWS, PROJECTS } from "./data/content";
+import { BrandLogo } from "../brand/BrandLogo";
+import { whatsappUrl } from "../brand";
 import { CATALOGUE } from "./data/catalogue";
 import { FURNITURE_TAXONOMY, flattenTaxonomy } from "./data/taxonomy";
 import { pushRecentSearch, getRecentSearches } from "./cx/stores";
 import { useSession } from "../state/session";
 import { useFocusTrap } from "../a11y/useFocusTrap";
+import {
+  BECOME_ROLE_OPTIONS,
+  COMPANY_MEGA_LINKS,
+  GUEST_ACCOUNT_SECTIONS,
+  buildRoleAccountSections,
+  WORKSPACE_ROLES,
+  addExtraWorkspaceRole,
+  displayFirstName,
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  resolveWorkspaceRoles,
+  setActiveWorkspaceRole,
+  unreadNotificationCount,
+  type AccountMenuLink,
+  type CxNotification,
+  type WorkspaceRoleId,
+} from "./nav";
+
+type MegaKind = "furniture" | "company" | null;
 
 export function MarketingShell() {
   const { pathname, hash } = useLocation();
-  const { theme, setTheme } = useSession();
+  const { theme, setTheme, user, tokens, permissionCodes, clearSession } = useSession();
+  const isLoggedIn = Boolean(tokens?.sessionId && user);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [megaOpen, setMegaOpen] = useState(false);
+  const [megaOpen, setMegaOpen] = useState<MegaKind>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [mobileAccountOpen, setMobileAccountOpen] = useState(false);
+  const [mobileCompanyOpen, setMobileCompanyOpen] = useState(false);
+  const [mobileFurnitureOpen, setMobileFurnitureOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notifTick, setNotifTick] = useState(0);
   const [pageReady, setPageReady] = useState(false);
   const [cookieOk, setCookieOk] = useState(
     () => localStorage.getItem("afh.site.cookies") === "1",
   );
   const [showTop, setShowTop] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [roleTick, setRoleTick] = useState(0);
   const menuId = useId();
+  const accountMenuId = useId();
+  const companyMegaId = useId();
+  const furnitureMegaId = useId();
   const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const closeAccount = useCallback(() => setAccountOpen(false), []);
   const drawerTrapRef = useFocusTrap(menuOpen, closeMenu);
+  const accountTrapRef = useFocusTrap(accountOpen, closeAccount);
+  const accountContainerRef = useRef<HTMLDivElement>(null);
+  const megaTimer = useRef<number | null>(null);
+
+  const workspace = useMemo(() => {
+    void roleTick;
+    return resolveWorkspaceRoles(isLoggedIn ? permissionCodes : null);
+  }, [isLoggedIn, permissionCodes, roleTick]);
+
+  const displayName = user
+    ? displayFirstName(user.fullName, user.email)
+    : "Account";
+
+  const unreadCount = useMemo(() => {
+    void notifTick;
+    return unreadNotificationCount();
+  }, [notifTick]);
+  const notifications = useMemo(() => {
+    void notifTick;
+    return listNotifications();
+  }, [notifTick]);
 
   useEffect(() => {
     setMenuOpen(false);
-    setMegaOpen(false);
+    setMegaOpen(null);
+    setAccountOpen(false);
+    setMobileAccountOpen(false);
     setSearchOpen(false);
     setPageReady(false);
     const t = window.setTimeout(() => setPageReady(true), 280);
@@ -47,10 +103,28 @@ export function MarketingShell() {
 
   useEffect(() => {
     if (!menuOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const scrollY = window.scrollY;
+    const { style: body } = document.body;
+    const { style: html } = document.documentElement;
+    const prev = {
+      bodyOverflow: body.overflow,
+      bodyPosition: body.position,
+      bodyTop: body.top,
+      bodyWidth: body.width,
+      htmlOverflow: html.overflow,
+    };
+    body.overflow = "hidden";
+    body.position = "fixed";
+    body.top = `-${scrollY}px`;
+    body.width = "100%";
+    html.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prev;
+      body.overflow = prev.bodyOverflow;
+      body.position = prev.bodyPosition;
+      body.top = prev.bodyTop;
+      body.width = prev.bodyWidth;
+      html.overflow = prev.htmlOverflow;
+      window.scrollTo(0, scrollY);
     };
   }, [menuOpen]);
 
@@ -65,7 +139,6 @@ export function MarketingShell() {
         e.preventDefault();
         setSearchOpen(true);
       }
-      // `/` opens search when not typing (does not conflict with browser Find when Ctrl/Cmd held)
       if (!typing && !e.metaKey && !e.ctrlKey && !e.altKey && e.key === "/") {
         e.preventDefault();
         setSearchOpen(true);
@@ -73,7 +146,8 @@ export function MarketingShell() {
       if (e.key === "Escape") {
         setSearchOpen(false);
         setChatOpen(false);
-        setMegaOpen(false);
+        setMegaOpen(null);
+        setAccountOpen(false);
         setMenuOpen(false);
       }
     };
@@ -81,22 +155,83 @@ export function MarketingShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const clearMegaTimer = () => {
+    if (megaTimer.current != null) {
+      window.clearTimeout(megaTimer.current);
+      megaTimer.current = null;
+    }
+  };
+
+  const openMega = (kind: MegaKind) => {
+    clearMegaTimer();
+    megaTimer.current = window.setTimeout(() => setMegaOpen(kind), 80);
+  };
+
+  const closeMegaSoon = () => {
+    clearMegaTimer();
+    megaTimer.current = window.setTimeout(() => setMegaOpen(null), 160);
+  };
+
   const closeNavSurfaces = () => {
-    setMegaOpen(false);
+    setMegaOpen(null);
+    setAccountOpen(false);
     setMenuOpen(false);
   };
 
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const root = accountContainerRef.current;
+      if (root && !root.contains(e.target as Node)) {
+        setAccountOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [accountOpen]);
+
+  function handleAccountAction(link: AccountMenuLink) {
+    if (link.action === "logout") {
+      clearSession();
+      closeNavSurfaces();
+      return;
+    }
+    if (link.action === "notifications" || link.action === "appearance") {
+      return;
+    }
+    closeNavSurfaces();
+  }
+
+  function refreshNotifications() {
+    setNotifTick((n) => n + 1);
+  }
+
+  function switchRole(role: WorkspaceRoleId) {
+    setActiveWorkspaceRole(role);
+    setRoleTick((n) => n + 1);
+  }
+
+  function becomeRole(role: WorkspaceRoleId) {
+    addExtraWorkspaceRole(role);
+    setActiveWorkspaceRole(role);
+    setRoleTick((n) => n + 1);
+  }
+
+  const accountSections = isLoggedIn
+    ? buildRoleAccountSections(workspace.active)
+    : GUEST_ACCOUNT_SECTIONS;
+
   return (
-    <div className="site" data-site-theme={theme === "dark" ? "dark" : "light"}>
+    <div
+      className={`site${menuOpen ? " is-nav-open" : ""}`}
+      data-site-theme={theme === "dark" ? "dark" : "light"}
+    >
       <a className="site-skip" href="#site-main">
         Skip to content
       </a>
       <header className={`site-header${showTop ? " is-scrolled" : ""}`}>
         <div className="site-header__inner">
-          <Link to="/" className="site-logo" aria-label={`${BRAND.name} home`}>
-            <span className="site-logo__mark">{BRAND.short}</span>
-            <span className="site-logo__name">{BRAND.name}</span>
-          </Link>
+          <BrandLogo variant="responsive" className="site-header__logo" />
           <button
             type="button"
             className="site-nav-toggle"
@@ -124,52 +259,50 @@ export function MarketingShell() {
             tabIndex={-1}
           >
             <div className="site-nav-drawer__head">
-              <p>Menu</p>
-              <button type="button" className="site-btn site-btn--ghost" onClick={closeMenu}>
+              <BrandLogo variant="text" className="site-nav-drawer__brand" onClick={closeMenu} />
+              <button
+                type="button"
+                className="site-nav-drawer__close"
+                onClick={closeMenu}
+                aria-label="Close menu"
+              >
                 Close
               </button>
             </div>
             <nav id={menuId} className="site-nav" aria-label="Primary">
-              <div className="site-nav__group">
-                <p className="site-nav__group-label">Collections</p>
+              <div className="site-nav__primary">
+                {/* Furniture */}
                 <div
-                  className="site-nav__item"
-                  onMouseEnter={() => {
-                    window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
-                    (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
-                      () => setMegaOpen(true),
-                      100,
-                    );
-                  }}
-                  onMouseLeave={() => {
-                    window.clearTimeout((window as unknown as { __afhMega?: number }).__afhMega);
-                    (window as unknown as { __afhMega?: number }).__afhMega = window.setTimeout(
-                      () => setMegaOpen(false),
-                      160,
-                    );
-                  }}
+                  className="site-nav__item site-nav__item--mega"
+                  onMouseEnter={() => openMega("furniture")}
+                  onMouseLeave={closeMegaSoon}
                 >
                   <button
                     type="button"
-                    className="site-nav__link"
-                    aria-expanded={megaOpen}
+                    className="site-nav__link site-nav__mega-trigger"
+                    aria-expanded={megaOpen === "furniture" || mobileFurnitureOpen}
+                    aria-controls={furnitureMegaId}
                     aria-haspopup="true"
-                    onClick={() => setMegaOpen((v) => !v)}
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setMegaOpen(true);
-                      }
-                      if (e.key === "Escape") {
-                        e.preventDefault();
-                        setMegaOpen(false);
+                    onClick={() => {
+                      if (window.matchMedia("(max-width: 1199px)").matches) {
+                        setMobileFurnitureOpen((v) => !v);
+                      } else {
+                        setMegaOpen((v) => (v === "furniture" ? null : "furniture"));
                       }
                     }}
                   >
                     Furniture
+                    <span className="site-nav__chevron" aria-hidden="true" />
                   </button>
-                  {megaOpen ? (
-                    <div className="site-mega site-mega--furniture" role="region" aria-label="Furniture menu">
+                  {(megaOpen === "furniture" || mobileFurnitureOpen) && (
+                    <div
+                      id={furnitureMegaId}
+                      className="site-mega site-mega--furniture"
+                      role="region"
+                      aria-label="Furniture menu"
+                      onMouseEnter={() => openMega("furniture")}
+                      onMouseLeave={closeMegaSoon}
+                    >
                       {FURNITURE_TAXONOMY.map((col) => (
                         <div key={col.id} className="site-mega__col">
                           <p className="site-mega__label">
@@ -190,10 +323,10 @@ export function MarketingShell() {
                       ))}
                       <div className="site-mega__feature">
                         <p>All furniture</p>
-                        <Link to="/furniture" className="site-btn site-btn--ghost" onClick={closeNavSurfaces}>
+                        <Link to="/furniture" className="site-btn site-btn--outline" onClick={closeNavSurfaces}>
                           Browse hub
                         </Link>
-                        <Link to="/#booklet" className="site-btn site-btn--ghost" onClick={closeNavSurfaces}>
+                        <Link to="/#booklet" className="site-btn site-btn--outline" onClick={closeNavSurfaces}>
                           Digital booklet
                         </Link>
                         <Link to="/planner" className="site-btn site-btn--primary" onClick={closeNavSurfaces}>
@@ -201,8 +334,9 @@ export function MarketingShell() {
                         </Link>
                       </div>
                     </div>
-                  ) : null}
+                  )}
                 </div>
+
                 <NavLink to="/products" className="site-nav__link" onClick={closeMenu}>
                   Products
                 </NavLink>
@@ -212,52 +346,179 @@ export function MarketingShell() {
                 <NavLink to="/manufacturing" className="site-nav__link" onClick={closeMenu}>
                   Manufacturing
                 </NavLink>
-              </div>
-              <div className="site-nav__group">
-                <p className="site-nav__group-label">Tools</p>
                 <NavLink to="/consultant" className="site-nav__link" onClick={closeMenu}>
                   Consultant
                 </NavLink>
-                <NavLink to="/wishlist" className="site-nav__link" aria-label="Wishlist" onClick={closeMenu}>
-                  Wishlist
+
+                {/* Company */}
+                <div
+                  className="site-nav__item site-nav__item--mega"
+                  onMouseEnter={() => openMega("company")}
+                  onMouseLeave={closeMegaSoon}
+                >
+                  <button
+                    type="button"
+                    className="site-nav__link site-nav__mega-trigger"
+                    aria-expanded={megaOpen === "company" || mobileCompanyOpen}
+                    aria-controls={companyMegaId}
+                    aria-haspopup="true"
+                    onClick={() => {
+                      if (window.matchMedia("(max-width: 1199px)").matches) {
+                        setMobileCompanyOpen((v) => !v);
+                      } else {
+                        setMegaOpen((v) => (v === "company" ? null : "company"));
+                      }
+                    }}
+                  >
+                    Company
+                    <span className="site-nav__chevron" aria-hidden="true" />
+                  </button>
+                  {(megaOpen === "company" || mobileCompanyOpen) && (
+                    <div
+                      id={companyMegaId}
+                      className="site-mega site-mega--company"
+                      role="region"
+                      aria-label="Company menu"
+                      onMouseEnter={() => openMega("company")}
+                      onMouseLeave={closeMegaSoon}
+                    >
+                      <div className="site-mega__company-grid">
+                        {COMPANY_MEGA_LINKS.map((item) => (
+                          <Link key={item.to + item.label} to={item.to} onClick={closeNavSurfaces}>
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <NavLink to="/blog" className="site-nav__link" onClick={closeMenu}>
+                  Journal
                 </NavLink>
-                <NavLink to="/compare" className="site-nav__link" aria-label="Compare" onClick={closeMenu}>
-                  Compare
-                </NavLink>
+              </div>
+
+              <div className="site-nav__utils" aria-label="Tools">
                 <button
                   type="button"
-                  className="site-nav__link"
+                  className="site-nav__icon-btn"
                   onClick={() => {
                     setSearchOpen(true);
                     setMenuOpen(false);
                   }}
                   aria-haspopup="dialog"
+                  aria-label="Search"
+                  title="Search (/)"
                 >
-                  Search
+                  <SearchIcon />
+                  <span className="site-nav__icon-label">Search</span>
                 </button>
-              </div>
-              <div className="site-nav__group">
-                <p className="site-nav__group-label">Company</p>
-                <NavLink to="/about" className="site-nav__link" onClick={closeMenu}>
-                  Company
-                </NavLink>
-                <NavLink to="/blog" className="site-nav__link" onClick={closeMenu}>
-                  Journal
-                </NavLink>
-                <Link to="/quote" className="site-btn site-btn--primary site-nav__cta" onClick={closeMenu}>
-                  Request quote
-                </Link>
-                <Link to="/app" className="site-nav__link site-nav__console" onClick={closeMenu}>
-                  Console
-                </Link>
-                <button
-                  type="button"
-                  className="site-theme-toggle"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  aria-label="Toggle color theme"
+
+                <Link
+                  to="/quote"
+                  className="site-btn site-btn--primary site-nav__cta"
+                  onClick={closeMenu}
                 >
-                  {theme === "dark" ? "Light" : "Dark"}
-                </button>
+                  Request Quote
+                </Link>
+
+                {/* Account — desktop dropdown (avatar only) */}
+                <div
+                  ref={accountContainerRef}
+                  className="site-nav__item site-nav__item--account site-nav__account--desktop"
+                >
+                  <button
+                    type="button"
+                    className="site-nav__account-trigger site-nav__account-trigger--avatar"
+                    aria-expanded={accountOpen}
+                    aria-controls={accountMenuId}
+                    aria-haspopup="menu"
+                    aria-label={
+                      isLoggedIn
+                        ? unreadCount > 0
+                          ? `${displayName} account, ${unreadCount} unread notifications`
+                          : `${displayName} account`
+                        : "Account menu"
+                    }
+                    onClick={() => setAccountOpen((v) => !v)}
+                  >
+                    <span className="site-nav__avatar-wrap">
+                      <span className="site-nav__avatar" aria-hidden="true">
+                        {isLoggedIn ? displayName.charAt(0).toUpperCase() : "?"}
+                      </span>
+                      {unreadCount > 0 ? (
+                        <span className="site-nav__avatar-badge" aria-hidden="true">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                  {accountOpen ? (
+                    <AccountDropdown
+                      id={accountMenuId}
+                      menuRef={accountTrapRef}
+                      isLoggedIn={isLoggedIn}
+                      displayName={displayName}
+                      badge={workspace.badge}
+                      theme={theme}
+                      setTheme={setTheme}
+                      unreadCount={unreadCount}
+                      notifications={notifications}
+                      availableRoles={workspace.available}
+                      activeRole={workspace.active}
+                      sections={accountSections}
+                      onAction={handleAccountAction}
+                      onSwitchRole={switchRole}
+                      onBecomeRole={becomeRole}
+                      onNavigate={closeNavSurfaces}
+                      onNotificationChange={refreshNotifications}
+                    />
+                  ) : null}
+                </div>
+
+                {/* Account — mobile expandable */}
+                <div className="site-nav__account--mobile">
+                  <button
+                    type="button"
+                    className="site-nav__link site-nav__account-trigger site-nav__account-trigger--mobile"
+                    aria-expanded={mobileAccountOpen}
+                    onClick={() => setMobileAccountOpen((v) => !v)}
+                  >
+                    <span className="site-nav__avatar-wrap">
+                      <span className="site-nav__avatar" aria-hidden="true">
+                        {isLoggedIn ? displayName.charAt(0).toUpperCase() : "?"}
+                      </span>
+                      {unreadCount > 0 ? (
+                        <span className="site-nav__avatar-badge" aria-hidden="true">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      ) : null}
+                    </span>
+                    {isLoggedIn ? `${displayName} · ${workspace.badge}` : "Account"}
+                    <span className="site-nav__chevron" aria-hidden="true" />
+                  </button>
+                  {mobileAccountOpen ? (
+                    <AccountDropdown
+                      id={`${accountMenuId}-mobile`}
+                      inline
+                      isLoggedIn={isLoggedIn}
+                      displayName={displayName}
+                      badge={workspace.badge}
+                      theme={theme}
+                      setTheme={setTheme}
+                      unreadCount={unreadCount}
+                      notifications={notifications}
+                      availableRoles={workspace.available}
+                      activeRole={workspace.active}
+                      sections={accountSections}
+                      onAction={handleAccountAction}
+                      onSwitchRole={switchRole}
+                      onBecomeRole={becomeRole}
+                      onNavigate={closeNavSurfaces}
+                      onNotificationChange={refreshNotifications}
+                    />
+                  ) : null}
+                </div>
               </div>
             </nav>
           </div>
@@ -278,6 +539,57 @@ export function MarketingShell() {
       {searchOpen ? <SiteSearch onClose={() => setSearchOpen(false)} /> : null}
 
       <footer className="site-footer">
+        <section className="site-footer__trust" aria-label="Business information">
+          <div className="site-footer__trust-grid">
+            <div className="site-footer__trust-item">
+              <p className="site-footer__trust-label">Business</p>
+              <p className="site-footer__trust-value">{BRAND.name}</p>
+            </div>
+            <div className="site-footer__trust-item">
+              <p className="site-footer__trust-label">Phone</p>
+              <p className="site-footer__trust-value">
+                <a href={`tel:${BRAND.phone.replace(/\s/g, "")}`}>{BRAND.phone}</a>
+                <br />
+                <a href={`tel:${BRAND.phoneSecondary.replace(/\s/g, "")}`}>{BRAND.phoneSecondary}</a>
+              </p>
+            </div>
+            <div className="site-footer__trust-item">
+              <p className="site-footer__trust-label">WhatsApp</p>
+              <p className="site-footer__trust-value">
+                <a href={whatsappUrl()}>{BRAND.whatsappDisplay}</a>
+              </p>
+            </div>
+            <div className="site-footer__trust-item">
+              <p className="site-footer__trust-label">Showroom</p>
+              <p className="site-footer__trust-value">{BRAND.showroomNotice}</p>
+            </div>
+            <div className="site-footer__trust-item">
+              <p className="site-footer__trust-label">Company</p>
+              <p className="site-footer__trust-value">
+                <Link to="/about">About</Link>
+                {" · "}
+                <Link to="/contact">Contact</Link>
+              </p>
+            </div>
+            <div className="site-footer__trust-item">
+              <p className="site-footer__trust-label">Catalogue</p>
+              <p className="site-footer__trust-value">
+                <Link to="/downloads">Download catalogue</Link>
+              </p>
+            </div>
+          </div>
+          <nav className="site-footer__social" aria-label="Social links">
+            <span className="site-footer__social-link" title="Social URL — configure before launch">
+              LinkedIn
+            </span>
+            <span className="site-footer__social-link" title="Social URL — configure before launch">
+              Instagram
+            </span>
+            <span className="site-footer__social-link" title="Social URL — configure before launch">
+              Facebook
+            </span>
+          </nav>
+        </section>
         <div className="site-footer__grid">
           <div>
             <p className="site-footer__brand">{BRAND.name}</p>
@@ -342,6 +654,7 @@ export function MarketingShell() {
               ["/downloads", "Downloads"],
               ["/planner", "Budget planner"],
               ["/consultant", "AI consultant"],
+              ["/my-projects", "My projects"],
               ["/demo", "Book demo"],
               ["/quote", "Request quote"],
             ]}
@@ -358,7 +671,7 @@ export function MarketingShell() {
 
       <a
         className="site-whatsapp"
-        href={`https://wa.me/${BRAND.whatsapp}`}
+        href={whatsappUrl()}
         target="_blank"
         rel="noreferrer"
         aria-label="Chat on WhatsApp"
@@ -373,9 +686,7 @@ export function MarketingShell() {
       >
         Furniture consultant
       </button>
-      {chatOpen ? (
-        <ChatPanel onClose={() => setChatOpen(false)} />
-      ) : null}
+      {chatOpen ? <ChatPanel onClose={() => setChatOpen(false)} /> : null}
 
       {showTop ? (
         <button
@@ -397,6 +708,350 @@ export function MarketingShell() {
         />
       ) : null}
     </div>
+  );
+}
+
+function AccountDropdown({
+  id,
+  inline,
+  menuRef,
+  isLoggedIn,
+  displayName,
+  badge,
+  theme,
+  setTheme,
+  unreadCount,
+  notifications,
+  availableRoles,
+  activeRole,
+  sections,
+  onAction,
+  onSwitchRole,
+  onBecomeRole,
+  onNavigate,
+  onNotificationChange,
+}: {
+  id: string;
+  inline?: boolean;
+  menuRef?: RefObject<HTMLDivElement | null>;
+  isLoggedIn: boolean;
+  displayName: string;
+  badge: string;
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
+  unreadCount: number;
+  notifications: readonly CxNotification[];
+  availableRoles: readonly WorkspaceRoleId[];
+  activeRole: WorkspaceRoleId;
+  sections: readonly { id: string; title?: string; links: readonly AccountMenuLink[] }[];
+  onAction: (link: AccountMenuLink) => void;
+  onSwitchRole: (role: WorkspaceRoleId) => void;
+  onBecomeRole: (role: WorkspaceRoleId) => void;
+  onNavigate: () => void;
+  onNotificationChange: () => void;
+}) {
+  const [notifExpanded, setNotifExpanded] = useState(false);
+  const [notifViewAll, setNotifViewAll] = useState(false);
+  const previewItems = notifications.slice(0, notifViewAll ? notifications.length : 3);
+
+  return (
+    <div
+      ref={menuRef}
+      id={id}
+      className={`site-account-menu${inline ? " site-account-menu--inline" : ""}`}
+      role="menu"
+      aria-label={isLoggedIn ? `${displayName} account menu` : "Account menu"}
+    >
+      {isLoggedIn ? (
+        <div className="site-account-menu__header">
+          <p className="site-account-menu__name">{displayName}</p>
+          <p className="site-account-menu__badge">{badge}</p>
+        </div>
+      ) : null}
+
+      {isLoggedIn && availableRoles.length > 1 ? (
+        <div className="site-account-menu__section" role="group" aria-label="Current role">
+          <p className="site-account-menu__section-title">Current Role</p>
+          <ul className="site-account-menu__list">
+            {availableRoles.map((roleId) => {
+              const meta = WORKSPACE_ROLES.find((r) => r.id === roleId);
+              if (!meta) return null;
+              return (
+                <li key={roleId}>
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={roleId === activeRole}
+                    className={
+                      roleId === activeRole
+                        ? "site-account-menu__item is-active"
+                        : "site-account-menu__item"
+                    }
+                    onClick={() => onSwitchRole(roleId)}
+                  >
+                    {roleId === activeRole ? "✓ " : ""}
+                    {meta.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      {sections.map((section) => (
+        <div key={section.id} className="site-account-menu__section">
+          {section.title ? (
+            <p className="site-account-menu__section-title">{section.title}</p>
+          ) : null}
+          <ul className="site-account-menu__list">
+            {section.links.map((link) => (
+              <li key={`${section.id}-${link.label}`}>
+                {link.action === "notifications" ? (
+                  <>
+                    <button
+                      type="button"
+                      role="menuitem"
+                    className="site-account-menu__item site-account-menu__item--row site-account-menu__item--with-icon"
+                    aria-expanded={notifExpanded}
+                    onClick={() => setNotifExpanded((v) => !v)}
+                  >
+                    <span className="site-account-menu__item--with-icon">
+                      {link.icon ? (
+                        <span className="site-account-menu__icon" aria-hidden="true">
+                          {link.icon}
+                        </span>
+                      ) : null}
+                      <span>{link.label}</span>
+                    </span>
+                      {unreadCount > 0 ? (
+                        <span className="site-account-menu__badge-count" aria-label={`${unreadCount} unread`}>
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      ) : null}
+                    </button>
+                    {notifExpanded ? (
+                      <AccountNotificationsInline
+                        items={previewItems}
+                        viewAll={notifViewAll}
+                        totalCount={notifications.length}
+                        onViewAll={() => setNotifViewAll(true)}
+                        onChange={onNotificationChange}
+                        onNavigate={onNavigate}
+                      />
+                    ) : null}
+                  </>
+                ) : link.action === "appearance" ? (
+                  <div className="site-account-menu__appearance" role="group" aria-label="Appearance">
+                    <span className="site-account-menu__appearance-label site-account-menu__item--with-icon">
+                      {link.icon ? (
+                        <span className="site-account-menu__icon" aria-hidden="true">
+                          {link.icon}
+                        </span>
+                      ) : null}
+                      {link.label}
+                    </span>
+                    <div className="site-account-menu__appearance-toggle" role="radiogroup" aria-label="Theme">
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={theme === "light"}
+                        className={
+                          theme === "light"
+                            ? "site-account-menu__theme-btn is-active"
+                            : "site-account-menu__theme-btn"
+                        }
+                        aria-label="Light appearance"
+                        title="Light"
+                        onClick={() => setTheme("light")}
+                      >
+                        <SunIcon />
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={theme === "dark"}
+                        className={
+                          theme === "dark"
+                            ? "site-account-menu__theme-btn is-active"
+                            : "site-account-menu__theme-btn"
+                        }
+                        aria-label="Dark appearance"
+                        title="Dark"
+                        onClick={() => setTheme("dark")}
+                      >
+                        <MoonIcon />
+                      </button>
+                    </div>
+                  </div>
+                ) : link.action === "logout" ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="site-account-menu__item site-account-menu__item--with-icon"
+                    onClick={() => onAction(link)}
+                  >
+                    {link.icon ? (
+                      <span className="site-account-menu__icon" aria-hidden="true">
+                        {link.icon}
+                      </span>
+                    ) : null}
+                    {link.label}
+                  </button>
+                ) : (
+                  <Link
+                    role="menuitem"
+                    className="site-account-menu__item site-account-menu__item--with-icon"
+                    to={link.to}
+                    onClick={() => {
+                      onAction(link);
+                      onNavigate();
+                    }}
+                  >
+                    {link.icon ? (
+                      <span className="site-account-menu__icon" aria-hidden="true">
+                        {link.icon}
+                      </span>
+                    ) : null}
+                    {link.label}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+
+      {isLoggedIn && activeRole === "buyer" ? (
+        <div className="site-account-menu__section">
+          <p className="site-account-menu__section-title">Register another role</p>
+          <ul className="site-account-menu__list">
+            {BECOME_ROLE_OPTIONS.map((opt) => {
+              const intent = new URL(opt.to, "http://local").searchParams.get("intent") as WorkspaceRoleId | null;
+              return (
+                <li key={opt.label}>
+                  <Link
+                    role="menuitem"
+                    className="site-account-menu__item"
+                    to={opt.to}
+                    onClick={() => {
+                      if (intent) onBecomeRole(intent);
+                      onNavigate();
+                    }}
+                  >
+                    {opt.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function AccountNotificationsInline({
+  items,
+  viewAll,
+  totalCount,
+  onViewAll,
+  onChange,
+  onNavigate,
+}: {
+  items: readonly CxNotification[];
+  viewAll: boolean;
+  totalCount: number;
+  onViewAll: () => void;
+  onChange: () => void;
+  onNavigate: () => void;
+}) {
+  return (
+    <div className="site-account-menu__notif-preview" role="region" aria-label="Notification preview">
+      {items.length === 0 ? (
+        <p className="site-account-menu__notif-empty" role="status">
+          No notifications yet.
+        </p>
+      ) : (
+        <ul className="site-account-menu__notif-list">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className={`site-account-menu__notif-item${item.read ? "" : " is-unread"}`}
+            >
+              <strong>{item.title}</strong>
+              <p>{item.body}</p>
+              {item.href ? (
+                <Link
+                  to={item.href}
+                  className="site-account-menu__notif-link"
+                  onClick={() => {
+                    markNotificationRead(item.id);
+                    onChange();
+                    onNavigate();
+                  }}
+                >
+                  Open
+                </Link>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="site-account-menu__notif-foot">
+        {!viewAll && totalCount > 3 ? (
+          <button type="button" className="site-account-menu__notif-view-all" onClick={onViewAll}>
+            View all
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="site-account-menu__notif-mark"
+          onClick={() => {
+            markAllNotificationsRead();
+            onChange();
+          }}
+        >
+          Mark all read
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.75" />
+      <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.75" />
+      <path
+        d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M20 14.5A7.5 7.5 0 0 1 9.5 4 7.5 7.5 0 1 0 20 14.5z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -584,6 +1239,7 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
     const pages = [
       { label: "Budget planner", to: "/planner" },
       { label: "AI Furniture Consultant", to: "/consultant" },
+      { label: "My projects", to: "/my-projects" },
       { label: "Downloads", to: "/downloads" },
       { label: "Manufacturing", to: "/manufacturing" },
     ];
@@ -598,7 +1254,7 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
   return (
     <div
       ref={trapRef}
-      className={`site-search${isMobile ? " site-search--drawer" : ""} cx-motion-fade`}
+      className={`site-search${isMobile ? " site-search--drawer" : ""} cx-motion-fade site-search--bar`}
       role="dialog"
       aria-modal="true"
       aria-label="Site search"
@@ -617,7 +1273,7 @@ function SiteSearch({ onClose }: { onClose: () => void }) {
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search catalogue, categories, projects…"
+            placeholder="Search products…"
             onKeyDown={(e) => {
               if (e.key === "Enter" && results[0]) {
                 pushRecentSearch(q);

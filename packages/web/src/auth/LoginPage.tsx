@@ -1,14 +1,20 @@
 import { startTransition, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, TextField } from "../components/ui";
 import { FormShell } from "../forms/FormShell";
 import { useSession } from "../state/session";
 import { ApiClientError } from "../api/types";
+import { BrandLogo } from "../brand/BrandLogo";
+import { BRAND } from "../brand";
 import { Seo } from "../marketing/Seo";
+import { sanitizeReturnUrl } from "../marketing/nav/role-home";
 
 export function LoginPage() {
   const { api, setSession, setLastCorrelationId } = useSession();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const returnUrl = sanitizeReturnUrl(params.get("returnUrl"));
+  const reason = params.get("reason");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mfaToken, setMfaToken] = useState("");
@@ -26,13 +32,10 @@ export function LoginPage() {
         ...(mfaToken ? { mfaToken } : {}),
       });
       setLastCorrelationId(result.correlationId);
-      // Commit session first, then navigate in a transition so AppShell /
-      // permission providers mount against a settled React tree (avoids the
-      // intermittent "Cannot read properties of null (reading 'useState')"
-      // race seen on login → /app under StrictMode + Vite HMR).
       setSession(result.data.user, result.data.tokens);
+      const destination = returnUrl ?? "/workspace";
       startTransition(() => {
-        void navigate("/app", { replace: true });
+        void navigate(destination, { replace: true });
       });
     } catch (err) {
       if (err instanceof ApiClientError) {
@@ -52,19 +55,23 @@ export function LoginPage() {
   }
 
   return (
-    <main className="auth-layout">
+    <main className="auth-layout" data-testid="login-page">
       <Seo
         title="Sign in"
-        description="Sign in to the Artisan Furnish Hub enterprise operations console."
+        description={`Sign in to the ${BRAND.name} enterprise operations console.`}
         path="/login"
         organizationSchema={false}
       />
       <div className="panel auth-card">
-        <h1>Artisan Furnish Hub</h1>
+        <BrandLogo variant="full" className="auth-brand-logo" asLink={false} />
+        <h1 className="sr-only">{BRAND.name}</h1>
         <p>
           Sign in to the enterprise operations console. Authorization is enforced by
           backend Policy.
         </p>
+        {reason === "workspace" ? (
+          <Alert tone="info">Please sign in to access your workspace.</Alert>
+        ) : null}
         {error ? <Alert tone="danger">{error}</Alert> : null}
         <FormShell
           submitLabel="Sign in"

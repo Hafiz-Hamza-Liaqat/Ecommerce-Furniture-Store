@@ -5,6 +5,7 @@ import type {
   AiProvider,
   AiProviderId,
 } from "./types";
+import { BRAND } from "../brand";
 
 function sleep(ms: number, signal?: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -77,7 +78,7 @@ function craftReply(userText: string, ctx?: AiContext): string {
     .join(" · ");
 
   let body =
-    `I am the AFH enterprise assistant assisting in ${where}. ` +
+    `I am the ${BRAND.name} enterprise assistant assisting in ${where}. ` +
     `I explain existing ERP, analytics, and search data — I do not change workflows, policies, or calculations.\n\n`;
 
   if (focus) body += `**Context**\n${focus}\n\n`;
@@ -93,7 +94,7 @@ function craftReply(userText: string, ctx?: AiContext): string {
     body +=
       `**Sales assist**\n` +
       `Draft outline (edit before send):\n\n` +
-      `> Thank you for considering Artisan Furnish Hub. Based on your project requirements, we propose a phased delivery with finish samples in week 1 and installation readiness in week 6.\n\n` +
+      `> Thank you for considering ${BRAND.name}. Based on your project requirements, we propose a phased delivery with finish samples in week 1 and installation readiness in week 6.\n\n` +
       `**Follow-ups**\n1. Confirm finish palette\n2. Share site access window\n3. Schedule design review\n`;
   } else if (/supplier|procurement|rfq|vendor/.test(q)) {
     body +=
@@ -183,7 +184,7 @@ function makeVendorStub(id: AiProviderId, label: string, models: readonly string
 
 export const LOCAL_PROVIDER: AiProvider = {
   id: "local",
-  label: "AFH Local Assist",
+  label: `${BRAND.monogram} Local Assist`,
   models: ["afh-assist-1"],
   async *chatStream(req) {
     const last = [...req.messages].reverse().find((m) => m.role === "user")?.content ?? "";

@@ -49,13 +49,13 @@ export class AppErrorBoundary extends Component<Props, State> {
         );
       return (
         <EnterpriseError
-          kind={chunkFail ? "network" : "server"}
-          title={chunkFail ? "Page failed to load" : "Unexpected application error"}
+          kind={chunkFail ? "maintenance" : "server"}
+          title={chunkFail ? "Maintenance" : "Unexpected application error"}
           {...(chunkFail ? { code: "503" } : {})}
           {...(message
             ? {
                 body: chunkFail
-                  ? "A page module could not be loaded (often after a refresh or update). Retry or hard-refresh the browser."
+                  ? "A page module could not be loaded (often after a refresh or update). Refresh shortly, or hard-refresh the browser."
                   : `${message}. You can retry or return to a safe page.`,
               }
             : {})}

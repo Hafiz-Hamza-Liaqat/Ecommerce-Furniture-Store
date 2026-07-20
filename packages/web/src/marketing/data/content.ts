@@ -1,17 +1,10 @@
 /**
  * Brand content for the public website — presentation data only.
- * No business logic; copy and media URLs for marketing surfaces.
+ * Canonical identity: src/brand/index.ts
  */
+import { BRAND as CANONICAL_BRAND } from "../../brand";
 
-export const BRAND = {
-  name: "Artisan Furnish Hub",
-  short: "AFH",
-  tagline: "Furniture crafted for lasting spaces.",
-  phone: "+92 300 000 0000",
-  whatsapp: "923000000000",
-  email: "hello@artisanfurnish.example",
-  address: "Industrial Estate, Lahore, Pakistan",
-} as const;
+export const BRAND = CANONICAL_BRAND;
 
 export const IMG = {
   hero: "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=1600&q=72",
@@ -230,7 +223,7 @@ export const TRUSTED = [
 export const TESTIMONIALS = [
   {
     quote:
-      "AFH treated our headquarters like a product — precise, durable, and calm under daily use.",
+      "Rao Liaqat Furniture treated our headquarters like a product — precise, durable, and calm under daily use.",
     name: "Sana Malik",
     role: "Workplace Director, Indus Group",
   },
@@ -328,7 +321,7 @@ export type SitePageContent = {
 
 export const SITE_PAGES: Record<string, SitePageContent> = {
   about: {
-    title: "About Artisan Furnish Hub",
+    title: "About Rao Liaqat Furniture",
     eyebrow: "Company",
     description: "A furniture manufacturer building lasting interiors for homes, hotels, and workplaces.",
     image: IMG.workshop,
@@ -344,7 +337,7 @@ export const SITE_PAGES: Record<string, SitePageContent> = {
     description: "From a joinery bench to an integrated manufacturing brand.",
     image: IMG.wood,
     body: [
-      "Artisan Furnish Hub began as a joinery studio obsessed with honest materials and precise detailing.",
+      "Rao Liaqat Furniture began as a joinery studio obsessed with honest materials and precise detailing.",
       "Demand from hospitality and workplace clients led us to build a modern factory — without abandoning craft.",
       "Today we serve designers, developers, and enterprises who expect both beauty and operational reliability.",
     ],
@@ -426,7 +419,7 @@ export const SITE_PAGES: Record<string, SitePageContent> = {
     image: IMG.team,
     body: [
       "We hire craftspeople, engineers, project managers, and commercial partners who care about detail.",
-      "Open roles are posted seasonally — send portfolios to careers@artisanfurnish.example.",
+      "Open roles are posted seasonally — send portfolios to careers@raoliaquatfurniture.com.",
     ],
   },
   partners: {
@@ -456,7 +449,7 @@ export const SITE_PAGES: Record<string, SitePageContent> = {
     image: IMG.catalog4,
     body: [
       "Follow product releases, open factory days, and sustainability milestones.",
-      "Media inquiries: press@artisanfurnish.example.",
+      "Media inquiries: press@raoliaquatfurniture.com.",
     ],
   },
   blog: {
@@ -476,7 +469,7 @@ export const SITE_PAGES: Record<string, SitePageContent> = {
     image: IMG.projectC,
     body: [
       "Join open days at the factory or private showroom appointments for new collections.",
-      "Request invitations through events@artisanfurnish.example.",
+      "Request invitations through events@raoliaquatfurniture.com.",
     ],
   },
   privacy: {
@@ -486,13 +479,13 @@ export const SITE_PAGES: Record<string, SitePageContent> = {
     body: [
       "We collect contact details you submit via forms to respond to inquiries and demos.",
       "Analytics may be used to improve site performance; we do not sell personal data.",
-      "Contact privacy@artisanfurnish.example for access or deletion requests.",
+      "Contact privacy@raoliaquatfurniture.com for access or deletion requests.",
     ],
   },
   terms: {
     title: "Terms of Use",
     eyebrow: "Legal",
-    description: "Conditions for using the Artisan Furnish Hub website.",
+    description: `Conditions for using the ${BRAND.name} website.`,
     body: [
       "Content is provided for information and specification guidance; product availability may vary.",
       "Quotes and contracts are governed by separate commercial agreements.",
@@ -505,8 +498,8 @@ export const SITE_PAGES: Record<string, SitePageContent> = {
     description: "Showroom, factory, and project inquiries.",
     image: IMG.office,
     body: [
-      "Email hello@artisanfurnish.example or call +92 300 000 0000.",
-      "Visit by appointment — Industrial Estate, Lahore.",
+      `Email ${BRAND.email} or call ${BRAND.phone} / ${BRAND.phoneSecondary}.`,
+      BRAND.showroomNotice,
     ],
   },
   quote: {
@@ -526,7 +519,7 @@ export const SITE_PAGES: Record<string, SitePageContent> = {
     image: IMG.lounge,
     body: [
       "Schedule a virtual or on-site walkthrough of collections and the digital booklet.",
-      "Ideal for design firms and procurement teams evaluating AFH for an upcoming program.",
+      "Ideal for design firms and procurement teams evaluating Rao Liaqat Furniture for an upcoming program.",
     ],
   },
   faq: {

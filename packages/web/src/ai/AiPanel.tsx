@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { BRAND } from "../brand";
 import { Drawer } from "../workspace/widgets";
 import { useWorkspaceUi } from "../workspace/context";
 import { ChatShell } from "./ChatShell";
@@ -14,7 +15,7 @@ export function AiAssistantPanel() {
   }, [aiPanelOpen]);
 
   return (
-    <Drawer open={aiPanelOpen} title="AFH Assist" onClose={() => setAiPanelOpen(false)}>
+    <Drawer open={aiPanelOpen} title={`${BRAND.monogram} Assist`} onClose={() => setAiPanelOpen(false)}>
       <div className="stack ai-panel">
         <div className="ai-chips">
           {SUGGESTED_PROMPTS.slice(0, 4).map((p) => (

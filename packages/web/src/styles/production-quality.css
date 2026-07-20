@@ -37,16 +37,16 @@
 [data-theme="dark"] .ws-modal,
 [data-theme="dark"] .ws-drawer,
 [data-theme="dark"] .ws-palette {
-  background: var(--afh-elevated, #1e1e1e);
-  color: var(--afh-ink, #f5f5f5);
+  background: var(--brand-surface-elevated);
+  color: var(--brand-ink);
 }
 
 .site[data-site-theme="dark"] .site-search__panel,
 .site[data-site-theme="dark"] .site-chat-panel,
 .site[data-site-theme="dark"] .site-cookies {
-  background: var(--site-surface, #1a1a1a);
-  color: var(--site-ink, #f5f5f5);
-  border-color: color-mix(in srgb, var(--site-ink, #fff) 16%, transparent);
+  background: var(--brand-surface-elevated);
+  color: var(--brand-ink);
+  border-color: var(--brand-line);
 }
 
 .site[data-site-theme="dark"] .site-search input,
@@ -79,7 +79,7 @@
 .site-chat:focus-visible,
 .site-top:focus-visible,
 .site-whatsapp:focus-visible {
-  outline: 2px solid var(--site-accent, #8b6914);
+  outline: var(--brand-focus-outline);
   outline-offset: 3px;
 }
 

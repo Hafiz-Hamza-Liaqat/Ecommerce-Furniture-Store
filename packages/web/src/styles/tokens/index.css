@@ -1,0 +1,229 @@
+/**
+ * RC9.4.2 — Canonical design tokens (CSS source of truth).
+ * All --afh-*, --site-*, and --cx-* aliases resolve here.
+ */
+
+:root {
+  /* ===== Brand palette (light) ===== */
+  --brand-forest: #2f4f3f;
+  --brand-forest-deep: #243d31;
+  --brand-brass: #9a7b4f;
+  --brand-brass-deep: #7a5f3a;
+  --brand-ink: #14201a;
+  --brand-ink-muted: #3a4a42;
+  --brand-paper: #f7f8f7;
+  --brand-mist: #eef1ef;
+  --brand-surface: #ffffff;
+  --brand-surface-elevated: #ffffff;
+  --brand-line: rgba(20, 32, 26, 0.12);
+  --brand-hero-text: #f4f7f5;
+  --brand-accent: var(--brand-brass);
+  --brand-accent-deep: var(--brand-brass-deep);
+  --brand-primary: var(--brand-forest);
+  --brand-primary-deep: var(--brand-forest-deep);
+  --brand-primary-on: #f4f7f5;
+
+  /* Semantic */
+  --brand-success: #1b7a4a;
+  --brand-warning: #a15c12;
+  --brand-danger: #b42318;
+  --brand-info: #1f6f6a;
+
+  /* Typography */
+  --brand-font-ui: "Manrope", "Segoe UI", sans-serif;
+  --brand-font-display: "Syne", "Manrope", sans-serif;
+  --type-hero-xl: clamp(2.4rem, 6vw, 4.6rem);
+  --type-hero-l: clamp(2rem, 4vw, 3rem);
+  --type-h1: clamp(1.85rem, 3.5vw, 2.75rem);
+  --type-h2: clamp(1.8rem, 3vw, 2.6rem);
+  --type-h3: clamp(1.25rem, 2vw, 1.5rem);
+  --type-body-l: 1.1rem;
+  --type-body: 1rem;
+  --type-caption: 0.875rem;
+  --type-eyebrow: 0.75rem;
+  --type-weight-display: 750;
+  --type-weight-hero: 800;
+
+  /* Spacing */
+  --brand-space-1: 0.25rem;
+  --brand-space-2: 0.5rem;
+  --brand-space-3: 0.75rem;
+  --brand-space-4: 1rem;
+  --brand-space-5: 1.25rem;
+  --brand-space-6: 1.5rem;
+  --brand-space-8: 2rem;
+  --brand-space-10: 2.5rem;
+  --brand-space-12: 3rem;
+  --brand-space-16: 4rem;
+  --brand-space-18: 4.5rem;
+  --brand-container: 1200px;
+  --brand-container-wide: 1400px;
+  --brand-header: 4.25rem;
+  --brand-sidebar: 280px;
+
+  /* Radius */
+  --brand-radius-sm: 8px;
+  --brand-radius-md: 12px;
+  --brand-radius-lg: 14px;
+  --brand-radius-pill: 999px;
+
+  /* Shadows (light) */
+  --brand-shadow-sm: 0 1px 2px rgba(20, 32, 26, 0.06);
+  --brand-shadow-md: 0 4px 12px rgba(20, 32, 26, 0.08);
+  --brand-shadow-lg: 0 8px 24px rgba(20, 32, 26, 0.08);
+  --brand-shadow-xl: 0 14px 36px rgba(20, 32, 26, 0.12);
+  --brand-shadow-panel: 0 18px 50px rgba(20, 32, 26, 0.08);
+
+  /* Motion */
+  --brand-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --brand-motion-fast: 140ms;
+  --brand-motion-medium: 220ms;
+  --brand-motion-slow: 320ms;
+  --brand-motion-hero: 560ms;
+  --brand-motion-reveal: 600ms;
+  --brand-lift: 2px;
+  --brand-scale: 1.008;
+  --brand-scale-img: 1.02;
+  --brand-reveal-y: 16px;
+  --brand-stagger: 55ms;
+
+  /* Focus */
+  --brand-focus-ring: 0 0 0 3px rgba(154, 123, 79, 0.35);
+  --brand-focus-outline: 2px solid var(--brand-brass);
+
+  /* Touch */
+  --brand-touch-min: 44px;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"],
+.site[data-site-theme="dark"] {
+  --brand-forest: #3d6b54;
+  --brand-forest-deep: #2f4f3f;
+  --brand-brass: #b8956a;
+  --brand-brass-deep: #9a7b4f;
+  --brand-ink: #e8eee9;
+  --brand-ink-muted: #b7c2bb;
+  --brand-paper: #0d1310;
+  --brand-mist: #121a16;
+  --brand-surface: #121a16;
+  --brand-surface-elevated: #161f1a;
+  --brand-line: rgba(232, 238, 233, 0.14);
+  --brand-primary-on: #12140f;
+
+  --brand-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --brand-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --brand-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --brand-shadow-xl: 0 14px 36px rgba(0, 0, 0, 0.4);
+  --brand-shadow-panel: 0 18px 50px rgba(0, 0, 0, 0.35);
+
+  --brand-focus-ring: 0 0 0 3px rgba(184, 149, 106, 0.35);
+
+  color-scheme: dark;
+}
+
+/* ===== Enterprise aliases (--afh-*) ===== */
+:root {
+  --afh-ink: var(--brand-ink);
+  --afh-ink-soft: var(--brand-ink-muted);
+  --afh-stone: var(--brand-mist);
+  --afh-mist: var(--brand-mist);
+  --afh-paper: var(--brand-paper);
+  --afh-surface: var(--brand-surface);
+  --afh-elevated: var(--brand-surface-elevated);
+  --afh-copper: var(--brand-brass);
+  --afh-copper-deep: var(--brand-brass-deep);
+  --afh-teal: var(--brand-info);
+  --afh-danger: var(--brand-danger);
+  --afh-ok: var(--brand-success);
+  --afh-warn: var(--brand-warning);
+  --afh-border: var(--brand-line);
+  --afh-shadow: var(--brand-shadow-panel);
+  --afh-radius: var(--brand-radius-lg);
+  --afh-font-ui: var(--brand-font-ui);
+  --afh-font-brand: var(--brand-font-display);
+  --afh-sidebar: var(--brand-sidebar);
+  --afh-focus: var(--brand-focus-ring);
+  --afh-row: 0.7rem;
+  --afh-space-1: var(--brand-space-1);
+  --afh-space-2: var(--brand-space-2);
+  --afh-space-3: var(--brand-space-3);
+  --afh-space-4: var(--brand-space-4);
+  --afh-space-5: var(--brand-space-5);
+  --afh-space-6: var(--brand-space-6);
+  --afh-space-8: var(--brand-space-8);
+  --afh-space-10: var(--brand-space-10);
+  --afh-elev-0: none;
+  --afh-elev-1: var(--brand-shadow-sm);
+  --afh-elev-2: var(--brand-shadow-md);
+  --afh-elev-3: var(--brand-shadow-panel);
+  --afh-motion-fast: var(--brand-motion-fast);
+  --afh-motion-base: var(--brand-motion-medium);
+  --afh-motion-slow: var(--brand-motion-slow);
+  --afh-ease-out: var(--brand-ease);
+  --afh-header-min-h: 3.25rem;
+  --afh-table-row: 2.75rem;
+  --afh-touch-min: var(--brand-touch-min);
+  --afh-badge-radius: var(--brand-radius-pill);
+  --afh-input-radius: var(--brand-radius-md);
+  --afh-card-radius: var(--brand-radius-lg);
+}
+
+/* ===== Marketing aliases (--site-*, --cx-*) ===== */
+.site,
+:root {
+  --site-ink: var(--brand-ink);
+  --site-ink-soft: var(--brand-ink-muted);
+  --site-mist: var(--brand-mist);
+  --site-paper: var(--brand-paper);
+  --site-surface: var(--brand-surface-elevated);
+  --site-forest: var(--brand-forest);
+  --site-brass: var(--brand-brass);
+  --site-brass-deep: var(--brand-brass-deep);
+  --site-line: var(--brand-line);
+  --site-accent: var(--brand-brass);
+  --site-font: var(--brand-font-ui);
+  --site-display: var(--brand-font-display);
+  --site-header: var(--brand-header);
+  --site-space-1: var(--brand-space-1);
+  --site-space-2: var(--brand-space-2);
+  --site-space-3: var(--brand-space-3);
+  --site-space-4: var(--brand-space-4);
+  --site-space-5: var(--brand-space-6);
+  --site-space-6: var(--brand-space-8);
+  --site-space-7: var(--brand-space-12);
+  --site-space-8: var(--brand-space-18);
+  --site-container: var(--brand-container);
+  --site-nav-gap: 0.85rem;
+  --site-nav-font: 0.9375rem;
+  --cx-ease: var(--brand-ease);
+  --cx-duration: var(--brand-motion-slow);
+  --cx-duration-slow: var(--brand-motion-hero);
+  --cx-duration-reveal: var(--brand-motion-reveal);
+  --cx-lift: var(--brand-lift);
+  --cx-scale: var(--brand-scale);
+  --cx-scale-img: var(--brand-scale-img);
+  --cx-reveal-y: var(--brand-reveal-y);
+  --cx-stagger: var(--brand-stagger);
+  --cx-shadow: var(--brand-shadow-lg);
+  --cx-shadow-hover: var(--brand-shadow-xl);
+}
+
+@media (min-width: 1440px) {
+  :root,
+  .site {
+    --brand-container: var(--brand-container-wide);
+    --site-container: var(--brand-container-wide);
+    --brand-header: 4.5rem;
+    --site-header: 4.5rem;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1439px) {
+  :root,
+  .site {
+    --brand-header: 4rem;
+    --site-header: 4rem;
+  }
+}

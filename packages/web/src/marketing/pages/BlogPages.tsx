@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { BRAND } from "../../brand";
 import { Seo } from "../Seo";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import {
@@ -88,7 +89,7 @@ export function BlogIndexPage() {
     <>
       <Seo
         title={category ? `${category.name} — Journal` : "Journal"}
-        description="Insights on furniture, interiors, manufacturing, and project craft from Artisan Furnish Hub."
+        description="Insights on furniture, interiors, manufacturing, and project craft from Rao Liaqat Furniture."
         path="/blog"
         {...(featured?.heroImage ? { image: featured.heroImage } : {})}
       />
@@ -96,7 +97,7 @@ export function BlogIndexPage() {
       <header className="afh-blog-hero site-reveal">
         <div className="afh-blog-hero__copy">
           <Breadcrumbs items={[{ label: "Journal" }]} />
-          <p className="site-eyebrow">AFH Journal</p>
+          <p className="site-eyebrow">{BRAND.name} Journal</p>
           <h1>Ideas for lasting spaces</h1>
           <p>
             Original notes on design, materials, manufacturing, and project delivery — written for architects,
@@ -252,13 +253,13 @@ export function BlogIndexPage() {
       </div>
 
       <section className="site-cta-band site-reveal" aria-labelledby="blog-cta">
-        <h2 id="blog-cta">Specify with AFH</h2>
+        <h2 id="blog-cta">Specify with {BRAND.name}</h2>
         <p>Explore the catalogue or request a quotation for your next interior program.</p>
         <div className="site-hero__actions">
           <Link to="/products" className="site-btn site-btn--primary">
             Browse catalogue
           </Link>
-          <Link to="/quote" className="site-btn site-btn--ghost">
+          <Link to="/quote" className="site-btn site-btn--outline">
             Request quote
           </Link>
         </div>
@@ -289,7 +290,7 @@ export function BlogArticlePage() {
   const cat = getBlogCategory(article.categoryId);
   const related = relatedArticles(article);
   const { prev, next } = adjacentArticles(article.slug);
-  const shareUrl = typeof window !== "undefined" ? window.location.href : `https://artisanfurnish.example/blog/${article.slug}`;
+  const shareUrl = typeof window !== "undefined" ? window.location.href : `${BRAND.web}/blog/${article.slug}`;
 
   return (
     <>
@@ -429,7 +430,7 @@ export function BlogArticlePage() {
             <Link to="/quote" className="site-btn site-btn--primary">
               Request quote
             </Link>
-            <Link to="/furniture" className="site-btn site-btn--ghost">
+            <Link to="/furniture" className="site-btn site-btn--outline">
               Browse furniture
             </Link>
           </div>

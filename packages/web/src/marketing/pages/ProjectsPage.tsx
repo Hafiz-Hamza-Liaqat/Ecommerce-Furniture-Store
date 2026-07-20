@@ -79,7 +79,7 @@ export function ProjectDetailPage() {
           <div>
             <h2>Client story</h2>
             <p>
-              {project.client} partnered with AFH for specification, manufacturing, and phased delivery.
+              {project.client} partnered with Rao Liaqat Furniture for specification, manufacturing, and phased delivery.
               Engineering boards locked finishes early so factory throughput stayed predictable.
             </p>
             <h2>Case study video</h2>
@@ -93,7 +93,7 @@ export function ProjectDetailPage() {
           <Link to="/quote" className="site-btn site-btn--primary">
             Start a similar project
           </Link>
-          <Link to="/projects" className="site-btn site-btn--ghost">
+          <Link to="/projects" className="site-btn site-btn--outline">
             Back to portfolio
           </Link>
         </div>

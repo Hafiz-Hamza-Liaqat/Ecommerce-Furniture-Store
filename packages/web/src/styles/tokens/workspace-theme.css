@@ -1,0 +1,116 @@
+/**
+ * RC9.4.2 — Workspace luxury theme (warm surfaces, forest/brass accents).
+ * Layout unchanged — visual tokens only.
+ */
+
+.ws-shell,
+.app-shell {
+  --ws-accent: var(--brand-forest);
+  --ws-accent-soft: color-mix(in srgb, var(--brand-forest) 12%, var(--brand-paper));
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(47, 79, 63, 0.08), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(154, 123, 79, 0.06), transparent 50%),
+    linear-gradient(180deg, var(--brand-mist), var(--brand-paper));
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(1000px 500px at 80% 0%, rgba(154, 123, 79, 0.1), transparent 55%),
+    linear-gradient(180deg, var(--brand-paper), var(--brand-mist));
+}
+
+.panel,
+.ws-card,
+.ws-stat {
+  background: color-mix(in srgb, var(--brand-surface) 94%, var(--brand-paper));
+  border: 1px solid var(--brand-line);
+  border-radius: var(--brand-radius-lg);
+  box-shadow: var(--brand-shadow-sm);
+}
+
+[data-theme="dark"] .panel,
+[data-theme="dark"] .ws-card,
+[data-theme="dark"] .ws-stat {
+  background: color-mix(in srgb, var(--brand-surface-elevated) 96%, var(--brand-paper));
+  box-shadow: var(--brand-shadow-md);
+}
+
+.page-header {
+  border-bottom: 1px solid var(--brand-line);
+  padding-bottom: var(--brand-space-4);
+  margin-bottom: var(--brand-space-6);
+}
+
+.brand__mark {
+  background: color-mix(in srgb, var(--brand-forest) 14%, var(--brand-paper));
+  color: var(--brand-forest);
+  border: 1px solid color-mix(in srgb, var(--brand-forest) 22%, var(--brand-line));
+}
+
+[data-theme="dark"] .brand__mark {
+  background: color-mix(in srgb, var(--brand-brass) 18%, var(--brand-surface));
+  color: var(--brand-brass);
+}
+
+.ws-sidebar {
+  background: color-mix(in srgb, var(--brand-paper) 96%, var(--brand-mist));
+  border-right: 1px solid var(--brand-line);
+}
+
+[data-theme="dark"] .ws-sidebar {
+  background: color-mix(in srgb, var(--brand-paper) 98%, var(--brand-mist));
+}
+
+.nav-link.active,
+.nav-link:hover {
+  color: var(--brand-forest);
+  background: var(--ws-accent-soft);
+}
+
+[data-theme="dark"] .nav-link.active,
+[data-theme="dark"] .nav-link:hover {
+  color: var(--brand-brass);
+}
+
+.ws-topbar {
+  background: color-mix(in srgb, var(--brand-paper) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--brand-line);
+}
+
+.plt-shell {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(47, 79, 63, 0.1), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(154, 123, 79, 0.07), transparent 50%),
+    var(--brand-mist);
+  color: var(--brand-ink);
+  font-family: var(--brand-font-ui);
+}
+
+.plt-shell__header {
+  background: color-mix(in srgb, var(--brand-paper) 92%, transparent);
+  border-bottom: 1px solid var(--brand-line);
+}
+
+.plt-shell__brand {
+  font-family: var(--brand-font-display);
+  color: var(--brand-forest);
+}
+
+[data-theme="dark"] .plt-shell__brand {
+  color: var(--brand-brass);
+}
+
+.plt-shell__nav a.is-active,
+.plt-shell__nav a:hover {
+  color: var(--brand-ink);
+  background: color-mix(in srgb, var(--brand-forest) 8%, var(--brand-paper));
+}
+
+[data-theme="dark"] .plt-shell__nav a.is-active,
+[data-theme="dark"] .plt-shell__nav a:hover {
+  background: color-mix(in srgb, var(--brand-brass) 12%, var(--brand-surface));
+}

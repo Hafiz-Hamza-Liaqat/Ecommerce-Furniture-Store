@@ -39,7 +39,7 @@ export function FurnitureHubPage() {
     <>
       <Seo
         title="All Furniture"
-        description="Browse AFH furniture by room and product family."
+        description="Browse Rao Liaqat Furniture by room and product family."
         path="/furniture"
         image={IMG.lounge}
         breadcrumbs={[

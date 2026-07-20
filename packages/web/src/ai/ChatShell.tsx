@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { BRAND } from "../brand";
 import { Button } from "../components/ui";
 import { getProvider } from "./provider";
 import { loadAiSettings, pushGeneration, recordUsage, saveConversations, loadConversations } from "./prefs";
@@ -213,7 +214,7 @@ export function ChatShell({
             ) : null}
             {messages.map((m) => (
               <article key={m.id} className={`ai-bubble ai-bubble--${m.role}${m.streaming ? " is-streaming" : ""}`}>
-                <header>{m.role === "user" ? "You" : "AFH Assist"}</header>
+                <header>{m.role === "user" ? "You" : `${BRAND.monogram} Assist`}</header>
                 <div className="ai-bubble__body">
                   {m.role === "assistant" ? renderMarkdown(m.content || "…") : m.content}
                 </div>
@@ -229,7 +230,7 @@ export function ChatShell({
               rows={compact ? 2 : 3}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask AFH Assist… (⌘/Ctrl Enter)"
+              placeholder={`Ask ${BRAND.monogram} Assist… (⌘/Ctrl Enter)`}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                   e.preventDefault();

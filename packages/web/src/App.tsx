@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { AppShell } from "./shell/AppShell";
 import { LoginPage } from "./auth/LoginPage";
@@ -7,6 +7,9 @@ import { PasswordResetPage } from "./auth/PasswordResetPage";
 import { useSession } from "./state/session";
 import { MarketingShell } from "./marketing/MarketingShell";
 import { RouteSuspense } from "./components/EnterpriseError";
+import { loginUrlForWorkspace } from "./marketing/nav/role-home";
+import { PortalEntry } from "./marketing/pages/PortalEntry";
+import { WorkspaceRedirectPage } from "./marketing/pages/WorkspaceRedirectPage";
 import {
   RequireRoutePermission,
   RequireRoutePermissionElement,
@@ -59,7 +62,6 @@ import {
   LazyOnboardingRoutes,
   LazyPersonalWorkspacePage,
   LazyPlatformRoutes,
-  LazyPortalRoutes,
   LazyPreferencesPage,
   LazyProcurementPage,
   LazyProductDetailPage,
@@ -79,22 +81,35 @@ import {
   LazyWishlistPage,
   LazyBudgetPlannerPage,
   LazyConsultantPage,
+  LazyCustomerProjectsPage,
   LazyDownloadsPage,
   LazyCookiesPage,
 } from "./routes/lazy";
 
 function RequireAuth() {
   const { tokens } = useSession();
+  const location = useLocation();
   if (!tokens?.sessionId) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to={loginUrlForWorkspace(`${location.pathname}${location.search}`)}
+        replace
+      />
+    );
   }
   return <Outlet />;
 }
 
 function RequireAuthElement({ children }: { readonly children: ReactNode }) {
   const { tokens } = useSession();
+  const location = useLocation();
   if (!tokens?.sessionId) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to={loginUrlForWorkspace(`${location.pathname}${location.search}`)}
+        replace
+      />
+    );
   }
   return children;
 }
@@ -132,16 +147,19 @@ export function AppRoutes() {
       <Route
         path="/portal/*"
         element={
-          <RequireAuthElement>
-            <RequireRoutePermissionElement>
-              <Lazy>
-                <LazyPortalRoutes />
-              </Lazy>
-            </RequireRoutePermissionElement>
-          </RequireAuthElement>
+          <Lazy>
+            <PortalEntry />
+          </Lazy>
         }
       />
-
+      <Route
+        path="/workspace"
+        element={
+          <Lazy>
+            <WorkspaceRedirectPage />
+          </Lazy>
+        }
+      />
       <Route path="/app" element={<RequireAuth />}>
         <Route element={<AppShell />}>
           {/* RC5.2 presentation guard: catalog-driven permission gating for
@@ -470,6 +488,14 @@ export function AppRoutes() {
           element={
             <Lazy>
               <LazyConsultantPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="my-projects"
+          element={
+            <Lazy>
+              <LazyCustomerProjectsPage />
             </Lazy>
           }
         />

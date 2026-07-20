@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Seo } from "../Seo";
 import { Breadcrumbs } from "../components/Breadcrumbs";
-import { BRAND } from "../data/content";
+import { BRAND, whatsappUrl } from "../../brand";
 import {
   bootstrapConsultantFromPlannerUrl,
   clearConsultantMemory,
@@ -22,7 +22,49 @@ import {
   saveConsultantHistory,
   type ConsultantMessage,
 } from "../cx/stores";
+import { getProject, syncConsultantState, welcomeBackMessage } from "../cx/projects";
 import { useReveal } from "../useReveal";
+
+function bootstrapConsultantEntry(search: string): {
+  memory: ConsultantMemory;
+  messages: ConsultantMessage[];
+  projectId: string | null;
+} {
+  const params = new URLSearchParams(search.startsWith("?") ? search : `?${search}`);
+  const projectId = params.get("projectId");
+
+  const plannerBoot = bootstrapConsultantFromPlannerUrl(search);
+  if (plannerBoot) {
+    return { ...plannerBoot, projectId };
+  }
+
+  if (projectId) {
+    const project = getProject(projectId);
+    if (project) {
+      const welcome: ConsultantMessage = {
+        role: "assistant",
+        text: welcomeBackMessage(project),
+        at: new Date().toISOString(),
+      };
+      const messages =
+        project.consultantMessages.length > 0
+          ? [...project.consultantMessages]
+          : [welcome];
+      return {
+        memory: { ...project.consultantMemory, spaceTemplateId: project.templateId },
+        messages,
+        projectId,
+      };
+    }
+  }
+
+  const hist = loadConsultantHistory();
+  return {
+    memory: loadConsultantMemory(),
+    messages: hist.length ? hist : [initialAssistantMessage()],
+    projectId: null,
+  };
+}
 
 /**
  * AI Furniture Consultant — showroom consultant UX (RC9.2).
@@ -35,24 +77,26 @@ export function ConsultantPage() {
   const [params] = useSearchParams();
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Consume planner handoff once on first mount (URL ?from=planner).
-  const [plannerBoot] = useState(() =>
-    bootstrapConsultantFromPlannerUrl(
+  const [entry] = useState(() =>
+    bootstrapConsultantEntry(
       typeof window !== "undefined" ? window.location.search : params.toString(),
     ),
   );
+  const [projectId] = useState(entry.projectId);
 
-  const [messages, setMessages] = useState<ConsultantMessage[]>(() => {
-    if (plannerBoot) return plannerBoot.messages;
-    const hist = loadConsultantHistory();
-    return hist.length ? hist : [initialAssistantMessage()];
-  });
-  const [state, setState] = useState<ConsultantMemory>(() =>
-    plannerBoot ? plannerBoot.memory : loadConsultantMemory(),
-  );
+  const [messages, setMessages] = useState<ConsultantMessage[]>(() => entry.messages);
+  const [state, setState] = useState<ConsultantMemory>(() => entry.memory);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [streamPreview, setStreamPreview] = useState("");
+
+  useEffect(() => {
+    if (!projectId) return;
+    const t = window.setTimeout(() => {
+      syncConsultantState(projectId, state, messages);
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [projectId, state, messages]);
 
   useEffect(() => {
     if (params.get("from") === "planner") {
@@ -253,12 +297,12 @@ export function ConsultantPage() {
           <Link to="/quote?from=consultant" className="site-btn site-btn--primary">
             Request quotation
           </Link>
-          <Link to="/demo" className="site-btn site-btn--ghost">
+          <Link to="/demo" className="site-btn site-btn--outline">
             Book consultation
           </Link>
           <a
             className="site-btn site-btn--ghost"
-            href={`https://wa.me/${BRAND.whatsapp}?text=${encodeURIComponent("Hi AFH — I spoke with the furniture consultant and need a handoff.")}`}
+            href={whatsappUrl(`Hi ${BRAND.name} — I spoke with the furniture consultant and need a handoff.`)}
             target="_blank"
             rel="noreferrer"
           >

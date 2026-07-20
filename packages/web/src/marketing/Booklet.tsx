@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { IMG, PRODUCTS } from "./data/content";
+import { BRAND, IMG, PRODUCTS } from "./data/content";
 
 const PAGES = [
   {
@@ -77,7 +77,7 @@ export function LuxuryBooklet() {
     <section className="booklet" id="booklet" aria-labelledby="booklet-title">
       <div className="booklet__intro">
         <p className="site-eyebrow">Premium booklet</p>
-        <h2 id="booklet-title">The AFH catalogue experience</h2>
+        <h2 id="booklet-title">The {BRAND.name} catalogue experience</h2>
         <p>
           Drag or swipe through the collection. Specify wood, fabric, finish, and color —
           then request a quote or download the PDF.

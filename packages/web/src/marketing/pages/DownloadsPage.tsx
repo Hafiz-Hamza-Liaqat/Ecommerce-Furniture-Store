@@ -16,7 +16,7 @@ export function DownloadsPage() {
     <>
       <Seo
         title="Downloads & catalogues"
-        description="Download AFH catalogues, brochures, and specification sheets."
+        description="Download Rao Liaqat Furniture catalogues, brochures, and specification sheets."
         path="/downloads"
         image={IMG.catalog1}
       />
@@ -53,7 +53,7 @@ export function DownloadsPage() {
 export function CookiesPage() {
   return (
     <>
-      <Seo title="Cookie preferences" description="Manage AFH cookie preferences." path="/cookies" />
+      <Seo title="Cookie preferences" description="Manage Rao Liaqat Furniture cookie preferences." path="/cookies" />
       <header className="site-page-hero">
         <Breadcrumbs items={[{ label: "Cookies" }]} />
         <h1>Cookie preferences</h1>

@@ -2,7 +2,7 @@
 
 - **Created:** 2026-07-19
 - **Last Updated:** 2026-07-20
-- **Status:** RC9.1–RC9.2 committed · **RC9.3 ready to commit**
+- **Status:** RC9.1–RC9.3 committed · **RC9.4 + RC9.4.1 implemented — review**
 
 ## Relationship to RC8
 
@@ -14,8 +14,26 @@ RC8 is **COMPLETE AND FROZEN**. RC9 is customer UI/content polish and customer-f
 |---|---|---|
 | **RC9.1** | Premium UI Polish (+ catalog/blog CX) | **Committed** (`60c8334`) |
 | **RC9.2** | Intelligent Furniture Consultant (Grounded AI) | **Committed** (`0bbed18`) |
-| **RC9.3** | Intelligent Budget Planner & Space Planning | **Implemented — review** |
-| RC9.4+ | TBD after RC9.3 approval | Not started |
+| **RC9.3** | Intelligent Budget Planner & Space Planning | **Committed** (`5757a2b`) |
+| **RC9.4** | Persistence & Collaboration | **Implemented — review** |
+| **RC9.4.1** | Nav, dashboards, notifications, UI stabilization | **Implemented — review** |
+| RC9.5+ | Security hardening | Not started |
+
+## Document map (RC9.4.1)
+
+| Doc | Path |
+|---|---|
+| Navigation Report | `docs/release/RC9.4.1-Navigation-Report.md` |
+
+## Document map (RC9.4)
+
+| Doc | Path |
+|---|---|
+| Persistence Report | `docs/release/RC9.4-Persistence-Report.md` |
+| Project History Architecture | `docs/release/Project-History-Architecture.md` |
+| Versioning Architecture | `docs/release/Versioning-Architecture.md` |
+| Collaboration Report | `docs/release/Collaboration-Report.md` |
+| Test Summary | `docs/release/RC9.4-Test-Summary.md` |
 
 ## Document map (RC9.3)
 
@@ -35,5 +53,7 @@ RC8 is **COMPLETE AND FROZEN**. RC9 is customer UI/content polish and customer-f
 - Frontend / content / customer AI only
 - Do **not** modify CQRS, Workflow, Policy, Authentication, Runtime Host, or enterprise modules
 - Reuse RC9.2 grounded engine; extend Budget Planner
-- Do **not** commit RC9.3 until explicit approval
-- Do **not** begin RC9.4 until RC9.3 is approved and committed
+- RC9.4 adds client persistence only — no backend project API
+- RC9.4.1 is navigation/responsive polish only — preserve routes and business logic
+- Do **not** commit RC9.4 / RC9.4.1 until explicit approval
+- Do **not** begin RC9.5 until RC9.4 is approved and committed

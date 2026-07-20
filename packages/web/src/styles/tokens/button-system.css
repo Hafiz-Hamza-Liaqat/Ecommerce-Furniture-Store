@@ -1,0 +1,209 @@
+/**
+ * RC9.4.2 — Unified button system (.btn + .site-btn share tokens).
+ */
+
+.btn,
+.site-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid transparent;
+  border-radius: var(--brand-radius-pill);
+  padding: 0.65rem 1.1rem;
+  min-height: var(--brand-touch-min);
+  cursor: pointer;
+  font-family: var(--brand-font-ui);
+  font-weight: 600;
+  font-size: var(--type-body);
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    transform var(--brand-motion-medium) var(--brand-ease),
+    background var(--brand-motion-medium) var(--brand-ease),
+    border-color var(--brand-motion-medium) var(--brand-ease),
+    box-shadow var(--brand-motion-medium) var(--brand-ease),
+    color var(--brand-motion-medium) var(--brand-ease);
+}
+
+.btn:hover:not(:disabled):not(.is-disabled),
+.site-btn:hover:not(:disabled):not(.is-disabled) {
+  transform: translateY(calc(-1 * var(--brand-lift))) scale(var(--brand-scale));
+}
+
+.btn:active:not(:disabled):not(.is-disabled),
+.site-btn:active:not(:disabled):not(.is-disabled) {
+  transform: translateY(0) scale(1);
+}
+
+.btn:focus-visible,
+.site-btn:focus-visible {
+  outline: var(--brand-focus-outline);
+  outline-offset: 3px;
+}
+
+.btn:disabled,
+.btn.is-disabled,
+.site-btn:disabled,
+.site-btn.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+
+/* Primary */
+.btn--primary,
+.site-btn--primary {
+  background: var(--brand-primary-deep);
+  color: var(--brand-primary-on);
+  border-color: transparent;
+}
+
+.btn--primary:hover:not(:disabled):not(.is-disabled),
+.site-btn--primary:hover:not(:disabled):not(.is-disabled) {
+  background: var(--brand-primary);
+  box-shadow: var(--brand-shadow-md);
+}
+
+[data-theme="dark"] .btn--primary,
+[data-theme="dark"] .site-btn--primary,
+.site[data-site-theme="dark"] .site-btn--primary {
+  background: var(--brand-brass);
+  color: var(--brand-primary-on);
+}
+
+[data-theme="dark"] .btn--primary:hover:not(:disabled):not(.is-disabled),
+[data-theme="dark"] .site-btn--primary:hover:not(:disabled):not(.is-disabled),
+.site[data-site-theme="dark"] .site-btn--primary:hover:not(:disabled):not(.is-disabled) {
+  background: var(--brand-brass-deep);
+}
+
+/* Ghost — subtle chrome (forms, filters, utility chrome) */
+.btn--ghost,
+.site-btn--ghost {
+  background: transparent;
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+
+.btn--ghost:hover:not(:disabled):not(.is-disabled),
+.site-btn--ghost:hover:not(:disabled):not(.is-disabled) {
+  background: color-mix(in srgb, var(--brand-mist) 65%, transparent);
+  border-color: color-mix(in srgb, var(--brand-brass) 45%, var(--brand-line));
+}
+
+/**
+ * Outline secondary — premium CTA companion (Book a Demo, etc.).
+ * Light: white fill, forest border/text · Dark: brass border/text.
+ */
+.btn--outline,
+.site-btn--outline {
+  background: #fff;
+  border-color: var(--brand-forest);
+  color: var(--brand-forest);
+  box-shadow: none;
+}
+
+.btn--outline:hover:not(:disabled):not(.is-disabled),
+.site-btn--outline:hover:not(:disabled):not(.is-disabled) {
+  background: var(--brand-forest);
+  border-color: var(--brand-forest);
+  color: var(--brand-primary-on);
+  box-shadow: var(--brand-shadow-md);
+}
+
+[data-theme="dark"] .btn--outline,
+[data-theme="dark"] .site-btn--outline,
+.site[data-site-theme="dark"] .site-btn--outline {
+  background: transparent;
+  border-color: var(--brand-brass);
+  color: var(--brand-brass);
+}
+
+[data-theme="dark"] .btn--outline:hover:not(:disabled):not(.is-disabled),
+[data-theme="dark"] .site-btn--outline:hover:not(:disabled):not(.is-disabled),
+.site[data-site-theme="dark"] .site-btn--outline:hover:not(:disabled):not(.is-disabled) {
+  background: var(--brand-brass);
+  border-color: var(--brand-brass);
+  color: var(--brand-primary-on);
+}
+
+/* Danger */
+.btn--danger,
+.site-btn--danger {
+  background: var(--brand-danger);
+  color: #fff;
+}
+
+.btn--danger:hover:not(:disabled):not(.is-disabled),
+.site-btn--danger:hover:not(:disabled):not(.is-disabled) {
+  background: color-mix(in srgb, var(--brand-danger) 88%, #000);
+}
+
+/* Sizes */
+.btn--sm,
+.site-btn--sm {
+  padding: 0.45rem 0.85rem;
+  min-height: 2.25rem;
+  font-size: var(--type-caption);
+}
+
+.btn--lg,
+.site-btn--lg {
+  padding: 0.75rem 1.35rem;
+  min-height: 3rem;
+  font-size: var(--type-body-l);
+}
+
+/* Icon-only */
+.btn--icon,
+.site-btn--icon {
+  padding: 0.45rem;
+  min-width: var(--brand-touch-min);
+  min-height: var(--brand-touch-min);
+}
+
+/* Loading */
+.btn.is-loading,
+.site-btn.is-loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.btn.is-loading::after,
+.site-btn.is-loading::after {
+  content: "";
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: brand-spin var(--brand-motion-hero) linear infinite;
+  color: var(--brand-primary-on);
+}
+
+@keyframes brand-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover,
+  .site-btn:hover {
+    transform: none;
+  }
+
+  .btn.is-loading::after,
+  .site-btn.is-loading::after {
+    animation: none;
+  }
+}
+
+[data-motion="reduce"] .btn:hover,
+[data-motion="reduce"] .site-btn:hover {
+  transform: none;
+}

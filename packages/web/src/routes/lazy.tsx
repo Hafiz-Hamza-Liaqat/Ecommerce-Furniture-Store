@@ -222,6 +222,10 @@ export const LazyConsultantPage = lazyNamed(
   () => import("../marketing/pages/ConsultantPage"),
   "ConsultantPage",
 );
+export const LazyCustomerProjectsPage = lazyNamed(
+  () => import("../marketing/pages/CustomerProjectsPage"),
+  "CustomerProjectsPage",
+);
 export const LazyDownloadsPage = lazyNamed(
   () => import("../marketing/pages/DownloadsPage"),
   "DownloadsPage",

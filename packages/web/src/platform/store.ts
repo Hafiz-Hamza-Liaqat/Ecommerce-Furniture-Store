@@ -213,7 +213,7 @@ function seedTenants(): TenantRecord[] {
   return [
     {
       id: "t-afh",
-      name: "Artisan Furnish Hub PK",
+      name: "Rao Liaqat Furniture",
       planId: "enterprise",
       status: "active",
       users: 118,

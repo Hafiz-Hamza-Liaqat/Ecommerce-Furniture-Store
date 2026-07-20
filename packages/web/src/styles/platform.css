@@ -1,15 +1,10 @@
 /* Phase P9 — SaaS platform, onboarding, portal, ops */
+/* Shell background: tokens/workspace-theme.css */
 
 .plt-shell {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
-  background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(31, 111, 106, 0.12), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(184, 115, 51, 0.08), transparent 50%),
-    var(--afh-mist);
-  color: var(--afh-ink);
-  font-family: var(--afh-font-ui);
 }
 
 .plt-skip {

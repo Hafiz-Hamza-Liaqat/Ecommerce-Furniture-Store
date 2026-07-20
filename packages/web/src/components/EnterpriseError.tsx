@@ -12,6 +12,7 @@ export type EnterpriseErrorKind =
   | "network"
   | "timeout"
   | "validation"
+  | "maintenance"
   | "generic";
 
 const PRESETS: Record<
@@ -20,23 +21,23 @@ const PRESETS: Record<
 > = {
   unauthorized: {
     code: "401",
-    title: "Sign in required",
-    body: "Your session expired or you are not signed in. Policy authorization happens on the server after authentication.",
+    title: "Login required",
+    body: "Please sign in to continue. Your session may have expired.",
   },
   forbidden: {
     code: "403",
-    title: "Access denied",
-    body: "Policy denied this action. The UI never authorizes — contact your administrator if you believe this is incorrect.",
+    title: "Permission denied",
+    body: "You are signed in, but Policy does not grant access to this page. Contact an administrator if you need access.",
   },
   "not-found": {
     code: "404",
     title: "Page not found",
-    body: "The resource you requested does not exist or has moved.",
+    body: "The page you requested does not exist or has moved.",
   },
   server: {
     code: "500",
-    title: "Something went wrong",
-    body: "The server encountered an error. Try again or contact support with your correlation ID.",
+    title: "Unexpected error",
+    body: "Something went wrong on our side. Retry, or report the issue with your correlation ID.",
   },
   network: {
     code: "Offline",
@@ -53,6 +54,11 @@ const PRESETS: Record<
     title: "Check your input",
     body: "One or more fields failed validation. Correct the highlighted items and submit again.",
   },
+  maintenance: {
+    code: "503",
+    title: "Maintenance",
+    body: "The service is temporarily unavailable. Refresh shortly, or check the status page when available.",
+  },
   generic: {
     code: "Error",
     title: "Something went wrong",
@@ -67,8 +73,9 @@ export function EnterpriseError({
   code,
   inline = false,
   onRetry,
-  homeHref = "/app",
+  homeHref = "/",
   loginHref = "/login",
+  contactHref = "/contact",
 }: {
   readonly kind?: EnterpriseErrorKind;
   readonly title?: string;
@@ -78,17 +85,19 @@ export function EnterpriseError({
   readonly onRetry?: () => void;
   readonly homeHref?: string;
   readonly loginHref?: string;
+  readonly contactHref?: string;
 }) {
   const preset = PRESETS[kind];
   const displayCode = code ?? preset.code;
   const displayTitle = title ?? preset.title;
   const displayBody = body ?? preset.body;
-  const classKind = kind === "not-found" ? "not-found" : kind;
+  const classKind =
+    kind === "not-found" ? "not-found" : kind === "maintenance" ? "network" : kind;
 
   return (
     <div
       className={`afh-error afh-error--${classKind}${inline ? " afh-error--inline" : ""}`}
-      role={kind === "validation" || kind === "server" || kind === "network" ? "alert" : "status"}
+      role={kind === "validation" || kind === "server" || kind === "network" || kind === "maintenance" ? "alert" : "status"}
       aria-live="polite"
     >
       <div className="afh-error__code" aria-hidden>
@@ -97,24 +106,97 @@ export function EnterpriseError({
       <h2 className="afh-error__title">{displayTitle}</h2>
       <p className="afh-error__body">{displayBody}</p>
       <div className="afh-error__actions">
-        {onRetry ? (
-          <Button variant="primary" onClick={onRetry}>
-            Retry
-          </Button>
-        ) : null}
         {kind === "unauthorized" ? (
-          <Link className="btn btn--primary" to={loginHref}>
-            Sign in
-          </Link>
-        ) : (
-          <Link className="btn btn--ghost" to={homeHref}>
-            Go to workspace
-          </Link>
-        )}
+          <>
+            <Link className="btn btn--primary" to={loginHref}>
+              Login
+            </Link>
+            <Link className="btn btn--ghost" to={homeHref}>
+              Home
+            </Link>
+          </>
+        ) : null}
+        {kind === "forbidden" ? (
+          <>
+            <Button variant="primary" onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+            <Link className="btn btn--ghost" to={homeHref}>
+              Home
+            </Link>
+            <Link className="btn btn--ghost" to={contactHref}>
+              Contact Administrator
+            </Link>
+          </>
+        ) : null}
         {kind === "not-found" ? (
-          <Link className="btn btn--ghost" to="/">
-            Marketing home
-          </Link>
+          <>
+            <Link className="btn btn--primary" to={homeHref}>
+              Home
+            </Link>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => {
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "/", bubbles: true }));
+              }}
+            >
+              Search
+            </button>
+          </>
+        ) : null}
+        {kind === "server" || kind === "generic" ? (
+          <>
+            {onRetry ? (
+              <Button variant="primary" onClick={onRetry}>
+                Retry
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            )}
+            <Link className="btn btn--ghost" to={homeHref}>
+              Home
+            </Link>
+            <Link className="btn btn--ghost" to={contactHref}>
+              Report Issue
+            </Link>
+          </>
+        ) : null}
+        {kind === "maintenance" || (kind === "network" && displayCode === "503") ? (
+          <>
+            <Button variant="primary" onClick={() => window.location.reload()}>
+              Refresh
+            </Button>
+            <Link className="btn btn--ghost" to={homeHref}>
+              Home
+            </Link>
+          </>
+        ) : null}
+        {kind === "network" && displayCode !== "503" ? (
+          <>
+            {onRetry ? (
+              <Button variant="primary" onClick={onRetry}>
+                Retry
+              </Button>
+            ) : null}
+            <Link className="btn btn--ghost" to={homeHref}>
+              Home
+            </Link>
+          </>
+        ) : null}
+        {kind === "timeout" || kind === "validation" ? (
+          <>
+            {onRetry ? (
+              <Button variant="primary" onClick={onRetry}>
+                Retry
+              </Button>
+            ) : null}
+            <Link className="btn btn--ghost" to={homeHref}>
+              Home
+            </Link>
+          </>
         ) : null}
       </div>
     </div>
@@ -141,6 +223,7 @@ export function errorKindFromStatus(status: number): EnterpriseErrorKind {
   if (status === 401) return "unauthorized";
   if (status === 403) return "forbidden";
   if (status === 404) return "not-found";
+  if (status === 503) return "maintenance";
   if (status >= 500) return "server";
   return "generic";
 }
@@ -150,6 +233,7 @@ export function errorKindFromApi(err: unknown): EnterpriseErrorKind {
     if (err.status === 401) return "unauthorized";
     if (err.status === 403) return "forbidden";
     if (err.status === 404) return "not-found";
+    if (err.status === 503) return "maintenance";
     if (err.status >= 500) return "server";
     if (err.category === "validation") return "validation";
     return "generic";

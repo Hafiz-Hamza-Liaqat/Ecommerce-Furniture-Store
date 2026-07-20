@@ -10,8 +10,8 @@ export const WORKSPACES = [
 ] as const;
 
 export const COMPANIES = [
-  { id: "afh-pk", label: "Artisan Furnish Hub PK" },
-  { id: "afh-export", label: "AFH Export Ltd" },
+  { id: "rlf-pk", label: "Rao Liaqat Furniture" },
+  { id: "rlf-export", label: "RLF Export" },
 ] as const;
 
 export const BRANCHES = [

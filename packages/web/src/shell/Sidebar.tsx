@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { BrandMark } from "../brand/BrandLogo";
 import {
   useEffect,
   useRef,
@@ -102,13 +103,7 @@ export function Sidebar() {
         aria-label="Primary"
       >
         <div className="brand">
-          <span className="brand__mark">AFH</span>
-          {!sidebarCollapsed ? (
-            <>
-              Artisan Furnish Hub
-              <span>Enterprise workspace</span>
-            </>
-          ) : null}
+          <BrandMark collapsed={sidebarCollapsed} />
         </div>
 
         {!sidebarCollapsed ? (

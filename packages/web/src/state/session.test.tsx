@@ -183,7 +183,7 @@ describe("session permission lifecycle (RC5.2.1)", () => {
     fireEvent.click(screen.getByTestId("refresh"));
     await expectCodes(screen, "");
     expect(screen.queryByTestId("guarded-content")).toBeNull();
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
   });
 
   it("logout clears permissions", async () => {

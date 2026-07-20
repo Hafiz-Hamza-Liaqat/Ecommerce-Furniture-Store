@@ -63,7 +63,7 @@ export function ProductsPage() {
     <>
       <Seo
         title="Product catalogue"
-        description="Browse AFH furniture collections, categories, and featured pieces."
+        description="Browse Rao Liaqat Furniture collections, categories, and featured pieces."
         path="/products"
         image={IMG.lounge}
       />
@@ -227,7 +227,7 @@ export function ProductDetailPage() {
     name: product.name,
     description: product.summary,
     image: product.image,
-    brand: { "@type": "Brand", name: "Artisan Furnish Hub" },
+    brand: { "@type": "Brand", name: "Rao Liaqat Furniture" },
     offers: {
       "@type": "Offer",
       priceCurrency: "PKR",

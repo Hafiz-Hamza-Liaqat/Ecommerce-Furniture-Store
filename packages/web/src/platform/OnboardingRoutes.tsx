@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { BRAND } from "../brand";
 import { Alert, Button, TextField, PageHeader } from "../components/ui";
 import { EmptyState, StatusBadge } from "../workspace/widgets";
 import { ONBOARDING_STEPS, ROLE_PRESETS } from "./catalog";
@@ -77,7 +78,7 @@ function OnboardingWizard() {
 
       <SectionCard title={step.label} lead={step.description}>
         {step.id === "welcome" ? (
-          <Alert tone="ok" title="Welcome to Artisan Furnish Hub">
+          <Alert tone="ok" title={`Welcome to ${BRAND.name}`}>
             This guided setup prepares your tenant for production use. No architecture or business rules are changed —
             preferences and company profile only.
           </Alert>
@@ -89,7 +90,7 @@ function OnboardingWizard() {
             label="Company name"
             value={draft.companyName}
             onChange={(e) => update({ companyName: e.target.value })}
-            placeholder="Artisan Furnish Hub PK"
+            placeholder="Rao Liaqat Furniture"
           />
         ) : null}
 
@@ -275,7 +276,7 @@ export function OnboardingRoutes() {
       <Route
         element={
           <PlatformPublicShell
-            brand="AFH Onboarding"
+            brand={`${BRAND.name} Onboarding`}
             homeTo="/onboarding"
             nav={[
               { to: "/onboarding", label: "Wizard" },

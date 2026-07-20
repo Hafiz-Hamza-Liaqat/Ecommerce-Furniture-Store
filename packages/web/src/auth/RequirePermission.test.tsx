@@ -91,7 +91,7 @@ describe("RequirePermission", () => {
     seedStoredSession();
     stubSessionFetch(["sales.dashboard.read"]);
     const screen = renderGuarded(["finance.dashboard.read"]);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
     expect(screen.queryByTestId("protected-content")).toBeNull();
   });
 
@@ -102,7 +102,7 @@ describe("RequirePermission", () => {
       "analytics.dashboards.read",
       "analytics.dashboards.configure",
     ]);
-    expect(await screen.findByText("Access denied")).toBeTruthy();
+    expect(await screen.findByText("Permission denied")).toBeTruthy();
   });
 
   it("shows a retriable error (not access) when the permission load fails", async () => {
@@ -130,7 +130,7 @@ describe("RequirePermission", () => {
     const screen = renderGuarded(["finance.dashboard.read"]);
     expect(screen.getByLabelText("Loading page")).toBeTruthy();
     expect(screen.queryByTestId("protected-content")).toBeNull();
-    expect(screen.queryByText("Access denied")).toBeNull();
+    expect(screen.queryByText("Permission denied")).toBeNull();
   });
 
   it("renders children immediately for authentication-only routes", () => {

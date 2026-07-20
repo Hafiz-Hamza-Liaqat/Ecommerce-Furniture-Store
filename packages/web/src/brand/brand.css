@@ -1,0 +1,241 @@
+/**
+ * RC9.4.3 — Brand logo responsive treatment.
+ */
+
+.brand-logo__link {
+  display: inline-flex;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.5rem;
+  max-width: 100%;
+}
+
+.brand-logo__svg {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.brand-logo__svg-bg {
+  fill: var(--brand-forest, #2f4f3f);
+}
+
+[data-theme="dark"] .brand-logo__svg-bg,
+.site[data-site-theme="dark"] .brand-logo__svg-bg {
+  fill: var(--brand-brass-deep, #7a5f3a);
+}
+
+.brand-logo__svg-text {
+  fill: var(--brand-primary-on, #f4f7f5);
+}
+
+.brand-logo__wordmark {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.brand-logo__name {
+  font-family: var(--brand-font-display, "Syne", sans-serif);
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  letter-spacing: -0.02em;
+  color: var(--brand-forest, #2f4f3f);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .brand-logo__name,
+.site[data-site-theme="dark"] .brand-logo__name {
+  color: var(--brand-brass, #9a7b4f);
+}
+
+.brand-logo__mono-text {
+  font-family: var(--brand-font-display, "Syne", sans-serif);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--brand-forest, #2f4f3f);
+}
+
+[data-theme="dark"] .brand-logo__mono-text,
+.site[data-site-theme="dark"] .brand-logo__mono-text {
+  color: var(--brand-brass, #9a7b4f);
+}
+
+.brand-logo--responsive {
+  /* Reserve width so navbar alignment stays stable across breakpoints */
+  min-width: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .brand-logo--responsive {
+    min-width: 10rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .brand-logo--responsive {
+    min-width: 14rem;
+  }
+}
+
+/* Responsive: full name ≥768 · SVG mark only on mobile (no duplicate RLF text) */
+.brand-logo--responsive .brand-logo__wordmark {
+  display: flex;
+}
+
+@media (max-width: 767px) {
+  .brand-logo--responsive .brand-logo__wordmark {
+    display: none;
+  }
+}
+
+@media (min-width: 1200px) {
+  .brand-logo--responsive .brand-logo__name {
+    font-size: 1.05rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .brand-logo--responsive .brand-logo__name {
+    font-size: 0.92rem;
+  }
+}
+
+/* Monogram = SVG mark only */
+.brand-logo--monogram .brand-logo__wordmark,
+.brand-logo--monogram .brand-logo__mono-text {
+  display: none;
+}
+
+/* Text-only RLF (drawer header) */
+.brand-logo--text .brand-logo__svg,
+.brand-logo--text .brand-logo__wordmark {
+  display: none;
+}
+
+.brand-logo--text .brand-logo__mono-text {
+  display: block;
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+}
+
+.brand-logo--full .brand-logo__mono-text {
+  display: none;
+}
+
+.brand-logo--full .brand-logo__wordmark {
+  display: flex;
+}
+
+/* Workspace sidebar mark */
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.brand-mark__svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+}
+
+.brand-mark__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.brand-mark__name {
+  font-family: var(--brand-font-display, "Syne", sans-serif);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
+}
+
+.brand-mark__sub {
+  font-size: 0.68rem;
+  color: var(--brand-ink-muted);
+  letter-spacing: 0.04em;
+}
+
+.brand-mark--collapsed {
+  justify-content: center;
+}
+
+.brand-mark--collapsed .brand-mark__text {
+  display: none;
+}
+
+/* Auth / login compact logo */
+.auth-brand-logo {
+  margin-bottom: 1rem;
+}
+
+.auth-brand-logo .brand-logo {
+  justify-content: center;
+}
+
+/* Contact page map placeholder */
+.contact-map-placeholder {
+  margin: var(--brand-space-6, 1.5rem) 0;
+  padding: var(--brand-space-8, 2rem) var(--brand-space-4, 1rem);
+  border: 1px dashed var(--brand-line);
+  border-radius: var(--brand-radius-lg, 14px);
+  background: color-mix(in srgb, var(--brand-mist) 50%, transparent);
+  text-align: center;
+}
+
+.contact-map-placeholder p {
+  margin: 0 0 0.5rem;
+  color: var(--brand-ink-muted);
+}
+
+.contact-details {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.contact-details a {
+  color: var(--brand-forest);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.contact-details a:hover {
+  text-decoration: underline;
+}
+
+[data-theme="dark"] .contact-details a,
+.site[data-site-theme="dark"] .contact-details a {
+  color: var(--brand-brass);
+}
+
+/* Account menu icons */
+.site-account-menu__item--with-icon {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.site-account-menu__icon {
+  width: 1.15rem;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.9;
+}

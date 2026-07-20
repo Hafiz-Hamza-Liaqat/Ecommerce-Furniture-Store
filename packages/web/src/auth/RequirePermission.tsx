@@ -22,7 +22,7 @@ import { useSession } from "../state/session";
  * Forbidden experience for authenticated users lacking a required permission.
  */
 export function ForbiddenRoute() {
-  return <EnterpriseError kind="forbidden" homeHref="/app/me" />;
+  return <EnterpriseError kind="forbidden" homeHref="/" />;
 }
 
 /**

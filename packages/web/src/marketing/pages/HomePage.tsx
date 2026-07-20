@@ -17,6 +17,7 @@ import {
   TRUSTED,
 } from "../data/content";
 import { useReveal } from "../useReveal";
+import { HeroKeywordRotate } from "../HeroKeywordRotate";
 
 export function HomePage() {
   useReveal();
@@ -34,7 +35,7 @@ export function HomePage() {
         <div className="site-hero__media">
           <img
             src={IMG.hero}
-            alt="Contemporary living room furnished with Artisan Furnish Hub pieces"
+            alt="Contemporary living room furnished with Rao Liaqat Furniture pieces"
             width={1600}
             height={1067}
             fetchPriority="high"
@@ -45,13 +46,13 @@ export function HomePage() {
           <p className="site-hero__brand">{BRAND.name}</p>
           <h1>{BRAND.tagline}</h1>
           <p className="site-hero__lead">
-            Collections and custom programs for homes, hotels, and workplaces — engineered in our factory.
+            Collections and custom programs for <HeroKeywordRotate /> — engineered in our factory.
           </p>
           <div className="site-hero__actions">
             <Link to="/products" className="site-btn site-btn--primary">
               Explore catalogue
             </Link>
-            <Link to="/demo" className="site-btn site-btn--ghost">
+            <Link to="/demo" className="site-btn site-btn--outline">
               Book a demo
             </Link>
           </div>
@@ -170,7 +171,7 @@ export function HomePage() {
             Our approach
           </Link>
         </div>
-        <img src={IMG.wood} alt="Timber preparation in the AFH factory" loading="lazy" />
+        <img src={IMG.wood} alt="Timber preparation in the Rao Liaqat Furniture workshop" loading="lazy" />
       </section>
 
       <section className="site-section site-reveal" aria-labelledby="time-title">
@@ -254,16 +255,16 @@ export function HomePage() {
       </section>
 
       <section className="site-cta-band site-reveal" aria-labelledby="cta-title">
-        <h2 id="cta-title">Ready to specify AFH?</h2>
+        <h2 id="cta-title">Ready to specify with Rao Liaqat Furniture?</h2>
         <p>Request a quotation, book a demo, or download the catalogue PDF.</p>
         <div className="site-hero__actions">
           <Link to="/quote" className="site-btn site-btn--primary">
             Request quotation
           </Link>
-          <Link to="/demo" className="site-btn site-btn--ghost">
+          <Link to="/demo" className="site-btn site-btn--outline">
             Book demo
           </Link>
-          <a className="site-btn site-btn--ghost" href="/catalogue.pdf" download>
+          <a className="site-btn site-btn--outline" href="/catalogue.pdf" download>
             Download catalogue
           </a>
         </div>

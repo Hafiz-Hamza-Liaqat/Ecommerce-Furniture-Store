@@ -7,4 +7,4 @@ Disallow: /login
 Disallow: /register
 Disallow: /password-reset
 
-Sitemap: https://artisanfurnish.example/sitemap.xml
+Sitemap: https://raoliaquatfurniture.com/sitemap.xml

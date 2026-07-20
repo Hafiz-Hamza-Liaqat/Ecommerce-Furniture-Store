@@ -1,19 +1,8 @@
-/* Artisan Furnish Hub — public brand experience
+/* Rao Liaqat Furniture — public brand experience
    Direction: forest ink, cool mist, brass accent — not cream/terracotta cliché.
 */
 
 .site {
-  --site-ink: #14201a;
-  --site-ink-soft: #3a4a42;
-  --site-mist: #eef1ef;
-  --site-paper: #f7f8f7;
-  --site-forest: #2f4f3f;
-  --site-brass: #9a7b4f;
-  --site-brass-deep: #7a5f3a;
-  --site-line: rgba(20, 32, 26, 0.12);
-  --site-font: "Manrope", "Segoe UI", sans-serif;
-  --site-display: "Syne", "Manrope", sans-serif;
-  --site-header: 4.5rem;
   color: var(--site-ink);
   background:
     radial-gradient(1200px 600px at 10% -10%, rgba(47, 79, 63, 0.08), transparent 60%),
@@ -23,14 +12,9 @@
 }
 
 .site[data-site-theme="dark"] {
-  --site-ink: #e8eee9;
-  --site-ink-soft: #b7c2bb;
-  --site-mist: #121a16;
-  --site-paper: #0d1310;
-  --site-line: rgba(232, 238, 233, 0.14);
   background:
     radial-gradient(1000px 500px at 80% 0%, rgba(154, 123, 79, 0.12), transparent 55%),
-    linear-gradient(180deg, #0d1310, #15201a);
+    linear-gradient(180deg, var(--site-paper), var(--brand-mist));
 }
 
 .site-sr {
@@ -61,11 +45,24 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  backdrop-filter: blur(14px);
-  background: color-mix(in srgb, var(--site-paper) 82%, transparent);
+  overflow: visible;
+  /* Blur via ::before — backdrop-filter on this element traps position:fixed descendants */
+  background: color-mix(in srgb, var(--site-paper) 92%, transparent);
   border-bottom: 1px solid var(--site-line);
 }
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  pointer-events: none;
+}
 .site-header__inner {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0.85rem 1.25rem;
@@ -175,43 +172,100 @@
   font-size: 0.9rem;
 }
 .site-mega__feature {
-  background: linear-gradient(160deg, rgba(47, 79, 63, 0.12), transparent);
-  padding: 1rem;
-  display: grid;
-  align-content: center;
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.15rem;
+  border-radius: var(--brand-radius-lg, 14px);
+  border: 1px solid color-mix(in srgb, var(--site-forest) 18%, var(--site-line));
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--site-forest) 10%, var(--site-paper)), var(--site-mist));
+  color: var(--site-ink);
 }
 
-.site-btn {
-  display: inline-flex;
+.site-mega__feature > p {
+  margin: 0 0 0.15rem;
+  padding: 0;
+  font-family: var(--site-display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--site-ink);
+  text-align: left;
+}
+
+/* Override .site-mega a { display:grid; padding } so CTAs align as equal-width buttons */
+.site-mega__feature a.site-btn,
+.site-mega__feature .site-btn {
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.7rem 1.15rem;
-  border-radius: 999px;
-  text-decoration: none;
-  font: inherit;
-  font-weight: 600;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0.7rem 1rem !important;
+  min-height: 2.75rem;
+  gap: 0.35rem;
+  text-align: center;
+  white-space: nowrap;
 }
-.site-btn:hover {
-  transform: translateY(-1px);
+
+.site[data-site-theme="dark"] .site-mega__feature {
+  border-color: color-mix(in srgb, var(--site-brass) 28%, var(--site-line));
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--site-brass) 14%, var(--site-paper)),
+      color-mix(in srgb, var(--site-forest) 18%, var(--site-paper))
+    );
+  color: var(--site-ink);
 }
-.site-btn--primary {
+
+.site[data-site-theme="dark"] .site-mega__feature > p {
+  color: var(--site-ink);
+}
+
+/* Feature card secondaries — readable outline in both themes */
+.site-mega__feature .site-btn--outline,
+.site-mega__feature .site-btn--ghost {
+  background: color-mix(in srgb, var(--site-paper) 70%, transparent);
+  border-color: var(--site-forest);
+  color: var(--site-forest);
+}
+
+.site-mega__feature .site-btn--outline:hover:not(:disabled):not(.is-disabled),
+.site-mega__feature .site-btn--ghost:hover:not(:disabled):not(.is-disabled) {
   background: var(--site-forest);
-  color: #f4f7f5;
+  border-color: var(--site-forest);
+  color: var(--brand-primary-on, #f4f7f5);
 }
-.site[data-site-theme="dark"] .site-btn--primary {
-  background: var(--site-brass);
-  color: #12140f;
-}
-.site-btn--ghost {
+
+.site[data-site-theme="dark"] .site-mega__feature .site-btn--outline,
+.site[data-site-theme="dark"] .site-mega__feature .site-btn--ghost {
   background: transparent;
-  border-color: var(--site-line);
-  color: inherit;
+  border-color: color-mix(in srgb, var(--site-brass) 70%, var(--site-line));
+  color: var(--site-brass);
 }
+
+.site[data-site-theme="dark"] .site-mega__feature .site-btn--outline:hover:not(:disabled):not(.is-disabled),
+.site[data-site-theme="dark"] .site-mega__feature .site-btn--ghost:hover:not(:disabled):not(.is-disabled) {
+  background: var(--site-brass);
+  border-color: var(--site-brass);
+  color: var(--brand-primary-on, #12140f);
+}
+
+.site-mega__feature .site-btn--primary {
+  color: var(--brand-primary-on);
+}
+
+/* RC9.4.2 — .site-btn primitives: tokens/button-system.css */
+
 .site-text-link {
   color: var(--site-forest);
   font-weight: 600;
@@ -285,6 +339,31 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+/* Hero secondary CTAs stay readable over dark media (light + dark site themes) */
+.site-hero .site-btn--outline {
+  background: #fff;
+  border-color: #fff;
+  color: var(--brand-forest, #2f4f3f);
+}
+
+.site-hero .site-btn--outline:hover:not(:disabled):not(.is-disabled) {
+  background: transparent;
+  border-color: #fff;
+  color: #fff;
+}
+
+.site[data-site-theme="dark"] .site-hero .site-btn--outline {
+  background: transparent;
+  border-color: var(--brand-brass);
+  color: var(--brand-brass);
+}
+
+.site[data-site-theme="dark"] .site-hero .site-btn--outline:hover:not(:disabled):not(.is-disabled) {
+  background: var(--brand-brass);
+  border-color: var(--brand-brass);
+  color: var(--brand-primary-on);
 }
 
 @keyframes site-hero-zoom {
@@ -667,6 +746,16 @@
   font-family: var(--site-display);
   margin: 0 0 0.5rem;
 }
+.site-cta-band .site-btn--outline {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+.site-cta-band .site-btn--outline:hover:not(:disabled):not(.is-disabled) {
+  background: #fff;
+  border-color: #fff;
+  color: var(--brand-forest, #2f4f3f);
+}
 .site-cta-band .site-btn--ghost {
   border-color: rgba(255, 255, 255, 0.35);
   color: #fff;
@@ -754,6 +843,26 @@
 /* --site-ink flips to near-white in dark mode, so the label must flip with
    it (paper token) instead of staying hardcoded light. */
 .site-top { left: 1rem; bottom: 1.25rem; background: var(--site-ink); color: var(--site-paper); }
+
+/* RC9.4.3.1 — Drawer open: hide floating chrome; pause hero motion */
+.site.is-nav-open .site-whatsapp,
+.site.is-nav-open .site-chat,
+.site.is-nav-open .site-top,
+.site.is-nav-open .site-chat-panel {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.site.is-nav-open .site-hero__actions {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.site.is-nav-open .site-hero__media img {
+  animation-play-state: paused;
+}
+
 .site-chat-panel {
   position: fixed;
   right: 1rem;
@@ -1248,15 +1357,7 @@
   .site-cookies { flex-direction: column; align-items: stretch; }
 }
 
-/* ===== RC8.1 Customer Experience ===== */
-.site {
-  --cx-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --cx-lift: 4px;
-  --cx-scale: 1.02;
-  --cx-reveal-y: 12px;
-  --cx-duration: 240ms;
-  --cx-duration-slow: 360ms;
-}
+/* ===== RC8.1 Customer Experience (motion classes — tokens from index.css) ===== */
 .cx-motion-card,
 .cx-hover-lift {
   transition:
@@ -1267,7 +1368,7 @@
 .cx-motion-card:hover,
 .cx-hover-lift:hover {
   transform: translateY(calc(-1 * var(--cx-lift))) scale(var(--cx-scale));
-  box-shadow: 0 10px 24px rgba(20, 32, 26, 0.1);
+  box-shadow: var(--brand-shadow-md);
 }
 .cx-motion-fade {
   animation: cx-fade-up var(--cx-duration-slow) var(--cx-ease);
@@ -1275,16 +1376,6 @@
 @keyframes cx-fade-up {
   from { opacity: 0; transform: translateY(var(--cx-reveal-y)); }
   to { opacity: 1; transform: translateY(0); }
-}
-.site-btn {
-  transition:
-    transform var(--cx-duration) var(--cx-ease),
-    background var(--cx-duration) var(--cx-ease),
-    box-shadow var(--cx-duration) var(--cx-ease),
-    color var(--cx-duration) var(--cx-ease);
-}
-.site-btn:hover {
-  transform: translateY(-2px);
 }
 .site-mega a,
 .site-nav__link,
@@ -1298,11 +1389,49 @@
     color var(--cx-duration) var(--cx-ease);
 }
 .site-mega--furniture {
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem 1.15rem;
   min-width: min(1080px, 96vw);
-  max-height: min(70vh, 520px);
+  max-height: min(72vh, 560px);
   overflow: auto;
+  padding: 1.25rem 1.35rem 1.35rem;
+}
+
+/* Feature CTA band — full-width row under category columns */
+.site-mega--furniture .site-mega__feature {
+  grid-column: 1 / -1;
+  margin-top: 0.35rem;
+}
+
+/* Desktop / wide mega: title + three equal buttons in one row */
+@media (min-width: 900px) {
+  .site-mega--furniture .site-mega__feature {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 10rem) repeat(3, minmax(0, 1fr));
+    align-items: center;
+    gap: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .site-mega--furniture .site-mega__feature > p {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Compact tablets / drawer mega: stacked full-width CTAs */
+@media (max-width: 899px) {
+  .site-mega--furniture .site-mega__feature {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    padding: 1rem;
+  }
+
+  .site-mega--furniture .site-mega__feature > p {
+    margin: 0 0 0.25rem;
+  }
 }
 .cx-breadcrumbs ol {
   display: flex;
@@ -2108,6 +2237,91 @@
 }
 .cx-skeleton-planner,
 .cx-skeleton-compare { padding: 1rem; display: grid; gap: 0.75rem; }
+
+/* RC9.4 — My Projects dashboard + multi-room planner tabs */
+.cx-projects-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+.cx-projects-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  min-width: 10rem;
+}
+.cx-projects-toolbar input,
+.cx-projects-toolbar select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--site-line);
+  font: inherit;
+}
+.cx-projects-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+}
+.cx-projects-card {
+  border: 1px solid var(--site-line);
+  padding: 1rem 1.15rem;
+  background: var(--site-paper, #fff);
+}
+.cx-projects-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.cx-projects-card__head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.cx-projects-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--site-line);
+}
+.cx-projects-status--planning { border-color: color-mix(in srgb, var(--site-brass) 50%, var(--site-line)); }
+.cx-projects-status--quoted { border-color: var(--site-brass); }
+.cx-projects-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.cx-projects-shared {
+  border: 1px solid var(--site-line);
+  padding: 1rem 1.15rem;
+  background: color-mix(in srgb, var(--site-mist) 40%, transparent);
+}
+.cx-planner-rooms { padding-top: 0; }
+.cx-planner-room-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.cx-planner-room-tabs button {
+  border: 1px solid var(--site-line);
+  background: var(--site-paper, #fff);
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+.cx-planner-room-tabs button.is-active,
+.cx-planner-room-tabs button[aria-selected="true"] {
+  border-color: var(--site-ink);
+  box-shadow: 0 0 0 1px var(--site-ink);
+}
 
 @media (max-width: 1200px) {
   .cx-category-main .site-product-grid:not(.is-list),

@@ -1,21 +1,21 @@
 {
-  "name": "Artisan Furnish Hub",
-  "short_name": "AFH",
-  "description": "Enterprise furniture ERP — Artisan Furnish Hub",
+  "name": "Rao Liaqat Furniture",
+  "short_name": "RLF",
+  "description": "Rao Liaqat Furniture — enterprise furniture platform",
   "start_url": "/app",
   "display": "standalone",
-  "background_color": "#f4f1ea",
+  "background_color": "#f7f8f7",
   "theme_color": "#2f4f3f",
   "lang": "en",
   "icons": [
     {
-      "src": "/icons/afh-192.svg",
+      "src": "/icons/rlf-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icons/afh-512.svg",
+      "src": "/icons/rlf-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
