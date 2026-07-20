@@ -18,6 +18,8 @@ export type PlannerHandoffLine = {
   readonly role: string;
   readonly zone?: string;
   readonly unitPkr: number;
+  /** RC10.3 — selected catalogue variant ids (additive). */
+  readonly variantIds?: readonly string[];
 };
 
 export type PlannerHandoffPayload = {

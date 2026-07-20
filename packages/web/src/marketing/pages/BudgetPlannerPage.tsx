@@ -8,7 +8,14 @@ import { Seo } from "../Seo";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { formatPkr, type CatalogueProduct } from "../data/catalogue";
 import { utilization, type PlannerStyle } from "../cx/budget-planner";
-import { enqueueLead, savePlan } from "../cx/stores";
+import {
+  enqueueLead,
+  getCompareIds,
+  getWishlistIds,
+  savePlan,
+  toggleCompare,
+  toggleWishlist,
+} from "../cx/stores";
 import { saveConsultantMemory } from "../cx/consultant";
 import {
   TEMPLATE_LABELS,
@@ -40,6 +47,17 @@ import {
 } from "../cx/projects";
 import { loadProject, mergeProjectsOnLogin, setLocalOwnerId } from "../cx/projects/store";
 import { useSession } from "../../state/session";
+import {
+  buildLineExplanations,
+  findTemplateRole,
+  groupVariants,
+  recordCatalogGap,
+  relatedProducts,
+  unitPriceForSelection,
+  type DesignPreferences,
+} from "../cx/configurator";
+import { ChangeProductDrawer } from "../cx/configurator/ui/ChangeProductDrawer";
+import { DesignPrefsBar } from "../cx/configurator/ui/DesignPrefsBar";
 
 const TEMPLATES: SpaceTemplateId[] = [
   "office",
@@ -63,7 +81,13 @@ type EditableLine = {
   role: string;
   zone?: string;
   reason?: string;
+  variantIds?: string[];
+  explanationBullets?: string[];
 };
+
+function lineUnitPrice(line: EditableLine): number {
+  return unitPriceForSelection(line.product, line.variantIds ?? []);
+}
 
 function cloneOptimized(result: OptimizationResult): EditableLine[] {
   return result.lines.map((l) => ({
@@ -72,11 +96,12 @@ function cloneOptimized(result: OptimizationResult): EditableLine[] {
     role: l.role,
     zone: l.zone,
     reason: l.reason,
+    variantIds: [],
   }));
 }
 
 function lineTotal(lines: readonly EditableLine[]): number {
-  return lines.reduce((sum, l) => sum + l.product.pricePkr * l.qty, 0);
+  return lines.reduce((sum, l) => sum + lineUnitPrice(l) * l.qty, 0);
 }
 
 function buildQuoteQuery(lines: readonly EditableLine[], total: number, projectId?: string | null): string {
@@ -103,7 +128,7 @@ function downloadPlannerPdf(opts: {
   const rows = opts.lines
     .map(
       (l) =>
-        `<tr><td>${l.zone ?? ""}</td><td>${l.role}</td><td>${l.product.name}</td><td>${l.qty}</td><td>${formatPkr(l.product.pricePkr * l.qty)}</td></tr>`,
+        `<tr><td>${l.zone ?? ""}</td><td>${l.role}</td><td>${l.product.name}</td><td>${l.qty}</td><td>${formatPkr(lineUnitPrice(l) * l.qty)}</td></tr>`,
     )
     .join("");
   const conceptual = opts.conceptual
@@ -165,6 +190,10 @@ export function BudgetPlannerPage() {
   const [restoredFromProject, setRestoredFromProject] = useState(false);
   const [manualLines, setManualLines] = useState(false);
   const [manualEditCount, setManualEditCount] = useState(0);
+  const [designPrefs, setDesignPrefs] = useState<DesignPreferences>({});
+  const [changeLineIndex, setChangeLineIndex] = useState<number | null>(null);
+  const [wishRev, setWishRev] = useState(0);
+  void wishRev;
 
   const [projectRevision, setProjectRevision] = useState(0);
   const [loadedProject, setLoadedProject] = useState<FurnishingProject | null>(null);
@@ -237,7 +266,15 @@ export function BudgetPlannerPage() {
     setTemplateId(restored.templateId);
     setBrief(restored.brief);
     setActive(restored.activeTier);
-    setLines(nextLines);
+    setLines(
+      nextLines.map((l) => ({
+        product: l.product,
+        qty: l.qty,
+        role: l.role,
+        ...(l.zone ? { zone: l.zone } : {}),
+        ...(l.variantIds?.length ? { variantIds: [...l.variantIds] } : {}),
+      })),
+    );
     setRestoredFromProject(true);
     setManualLines(customized);
     setManualEditCount(customized ? 1 : 0);
@@ -325,8 +362,52 @@ export function BudgetPlannerPage() {
       qty: l.qty,
       role: l.role,
       ...(l.zone ? { zone: l.zone } : {}),
-      unitPkr: l.product.pricePkr,
+      unitPkr: lineUnitPrice(l),
+      ...(l.variantIds?.length ? { variantIds: [...l.variantIds] } : {}),
     }));
+  }
+
+  function enrichLine(line: EditableLine): EditableLine {
+    const roleDef = findTemplateRole(templateId, line.role);
+    if (!roleDef) return line;
+    const variantLabels = (line.variantIds ?? [])
+      .map((id) => line.product.variants.find((v) => v.id === id)?.label)
+      .filter((x): x is string => Boolean(x));
+    const bullets = buildLineExplanations({
+      product: line.product,
+      role: roleDef,
+      brief,
+      prefs: designPrefs,
+      ...(variantLabels.length ? { variantLabels } : {}),
+    });
+    return {
+      ...line,
+      ...(bullets[0] ? { reason: bullets[0] } : line.reason ? { reason: line.reason } : {}),
+      explanationBullets: bullets,
+    };
+  }
+
+  function applyConfiguredLine(index: number, patch: Partial<EditableLine>, bump: boolean) {
+    const next = lines.map((row, idx) => {
+      if (idx !== index) return row;
+      return enrichLine({ ...row, ...patch });
+    });
+    applyPackageLines(next, bump);
+  }
+
+  function openChangeProduct(index: number) {
+    const line = lines[index];
+    if (!line) return;
+    const roleDef = findTemplateRole(templateId, line.role);
+    if (!roleDef) {
+      recordCatalogGap({
+        role: line.role,
+        templateId,
+        requiredQty: line.qty,
+        availableCount: 0,
+      });
+    }
+    setChangeLineIndex(index);
   }
 
   /** Persist current (or provided) lines so Remove/Qty survive refresh. */
@@ -398,7 +479,8 @@ export function BudgetPlannerPage() {
         qty: l.qty,
         role: l.role,
         ...(l.zone ? { zone: l.zone } : {}),
-        unitPkr: l.product.pricePkr,
+        unitPkr: lineUnitPrice(l),
+        ...(l.variantIds?.length ? { variantIds: [...l.variantIds] } : {}),
       })),
       totalPkr: total,
       packageName: tierLabel(pkg.tier, pkg.name),
@@ -449,10 +531,18 @@ export function BudgetPlannerPage() {
     setTemplateId(restored.templateId);
     setBrief(restored.brief);
     setActive(restored.activeTier);
-    setLines(restored.lines);
+    setLines(
+      restored.lines.map((l) => ({
+        product: l.product,
+        qty: l.qty,
+        role: l.role,
+        ...(l.zone ? { zone: l.zone } : {}),
+        ...(l.variantIds?.length ? { variantIds: [...l.variantIds] } : {}),
+      })),
+    );
     setRestoredFromProject(true);
-    setManualLines(false);
-    setManualEditCount(0);
+    setManualLines(room.packageCustomized === true);
+    setManualEditCount(room.packageCustomized ? 1 : 0);
   }
 
   const updateNumber = (id: string, value: number) => {
@@ -730,6 +820,14 @@ export function BudgetPlannerPage() {
         ))}
       </div>
 
+      <section className="site-section cx-design-prefs-section" aria-label="Design preferences">
+        <h2 className="cx-planner-section-title">Design preferences</h2>
+        <p className="cx-muted">
+          Soft-rank alternatives and explanations — does not rebuild your package.
+        </p>
+        <DesignPrefsBar prefs={designPrefs} onChange={setDesignPrefs} />
+      </section>
+
       <section className="site-section cx-planner-result" aria-live="polite">
         <div className="cx-planner-result__head">
           <h2>{tierLabel(pkg.tier, pkg.name)}</h2>
@@ -822,53 +920,139 @@ export function BudgetPlannerPage() {
             ) : null}
 
             <ul className="cx-planner-lines">
-              {lines.map((l, i) => (
-                <li key={`${l.product.id}-${l.role}-${i}`}>
-                  <div className="cx-planner-line">
-                    <div>
-                      {l.zone ? <span className="cx-planner-zone">{l.zone}</span> : null}
-                      <Link to={`/products/${l.product.id}`}>
-                        {l.role}: {l.product.name}
-                      </Link>
-                      {l.reason ? <p className="cx-muted cx-planner-reason">{l.reason}</p> : null}
+              {lines.map((l, i) => {
+                const roleDef = findTemplateRole(templateId, l.role);
+                const unit = lineUnitPrice(l);
+                const groups = groupVariants(l.product);
+                const matching = relatedProducts(l.product, "MatchingCollection").slice(0, 3);
+                const bullets =
+                  l.explanationBullets ??
+                  (roleDef
+                    ? buildLineExplanations({
+                        product: l.product,
+                        role: roleDef,
+                        brief,
+                        prefs: designPrefs,
+                      })
+                    : l.reason
+                      ? [l.reason]
+                      : []);
+                return (
+                  <li key={`${l.product.id}-${l.role}-${i}`} className="cx-planner-line-card">
+                    <div className="cx-planner-line cx-planner-line--config">
+                      <div className="cx-planner-line__main">
+                        {l.zone ? <span className="cx-planner-zone">{l.zone}</span> : null}
+                        <p className="cx-planner-line__role">{l.role}</p>
+                        <Link to={`/products/${l.product.id}`} className="cx-planner-line__product">
+                          {l.product.name}
+                        </Link>
+                        <p className="cx-muted cx-planner-line__meta">
+                          {[l.product.collection, l.product.material, l.product.color]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                        {bullets.length > 0 ? (
+                          <ul className="cx-planner-line__why">
+                            {bullets.slice(0, 5).map((b) => (
+                              <li key={b}>{b}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {matching.length > 0 ? (
+                          <p className="cx-muted cx-planner-line__related">
+                            Matching collection:{" "}
+                            {matching.map((p) => p.name).join(", ")}
+                          </p>
+                        ) : null}
+                        {groups.length > 0 ? (
+                          <div className="cx-planner-variants" role="group" aria-label="Variants">
+                            {groups.map((g) => (
+                              <label key={g.group}>
+                                {g.group}
+                                <select
+                                  value={
+                                    l.variantIds?.find((id) =>
+                                      g.variants.some((v) => v.id === id),
+                                    ) ?? ""
+                                  }
+                                  onChange={(e) => {
+                                    const selected = e.target.value;
+                                    const otherGroups = (l.variantIds ?? []).filter(
+                                      (id) => !g.variants.some((v) => v.id === id),
+                                    );
+                                    const nextIds = selected
+                                      ? [...otherGroups, selected]
+                                      : otherGroups;
+                                    applyConfiguredLine(
+                                      i,
+                                      { variantIds: nextIds },
+                                      false,
+                                    );
+                                  }}
+                                >
+                                  <option value="">Base</option>
+                                  {g.variants.map((v) => (
+                                    <option key={v.id} value={v.id}>
+                                      {v.label}
+                                      {v.priceDeltaPkr
+                                        ? ` (${v.priceDeltaPkr > 0 ? "+" : ""}${formatPkr(v.priceDeltaPkr)})`
+                                        : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                      <label className="cx-planner-qty">
+                        Qty
+                        <input
+                          type="number"
+                          min={1}
+                          max={999}
+                          value={l.qty}
+                          onChange={(e) => {
+                            const qty = Math.max(1, Math.min(999, Number(e.target.value) || 1));
+                            const next = lines.map((row, idx) =>
+                              idx === i ? { ...row, qty } : row,
+                            );
+                            applyPackageLines(next, false);
+                          }}
+                        />
+                      </label>
+                      <span className="cx-planner-line__price">{formatPkr(unit * l.qty)}</span>
+                      <div className="cx-planner-line__actions">
+                        <button
+                          type="button"
+                          className="site-btn site-btn--outline"
+                          onClick={() => openChangeProduct(i)}
+                          disabled={!roleDef}
+                        >
+                          Change Product
+                        </button>
+                        <button
+                          type="button"
+                          className="site-btn site-btn--ghost"
+                          onClick={() => {
+                            const next = lines.filter((_, idx) => idx !== i);
+                            applyPackageLines(next, true);
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
-                    <label className="cx-planner-qty">
-                      Qty
-                      <input
-                        type="number"
-                        min={1}
-                        max={999}
-                        value={l.qty}
-                        onChange={(e) => {
-                          const qty = Math.max(1, Math.min(999, Number(e.target.value) || 1));
-                          const next = lines.map((row, idx) =>
-                            idx === i ? { ...row, qty } : row,
-                          );
-                          applyPackageLines(next, false);
-                        }}
-                      />
-                    </label>
-                    <span>{formatPkr(l.product.pricePkr * l.qty)}</span>
-                    <button
-                      type="button"
-                      className="site-btn site-btn--ghost"
-                      onClick={() => {
-                        const next = lines.filter((_, idx) => idx !== i);
-                        applyPackageLines(next, true);
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
 
             {result.conceptual.length > 0 ? (
               <div className="cx-planner-conceptual" role="note">
-                <h3>Conceptual recommendations</h3>
+                <h3>No exact catalog match available</h3>
                 <p className="cx-muted">
-                  These are not presented as available AFH catalogue products:
+                  We can manufacture these roles or connect you with Sales — we never invent catalogue SKUs.
                 </p>
                 <ul>
                   {result.conceptual.map((c) => (
@@ -880,6 +1064,42 @@ export function BudgetPlannerPage() {
                     </li>
                   ))}
                 </ul>
+                <div className="cx-planner-conceptual__actions">
+                  <button
+                    type="button"
+                    className="site-btn site-btn--primary"
+                    onClick={() => {
+                      for (const c of result.conceptual) {
+                        recordCatalogGap({
+                          role: c.role,
+                          templateId,
+                          requiredQty: c.qty,
+                          availableCount: 0,
+                        });
+                      }
+                      enqueueLead({
+                        intent: "Custom manufacturing request",
+                        name: user?.email ? "Studio customer" : "Planner visitor",
+                        email: user?.email ?? "visitor@example.com",
+                        message: `Custom manufacturing request · ${TEMPLATE_LABELS[templateId]} · ${result.conceptual.map((c) => c.role).join(", ")}`,
+                        source: "planner-custom-manufacturing",
+                        meta: {
+                          templateId,
+                          roles: result.conceptual.map((c) => c.role),
+                          ...(projectId && loadedProject
+                            ? buildCrmProjectMeta(loadedProject)
+                            : {}),
+                        },
+                      });
+                      setSavedMsg("Custom manufacturing request queued for Sales.");
+                    }}
+                  >
+                    Request Custom Manufacturing
+                  </button>
+                  <Link to="/contact" className="site-btn site-btn--outline">
+                    Request Sales Consultation
+                  </Link>
+                </div>
               </div>
             ) : null}
 
@@ -952,7 +1172,7 @@ export function BudgetPlannerPage() {
                     productId: l.product.id,
                     name: l.product.name,
                     qty: l.qty,
-                    unitPkr: l.product.pricePkr,
+                    unitPkr: lineUnitPrice(l),
                   })),
                   totalPkr: total,
                 });
@@ -1018,7 +1238,7 @@ export function BudgetPlannerPage() {
                   qty: l.qty,
                   role: l.role,
                   ...(l.zone ? { zone: l.zone } : {}),
-                  unitPkr: l.product.pricePkr,
+                  unitPkr: lineUnitPrice(l),
                 })),
                 explanations: result.explanations,
                 upgrades: result.upgrades,
@@ -1038,6 +1258,63 @@ export function BudgetPlannerPage() {
           </p>
         ) : null}
       </section>
+
+      {changeLineIndex != null && lines[changeLineIndex] && findTemplateRole(templateId, lines[changeLineIndex]!.role) ? (
+        <ChangeProductDrawer
+          open
+          role={findTemplateRole(templateId, lines[changeLineIndex]!.role)!}
+          currentProduct={lines[changeLineIndex]!.product}
+          qty={lines[changeLineIndex]!.qty}
+          prefs={designPrefs}
+          onClose={() => setChangeLineIndex(null)}
+          onSelect={(product) => {
+            const idx = changeLineIndex;
+            applyConfiguredLine(
+              idx,
+              {
+                product,
+                variantIds: [],
+              },
+              true,
+            );
+            setChangeLineIndex(null);
+          }}
+          onToggleWishlist={(id) => {
+            toggleWishlist(id);
+            setWishRev((n) => n + 1);
+          }}
+          onToggleCompare={(id) => {
+            toggleCompare(id);
+            setWishRev((n) => n + 1);
+          }}
+          wishlistIds={getWishlistIds()}
+          compareIds={getCompareIds()}
+          onRequestCustom={() => {
+            const line = lines[changeLineIndex];
+            if (!line) return;
+            recordCatalogGap({
+              role: line.role,
+              templateId,
+              requiredQty: line.qty,
+              availableCount: 0,
+            });
+            enqueueLead({
+              intent: "Custom manufacturing request",
+              name: user?.email ? "Studio customer" : "Planner visitor",
+              email: user?.email ?? "visitor@example.com",
+              message: `Custom manufacturing for role ${line.role}`,
+              source: "planner-custom-manufacturing",
+              meta: { role: line.role, templateId, projectId },
+            });
+            setSavedMsg("Custom manufacturing request queued for Sales.");
+            setChangeLineIndex(null);
+          }}
+          onRequestConsult={() => {
+            setChangeLineIndex(null);
+            window.location.href = "/contact";
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -15,6 +15,7 @@ export type RestoredPlannerState = {
     qty: number;
     role: string;
     zone?: string;
+    variantIds?: readonly string[];
   }[];
 };
 
@@ -28,6 +29,7 @@ export function restorePlannerFromRoom(room: ProjectRoom): RestoredPlannerState 
         qty: l.qty,
         role: l.role,
         ...(l.zone ? { zone: l.zone } : {}),
+        ...(l.variantIds?.length ? { variantIds: [...l.variantIds] } : {}),
       };
     })
     .filter((l): l is NonNullable<typeof l> => l != null);
