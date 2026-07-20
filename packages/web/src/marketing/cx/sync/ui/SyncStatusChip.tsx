@@ -55,11 +55,13 @@ export function SyncStatusChip({
       </button>
       {open ? (
         <div className="cx-sync-chip__panel" role="dialog" aria-label="Synchronization details">
-          <p>
+          <p className="cx-sync-chip__status">
             <strong>{label}</strong>
-            {state.lastSyncAt
-              ? ` · Last sync ${new Date(state.lastSyncAt).toLocaleString()}`
-              : " · Not synced yet"}
+            <span className="cx-sync-chip__status-meta">
+              {state.lastSyncAt
+                ? `Last sync ${new Date(state.lastSyncAt).toLocaleString()}`
+                : "Not synced yet"}
+            </span>
           </p>
           {state.pendingCount > 0 ? <p>{state.pendingCount} pending change(s)</p> : null}
           {state.lastError ? <p className="cx-sync-chip__err">{state.lastError}</p> : null}
@@ -73,21 +75,32 @@ export function SyncStatusChip({
             Sync Now
           </button>
           <h3>Devices</h3>
-          <ul>
+          <ul className="cx-sync-chip__devices">
             {devices.map((d) => (
               <li key={d.deviceId}>
-                {d.label} · {d.platform}
-                {d.lastSyncAt ? ` · synced ${new Date(d.lastSyncAt).toLocaleString()}` : ""}
+                <span className="cx-sync-chip__device-name">
+                  {d.label} · {d.platform}
+                </span>
+                {d.lastSyncAt ? (
+                  <span className="cx-sync-chip__device-meta">
+                    Synced {new Date(d.lastSyncAt).toLocaleString()}
+                  </span>
+                ) : (
+                  <span className="cx-sync-chip__device-meta">Not synced yet</span>
+                )}
               </li>
             ))}
           </ul>
           {conflicts.length > 0 ? (
             <>
               <h3>Conflicts</h3>
-              <ul>
+              <ul className="cx-sync-chip__conflicts">
                 {conflicts.slice(0, 5).map((c) => (
                   <li key={c.id}>
-                    {c.key}: {c.resolution} — {c.note}
+                    <span className="cx-sync-chip__conflict-key">{c.key}</span>
+                    <span className="cx-sync-chip__conflict-note">
+                      {c.resolution} — {c.note}
+                    </span>
                   </li>
                 ))}
               </ul>

@@ -1,4 +1,4 @@
-/* Core ERP module experience â€” extends workspace design system */
+/* Core ERP module experience ? extends workspace design system */
 
 .erp-module {
   display: flex;
@@ -184,7 +184,7 @@
   }
 }
 
-/* RC10.4 — Sales workflow */
+/* RC10.4 ? Sales workflow */
 .sales-workflow__filters {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
@@ -266,7 +266,7 @@
   font: inherit;
 }
 
-/* RC10.5 — Sync status chip */
+/* RC10.5 ? Sync status chip */
 .cx-sync-chip {
   position: relative;
   display: inline-flex;
@@ -303,7 +303,10 @@
   right: 0;
   top: calc(100% + 0.35rem);
   z-index: 40;
-  width: min(22rem, 90vw);
+  box-sizing: border-box;
+  width: min(22rem, calc(100vw - 1.25rem));
+  max-width: calc(100vw - 1.25rem);
+  min-width: 0;
   padding: 0.85rem;
   border-radius: 12px;
   border: 1px solid var(--afh-border);
@@ -311,14 +314,131 @@
   box-shadow: 0 12px 40px rgba(0,0,0,.12);
   display: grid;
   gap: 0.5rem;
+  overflow: visible;
+  white-space: normal;
+}
+.cx-sync-chip__panel > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.cx-sync-chip__panel p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.cx-sync-chip__status {
+  display: grid;
+  gap: 0.15rem;
+}
+.cx-sync-chip__status-meta {
+  display: block;
+  color: var(--afh-ink-soft);
+  font-size: 0.75rem;
 }
 .cx-sync-chip__panel h3 {
   margin: 0.35rem 0 0;
   font-size: 0.85rem;
 }
-.cx-sync-chip__panel ul {
+.cx-sync-chip__devices,
+.cx-sync-chip__conflicts {
   margin: 0;
-  padding-left: 1.1rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
   font-size: 0.8rem;
 }
+.cx-sync-chip__devices li,
+.cx-sync-chip__conflicts li {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--afh-ink) 4%, transparent);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.cx-sync-chip__device-name,
+.cx-sync-chip__conflict-key {
+  display: block;
+  font-weight: 600;
+  color: var(--afh-ink);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.cx-sync-chip__device-meta,
+.cx-sync-chip__conflict-note {
+  display: block;
+  color: var(--afh-ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.cx-sync-chip__panel .site-btn {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+}
 .cx-sync-chip__err { color: #dc2626; font-size: 0.8rem; }
+
+@media (max-width: 640px) {
+  .cx-sync-chip__panel {
+    width: min(20rem, calc(100vw - 1rem));
+    max-width: calc(100vw - 1rem);
+  }
+}
+/* RC10.6 ? CX Workspace Intelligence */
+.cx-bi-page {
+  gap: 1rem;
+}
+.cx-bi-kpi-grid {
+  margin-bottom: 0.25rem;
+}
+.cx-bi-trend {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.cx-bi-trend.is-up { color: #15803d; }
+.cx-bi-trend.is-down { color: #b91c1c; }
+.cx-bi-empty {
+  padding: 1rem;
+  border: 1px dashed var(--afh-border);
+  border-radius: var(--afh-radius, 8px);
+  color: var(--afh-ink-soft);
+}
+.cx-bi-empty strong {
+  display: block;
+  color: var(--afh-ink);
+  margin-bottom: 0.25rem;
+}
+.cx-bi-loading {
+  padding: 1.5rem;
+  color: var(--afh-ink-soft);
+}
+.cx-bi-legend {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--afh-ink-soft);
+}
+.cx-bi-donut {
+  display: flex;
+  justify-content: center;
+}
+.cx-bi-filters {
+  margin-bottom: 0.5rem;
+}
+@media print {
+  .cx-bi-page .erp-subnav,
+  .cx-bi-page .bi-filters,
+  .cx-bi-page .page-header .row {
+    display: none !important;
+  }
+}
