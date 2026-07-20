@@ -34,6 +34,7 @@ import {
   upsertRoomSnapshot,
   type FurnishingProject,
 } from "../cx/projects";
+import { loadProject, setLocalOwnerId } from "../cx/projects/store";
 
 const TEMPLATES: SpaceTemplateId[] = [
   "office",
@@ -161,6 +162,7 @@ export function BudgetPlannerPage() {
 
   const [projectRevision, setProjectRevision] = useState(0);
   const [loadedProject, setLoadedProject] = useState<FurnishingProject | null>(null);
+  const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoadedProject(projectId ? getProject(projectId) : null);
@@ -168,15 +170,37 @@ export function BudgetPlannerPage() {
 
   useEffect(() => {
     if (!projectIdParam) return;
-    const project = getProject(projectIdParam);
-    if (!project) return;
+    setProjectLoadError(null);
+    let project = getProject(projectIdParam);
+    if (!project) {
+      // Recover when create owned the project under session id but local actor lagged.
+      const raw = loadProject(projectIdParam);
+      if (raw) {
+        setLocalOwnerId(raw.ownerId);
+        project = getProject(projectIdParam);
+      }
+    }
+    if (!project) {
+      setProjectLoadError("This project could not be opened. It may be missing or inaccessible.");
+      setBooting(false);
+      return;
+    }
     const room =
       project.rooms.find((r) => r.id === roomIdParam) ??
       project.rooms.find((r) => r.id === project.activeRoomId) ??
       project.rooms[0];
-    if (!room) return;
+    if (!room) {
+      setProjectLoadError("This project has no rooms to open in the planner.");
+      setBooting(false);
+      return;
+    }
     const restored = restorePlannerFromRoom(room);
-    if (!restored) return;
+    if (!restored) {
+      setProjectLoadError("Could not restore planner state for this project.");
+      setBooting(false);
+      return;
+    }
+    const hasLines = restored.lines.length > 0;
     setProjectId(project.id);
     setProjectTitle(project.title);
     setActiveRoomId(room.id);
@@ -184,8 +208,10 @@ export function BudgetPlannerPage() {
     setBrief(restored.brief);
     setActive(restored.activeTier);
     setLines(restored.lines);
+    // Preserve restored brief/budget. Empty new projects still get package lines
+    // from the plan effect (restoredFromProject alone no longer blocks empty lines).
     setRestoredFromProject(true);
-    setManualLines(restored.lines.length > 0);
+    setManualLines(hasLines);
     setBooting(false);
   }, [projectIdParam, roomIdParam]);
 
@@ -212,14 +238,16 @@ export function BudgetPlannerPage() {
   const pkg = plan.packages.find((p) => p.tier === active) ?? plan.primary;
 
   useEffect(() => {
-    if (manualLines || restoredFromProject) return;
+    if (manualLines) return;
+    if (restoredFromProject && lines.length > 0) return;
+    if (!result) return;
     setBooting(true);
     const t = window.setTimeout(() => {
       setLines(cloneOptimized(result));
       setBooting(false);
     }, 220);
     return () => window.clearTimeout(t);
-  }, [result, manualLines, restoredFromProject]);
+  }, [result, manualLines, restoredFromProject, lines.length]);
 
   const total = lineTotal(lines);
   const { remaining, percent } = utilization(brief.budgetPkr ?? 0, total);
@@ -359,6 +387,12 @@ export function BudgetPlannerPage() {
           <p className="cx-muted" role="status">
             Project: <strong>{projectTitle || loadedProject?.title}</strong> ·{" "}
             <Link to={`/my-projects`}>My Projects</Link>
+          </p>
+        ) : null}
+        {projectLoadError ? (
+          <p className="site-form-error" role="alert">
+            {projectLoadError}{" "}
+            <Link to="/my-projects">Back to Design Studio</Link>
           </p>
         ) : null}
       </header>

@@ -20,7 +20,15 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 function writeJson(key: string, value: unknown): void {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (cause) {
+    const message =
+      cause instanceof DOMException && cause.name === "QuotaExceededError"
+        ? "Browser storage is full. Free space or remove old projects, then try again."
+        : "Could not save project to browser storage.";
+    throw new Error(message, { cause });
+  }
 }
 
 function projectKey(id: string): string {

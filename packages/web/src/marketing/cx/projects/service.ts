@@ -16,6 +16,7 @@ import {
   registerShareToken,
   resolveShareToken,
   saveProject,
+  setLocalOwnerId,
   toListItem,
 } from "./store";
 import type {
@@ -125,10 +126,23 @@ export function createProject(input: {
   owner?: OwnerContext;
   status?: ProjectStatus;
   room?: Omit<ProjectRoom, "id" | "order">;
+  /** Optional free-text summary (stored on project; does not change schema shape). */
+  description?: string;
+  location?: string;
+  /** Optional budget applied to the seed room brief when no room brief is supplied. */
+  budgetPkr?: number;
 }): FurnishingProject {
   const ownerId = input.owner?.ownerId ?? getLocalOwnerId();
   const ownerLabel = input.owner?.ownerLabel ?? "You";
-  const brief = input.room?.brief ?? createDefaultBrief(input.templateId);
+  // Keep local actor aligned with the project owner so getProject/listProjects
+  // succeed after create + navigation (RC10.1 blocker fix).
+  setLocalOwnerId(ownerId);
+
+  const baseBrief = input.room?.brief ?? createDefaultBrief(input.templateId);
+  const brief =
+    input.room?.brief == null && input.budgetPkr != null && Number.isFinite(input.budgetPkr)
+      ? { ...baseBrief, budgetPkr: Math.max(0, Math.round(input.budgetPkr)) }
+      : baseBrief;
   const lines = input.room?.lines ?? [];
   const room: ProjectRoom = {
     id: uid(),
@@ -146,9 +160,21 @@ export function createProject(input: {
     notes: input.room?.notes ?? [],
   };
   const created = now();
+  const description = input.description?.trim();
+  const location = input.location?.trim();
+  const seedNotes: ProjectNote[] = [];
+  if (location) {
+    seedNotes.push({
+      id: uid(),
+      text: `Location: ${location}`,
+      createdAt: created,
+      authorId: ownerId,
+      authorLabel: ownerLabel,
+    });
+  }
   const project: FurnishingProject = {
     id: uid(),
-    title: input.title,
+    title: input.title.trim(),
     status: input.status ?? "planning",
     createdAt: created,
     updatedAt: created,
@@ -167,11 +193,11 @@ export function createProject(input: {
     },
     consultantMessages: [],
     quotes: [],
-    notes: [],
+    notes: seedNotes,
     collaborators: [
       {
-        id: uid(),
-        email: "",
+        id: ownerId,
+        email: input.owner?.customerName ?? "",
         name: ownerLabel,
         role: "Owner",
         permission: "owner",
@@ -182,6 +208,7 @@ export function createProject(input: {
     versions: [],
     latestVersionId: "",
     aiAssisted: false,
+    ...(description ? { plannerSummary: description } : {}),
   };
   const v = snapshotVersion(project, "Version 1", "Initial project");
   const withVersion: FurnishingProject = {
@@ -619,6 +646,68 @@ export function welcomeBackMessage(project: FurnishingProject): string {
     days === 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
   const room = project.rooms.find((r) => r.id === project.activeRoomId);
   return `Welcome back. Your ${project.title} project was last updated ${when}. Would you like to continue improving ${room?.name ?? "the active room"} or review the quotation?`;
+}
+
+/** Clone a project locally (new id). Does not alter the source project. */
+export function duplicateProject(
+  id: string,
+  actorId?: string,
+): FurnishingProject | null {
+  const source = getProject(id, actorId);
+  if (!source) return null;
+  const ownerId = actorId ?? getLocalOwnerId();
+  const firstRoom = source.rooms[0];
+  const clone = createProject({
+    title: `${source.title} (copy)`,
+    templateId: source.templateId,
+    owner: {
+      ownerId,
+      ownerLabel: source.ownerLabel,
+      ...(source.customerName ? { customerName: source.customerName } : {}),
+    },
+    status: "planning",
+    ...(firstRoom
+      ? {
+          room: {
+            name: firstRoom.name,
+            templateId: firstRoom.templateId,
+            brief: firstRoom.brief,
+            activeTier: firstRoom.activeTier,
+            lines: firstRoom.lines,
+            totalPkr: firstRoom.totalPkr,
+            explanations: firstRoom.explanations,
+            upgrades: firstRoom.upgrades,
+            downgrades: firstRoom.downgrades,
+            packageName: firstRoom.packageName,
+            notes: firstRoom.notes,
+          },
+        }
+      : {}),
+  });
+  if (source.rooms.length <= 1) return clone;
+  let next = clone;
+  for (const room of source.rooms.slice(1)) {
+    const added = addRoom(next.id, room.name, room.templateId);
+    if (!added) break;
+    next = added;
+    const active = next.rooms[next.rooms.length - 1];
+    if (!active) break;
+    const snapped = upsertRoomSnapshot(next.id, {
+      roomId: active.id,
+      name: room.name,
+      templateId: room.templateId,
+      brief: room.brief,
+      activeTier: room.activeTier,
+      lines: room.lines,
+      totalPkr: room.totalPkr,
+      packageName: room.packageName,
+      explanations: room.explanations,
+      upgrades: room.upgrades,
+      downgrades: room.downgrades,
+    });
+    if (snapped) next = snapped;
+  }
+  return next;
 }
 
 export function removeProject(id: string): boolean {
