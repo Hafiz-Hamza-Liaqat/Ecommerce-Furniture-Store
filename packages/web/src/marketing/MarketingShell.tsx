@@ -999,9 +999,16 @@ function AccountNotificationsInline({
         </ul>
       )}
       <div className="site-account-menu__notif-foot">
+        <Link
+          to="/notifications"
+          className="site-account-menu__notif-view-all"
+          onClick={onNavigate}
+        >
+          View all
+        </Link>
         {!viewAll && totalCount > 3 ? (
           <button type="button" className="site-account-menu__notif-view-all" onClick={onViewAll}>
-            View all
+            Show more
           </button>
         ) : null}
         <button

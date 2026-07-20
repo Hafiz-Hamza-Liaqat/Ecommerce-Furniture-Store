@@ -36,6 +36,11 @@ export type ProjectRoom = {
   readonly downgrades: readonly string[];
   readonly packageName: string;
   readonly notes: readonly string[];
+  /**
+   * When true, empty or edited lines are intentional (user customized).
+   * Prevents AI re-seed on refresh after Remove.
+   */
+  readonly packageCustomized?: boolean;
 };
 
 export type ProjectNote = {

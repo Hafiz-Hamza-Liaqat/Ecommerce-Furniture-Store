@@ -1,6 +1,7 @@
 /**
  * RC10.1 — Rich studio project card (presentation only).
  */
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { formatPkr } from "../../../data/catalogue";
 import { TEMPLATE_LABELS } from "../../intelligent/space-brief";
@@ -25,6 +26,20 @@ type Props = {
   readonly onArchive: () => void;
 };
 
+function placeMoreMenu(details: HTMLDetailsElement) {
+  details.classList.remove("cx-studio-more--up", "cx-studio-more--start");
+  if (!details.open) return;
+  const rect = details.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceRight = window.innerWidth - rect.right;
+  if (spaceBelow < 220 && rect.top > spaceBelow) {
+    details.classList.add("cx-studio-more--up");
+  }
+  if (spaceRight < 180 && rect.left > spaceRight) {
+    details.classList.add("cx-studio-more--start");
+  }
+}
+
 export function ProjectStudioCard({
   item,
   pinned,
@@ -34,11 +49,19 @@ export function ProjectStudioCard({
   onDuplicate,
   onArchive,
 }: Props) {
+  const moreRef = useRef<HTMLDetailsElement>(null);
   const full = loadProject(item.id);
   const tiles = deriveMoodboardTiles(full, density === "compact" ? 3 : 4);
   const progress = projectProgressPercent(item.status);
   const target = full ? continueTargetForProject(full) : "planner";
   const resume = continueHref(item.id, target === "project" ? "planner" : target);
+
+  function closeOtherMenus() {
+    const root = moreRef.current?.closest(".cx-studio-card-grid") ?? document;
+    root.querySelectorAll<HTMLDetailsElement>(".cx-studio-more[open]").forEach((el) => {
+      if (el !== moreRef.current) el.open = false;
+    });
+  }
 
   return (
     <article
@@ -107,7 +130,15 @@ export function ProjectStudioCard({
           <Link to={`/consultant?projectId=${item.id}`} className="site-btn site-btn--ghost">
             Consultant
           </Link>
-          <details className="cx-studio-more">
+          <details
+            ref={moreRef}
+            className="cx-studio-more"
+            onToggle={(e) => {
+              const el = e.currentTarget;
+              if (el.open) closeOtherMenus();
+              placeMoreMenu(el);
+            }}
+          >
             <summary className="site-btn site-btn--ghost">More</summary>
             <div className="cx-studio-more__menu" role="menu">
               <button type="button" role="menuitem" onClick={onPin}>

@@ -19,6 +19,10 @@ import {
   type SpaceTemplateId,
 } from "../cx/intelligent/space-brief";
 import { planFromBrief, estimateQuantities } from "../cx/intelligent/planner";
+import {
+  packageModeFromManual,
+  shouldAutoRegeneratePackage,
+} from "../cx/intelligent/planner-manual-mode";
 import type { OptimizationResult } from "../cx/intelligent/optimize";
 import { toPlannerStyle } from "../cx/intelligent/nlu";
 import { buildPlannerHandoff, savePlannerHandoff } from "../cx/intelligent/handoff";
@@ -34,7 +38,8 @@ import {
   upsertRoomSnapshot,
   type FurnishingProject,
 } from "../cx/projects";
-import { loadProject, setLocalOwnerId } from "../cx/projects/store";
+import { loadProject, mergeProjectsOnLogin, setLocalOwnerId } from "../cx/projects/store";
+import { useSession } from "../../state/session";
 
 const TEMPLATES: SpaceTemplateId[] = [
   "office",
@@ -159,21 +164,31 @@ export function BudgetPlannerPage() {
   const [projectTitle, setProjectTitle] = useState("");
   const [restoredFromProject, setRestoredFromProject] = useState(false);
   const [manualLines, setManualLines] = useState(false);
+  const [manualEditCount, setManualEditCount] = useState(0);
 
   const [projectRevision, setProjectRevision] = useState(0);
   const [loadedProject, setLoadedProject] = useState<FurnishingProject | null>(null);
   const [projectLoadError, setProjectLoadError] = useState<string | null>(null);
+  const { user } = useSession();
 
   useEffect(() => {
     setLoadedProject(projectId ? getProject(projectId) : null);
   }, [projectId, projectRevision]);
 
   useEffect(() => {
-    if (!projectIdParam) return;
+    if (!projectIdParam) {
+      setProjectLoadError(null);
+      return;
+    }
     setProjectLoadError(null);
+
+    // Align local owner with session before access checks (continuity regression).
+    if (user?.id) {
+      mergeProjectsOnLogin(user.id, user.email ?? user.id);
+    }
+
     let project = getProject(projectIdParam);
     if (!project) {
-      // Recover when create owned the project under session id but local actor lagged.
       const raw = loadProject(projectIdParam);
       if (raw) {
         setLocalOwnerId(raw.ownerId);
@@ -181,7 +196,9 @@ export function BudgetPlannerPage() {
       }
     }
     if (!project) {
-      setProjectLoadError("This project could not be opened. It may be missing or inaccessible.");
+      setProjectLoadError(
+        "No project found with this ID (missing or inaccessible). Open Design Studio to continue, or start a new plan without a project link.",
+      );
       setBooting(false);
       return;
     }
@@ -200,27 +217,39 @@ export function BudgetPlannerPage() {
       setBooting(false);
       return;
     }
-    const hasLines = restored.lines.length > 0;
+
+    // Empty new projects: seed AI lines unless the user already customized
+    // (e.g. removed items and refreshed — do not bring them back).
+    const customized = room.packageCustomized === true;
+    let nextLines = restored.lines;
+    if (nextLines.length === 0 && !customized) {
+      const seedPlan = planFromBrief(restored.brief);
+      const seedResult =
+        seedPlan.results.find((r) => r.tier === restored.activeTier) ?? seedPlan.primaryResult;
+      if (seedResult) {
+        nextLines = cloneOptimized(seedResult);
+      }
+    }
+
     setProjectId(project.id);
     setProjectTitle(project.title);
     setActiveRoomId(room.id);
     setTemplateId(restored.templateId);
     setBrief(restored.brief);
     setActive(restored.activeTier);
-    setLines(restored.lines);
-    // Preserve restored brief/budget. Empty new projects still get package lines
-    // from the plan effect (restoredFromProject alone no longer blocks empty lines).
+    setLines(nextLines);
     setRestoredFromProject(true);
-    setManualLines(hasLines);
+    setManualLines(customized);
+    setManualEditCount(customized ? 1 : 0);
     setBooting(false);
-  }, [projectIdParam, roomIdParam]);
+  }, [projectIdParam, roomIdParam, user?.id, user?.email]);
 
   useEffect(() => {
     if (restoredFromProject) return;
+    if (manualLines) return;
     setBrief(createDefaultBrief(templateId));
     setActive("recommended");
-    setManualLines(false);
-  }, [templateId, restoredFromProject]);
+  }, [templateId, restoredFromProject, manualLines]);
 
   const plan = useMemo(() => planFromBrief(brief), [brief]);
   const qtyPreview = useMemo(() => estimateQuantities(brief), [brief]);
@@ -238,21 +267,39 @@ export function BudgetPlannerPage() {
   const pkg = plan.packages.find((p) => p.tier === active) ?? plan.primary;
 
   useEffect(() => {
-    if (manualLines) return;
-    if (restoredFromProject && lines.length > 0) return;
-    if (!result) return;
+    if (
+      !shouldAutoRegeneratePackage({
+        manualLines,
+        restoredFromProject,
+        lineCount: lines.length,
+      })
+    ) {
+      // Critical: never leave skeleton visible after lock / restore skips regen.
+      setBooting(false);
+      return;
+    }
+    if (!result) {
+      setBooting(false);
+      return;
+    }
+    let cancelled = false;
     setBooting(true);
     const t = window.setTimeout(() => {
+      if (cancelled) return;
       setLines(cloneOptimized(result));
       setBooting(false);
     }, 220);
-    return () => window.clearTimeout(t);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
   }, [result, manualLines, restoredFromProject, lines.length]);
 
   const total = lineTotal(lines);
   const { remaining, percent } = utilization(brief.budgetPkr ?? 0, total);
   const questions = discoveryQuestions(templateId);
   const style = (brief.style as PlannerStyle | undefined) ?? "modern";
+  const packageMode = packageModeFromManual(manualLines);
 
   const tierLabel = (tier: string, name: string) => {
     if (templateId !== "jahez") return name;
@@ -261,10 +308,80 @@ export function BudgetPlannerPage() {
     return "Jahez Premium / Luxury";
   };
 
+  /** Enter User Customized mode — blocks automatic package regeneration. */
+  function markPackageCustomized(bumpChange: boolean) {
+    setManualLines(true);
+    if (bumpChange) {
+      setManualEditCount((n) => n + 1);
+    } else {
+      setManualEditCount((n) => (n === 0 ? 1 : n));
+    }
+  }
+
+  function linesToSnapshot(nextLines: EditableLine[]) {
+    return nextLines.map((l) => ({
+      productId: l.product.id,
+      name: l.product.name,
+      qty: l.qty,
+      role: l.role,
+      ...(l.zone ? { zone: l.zone } : {}),
+      unitPkr: l.product.pricePkr,
+    }));
+  }
+
+  /** Persist current (or provided) lines so Remove/Qty survive refresh. */
+  function persistPackageLines(
+    nextLines: EditableLine[],
+    versionSummary: string,
+    packageCustomized: boolean,
+  ): void {
+    if (!projectId || !result || !pkg) return;
+    const roomName = loadedProject?.rooms.find((r) => r.id === activeRoomId)?.name;
+    const totalPkr = lineTotal(nextLines);
+    upsertRoomSnapshot(
+      projectId,
+      {
+        ...(activeRoomId ? { roomId: activeRoomId } : {}),
+        ...(roomName ? { name: roomName } : {}),
+        templateId,
+        brief,
+        activeTier: active,
+        lines: linesToSnapshot(nextLines),
+        totalPkr,
+        packageName: tierLabel(pkg.tier, pkg.name),
+        explanations: result.explanations,
+        upgrades: result.upgrades,
+        downgrades: result.downgrades,
+        packageCustomized,
+      },
+      versionSummary,
+    );
+    setProjectRevision((r) => r + 1);
+  }
+
+  function applyPackageLines(nextLines: EditableLine[], bumpChange: boolean) {
+    markPackageCustomized(bumpChange);
+    setLines(nextLines);
+    persistPackageLines(nextLines, "Package line edit", true);
+  }
+
+  /** Only exit from User Customized mode — regenerate from current AI result. */
+  function resetToAiPackage() {
+    if (!result) return;
+    const nextLines = cloneOptimized(result);
+    setManualLines(false);
+    setManualEditCount(0);
+    setRestoredFromProject(false);
+    setBooting(true);
+    setLines(nextLines);
+    setBooting(false);
+    persistPackageLines(nextLines, "Reset to AI package", false);
+  }
+
   const updateFlag = (id: string, value: boolean) => {
     setBrief((b) => ({ ...b, flags: { ...b.flags, [id]: value } }));
     setRestoredFromProject(false);
-    setManualLines(false);
+    // Do not exit customized mode — only Reset to AI Package does.
   };
 
   function persistCurrentProject(versionSummary = "Planner save"): string | null {
@@ -288,6 +405,7 @@ export function BudgetPlannerPage() {
       explanations: result.explanations,
       upgrades: result.upgrades,
       downgrades: result.downgrades,
+      packageCustomized: manualLines,
     };
     if (projectId) {
       upsertRoomSnapshot(projectId, snapshot, versionSummary);
@@ -333,12 +451,13 @@ export function BudgetPlannerPage() {
     setActive(restored.activeTier);
     setLines(restored.lines);
     setRestoredFromProject(true);
-    setManualLines(restored.lines.length > 0);
+    setManualLines(false);
+    setManualEditCount(0);
   }
 
   const updateNumber = (id: string, value: number) => {
     setRestoredFromProject(false);
-    setManualLines(false);
+    // Do not exit customized mode — only Reset to AI Package does.
     setBrief((b) => {
       switch (id) {
         case "budgetPkr":
@@ -393,6 +512,16 @@ export function BudgetPlannerPage() {
           <p className="site-form-error" role="alert">
             {projectLoadError}{" "}
             <Link to="/my-projects">Back to Design Studio</Link>
+            {" · "}
+            <Link
+              to="/planner"
+              onClick={() => {
+                setProjectLoadError(null);
+                setProjectId(null);
+              }}
+            >
+              Start a new plan
+            </Link>
           </p>
         ) : null}
       </header>
@@ -602,7 +731,43 @@ export function BudgetPlannerPage() {
       </div>
 
       <section className="site-section cx-planner-result" aria-live="polite">
-        <h2>{tierLabel(pkg.tier, pkg.name)}</h2>
+        <div className="cx-planner-result__head">
+          <h2>{tierLabel(pkg.tier, pkg.name)}</h2>
+          <p
+            className={`cx-planner-mode${packageMode === "customized" ? " is-customized" : ""}`}
+            role="status"
+            aria-live="polite"
+          >
+            {packageMode === "customized" ? (
+              <>
+                Customized by You
+                {manualEditCount > 0 ? (
+                  <span className="cx-planner-mode__edits">
+                    {" "}
+                    · {manualEditCount} manual {manualEditCount === 1 ? "change" : "changes"}
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              <>AI Generated</>
+            )}
+          </p>
+        </div>
+        {packageMode === "customized" ? (
+          <p className="cx-muted cx-planner-mode-hint">
+            Your line edits are locked. Use Reset to AI Package to discard them and regenerate.
+          </p>
+        ) : null}
+        <div className="cx-planner-result__tools">
+          <button
+            type="button"
+            className="site-btn site-btn--outline"
+            onClick={resetToAiPackage}
+            disabled={!result || packageMode === "ai"}
+          >
+            Reset to AI Package
+          </button>
+        </div>
         {booting ? (
           <div className="cx-skeleton-planner" aria-label="Loading package">
             <div className="cx-skeleton-card__line" />
@@ -676,9 +841,10 @@ export function BudgetPlannerPage() {
                         value={l.qty}
                         onChange={(e) => {
                           const qty = Math.max(1, Math.min(999, Number(e.target.value) || 1));
-                          setLines((prev) =>
-                            prev.map((row, idx) => (idx === i ? { ...row, qty } : row)),
+                          const next = lines.map((row, idx) =>
+                            idx === i ? { ...row, qty } : row,
                           );
+                          applyPackageLines(next, false);
                         }}
                       />
                     </label>
@@ -686,7 +852,10 @@ export function BudgetPlannerPage() {
                     <button
                       type="button"
                       className="site-btn site-btn--ghost"
-                      onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))}
+                      onClick={() => {
+                        const next = lines.filter((_, idx) => idx !== i);
+                        applyPackageLines(next, true);
+                      }}
                     >
                       Remove
                     </button>

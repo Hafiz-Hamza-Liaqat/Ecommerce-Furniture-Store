@@ -82,6 +82,7 @@ import {
   LazyBudgetPlannerPage,
   LazyConsultantPage,
   LazyCustomerProjectsPage,
+  LazyNotificationsPage,
   LazyDownloadsPage,
   LazyCookiesPage,
 } from "./routes/lazy";
@@ -496,6 +497,14 @@ export function AppRoutes() {
           element={
             <Lazy>
               <LazyCustomerProjectsPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="notifications"
+          element={
+            <Lazy>
+              <LazyNotificationsPage />
             </Lazy>
           }
         />

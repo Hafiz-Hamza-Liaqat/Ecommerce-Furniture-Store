@@ -8,6 +8,7 @@ import type { SpaceBrief, SpaceTemplateId } from "../intelligent/space-brief";
 import { TEMPLATE_LABELS, createDefaultBrief } from "../intelligent/space-brief";
 import type { PlannerHandoffLine } from "../intelligent/handoff";
 import type { ConsultantMessage } from "../stores";
+import { pushNotification } from "../../nav/notifications";
 import {
   deleteProject,
   getLocalOwnerId,
@@ -316,6 +317,8 @@ export function upsertRoomSnapshot(
     explanations?: readonly string[];
     upgrades?: readonly string[];
     downgrades?: readonly string[];
+    /** Persist user package edits so Remove survives refresh. */
+    packageCustomized?: boolean;
   },
   versionSummary = "Planner save",
 ): FurnishingProject | null {
@@ -324,10 +327,13 @@ export function upsertRoomSnapshot(
 
   const rooms = [...project.rooms];
   const existingIdx = snapshot.roomId ? rooms.findIndex((r) => r.id === snapshot.roomId) : -1;
+  const existing = existingIdx >= 0 ? rooms[existingIdx] : undefined;
+  const packageCustomized =
+    snapshot.packageCustomized ?? existing?.packageCustomized ?? false;
   const room: ProjectRoom = {
     id: snapshot.roomId ?? uid(),
-    name: snapshot.name ?? rooms[existingIdx]?.name ?? "Room",
-    order: existingIdx >= 0 ? rooms[existingIdx]!.order : rooms.length,
+    name: snapshot.name ?? existing?.name ?? "Room",
+    order: existingIdx >= 0 ? existing!.order : rooms.length,
     templateId: snapshot.templateId,
     brief: snapshot.brief,
     activeTier: snapshot.activeTier,
@@ -337,7 +343,8 @@ export function upsertRoomSnapshot(
     upgrades: [...(snapshot.upgrades ?? [])],
     downgrades: [...(snapshot.downgrades ?? [])],
     packageName: snapshot.packageName,
-    notes: existingIdx >= 0 ? [...rooms[existingIdx]!.notes] : [],
+    notes: existingIdx >= 0 ? [...existing!.notes] : [],
+    ...(packageCustomized ? { packageCustomized: true } : {}),
   };
   if (existingIdx >= 0) rooms[existingIdx] = room;
   else rooms.push(room);
@@ -578,6 +585,12 @@ export function createShareLink(
     "Share link created",
     `Share link (${permission})`,
   );
+  pushNotification({
+    category: "project_shared",
+    title: "Share link created",
+    body: `“${next.title}” is ready to share (${permission}).`,
+    href: `/my-projects?focus=${encodeURIComponent(next.id)}`,
+  });
   return { project: next, url: `/my-projects?share=${token}` };
 }
 
@@ -600,7 +613,7 @@ export function recordQuote(
     isLatest: true,
   };
   const quotes = project.quotes.map((q) => ({ ...q, isLatest: false }));
-  return persistProject(
+  const next = persistProject(
     {
       ...project,
       quotes: [entry, ...quotes].slice(0, 30),
@@ -609,6 +622,15 @@ export function recordQuote(
     entry.label,
     `Quotation ${entry.label}`,
   );
+  if (next) {
+    pushNotification({
+      category: "quotation_ready",
+      title: "Quotation ready",
+      body: `“${next.title}” — ${entry.label} (${entry.totalPkr.toLocaleString("en-PK")} PKR).`,
+      href: `/planner?projectId=${encodeURIComponent(next.id)}`,
+    });
+  }
+  return next;
 }
 
 export function buildCrmProjectMeta(project: FurnishingProject): Record<string, unknown> {

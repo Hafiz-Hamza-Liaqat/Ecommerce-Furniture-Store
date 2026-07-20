@@ -2437,8 +2437,14 @@
   background: var(--site-paper, #fff);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* visible so More menus are not clipped; moodboard clips its own tiles */
+  overflow: visible;
+  position: relative;
+  z-index: 1;
   transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+.cx-studio-card:has(.cx-studio-more[open]) {
+  z-index: 12;
 }
 .cx-studio-card:hover {
   box-shadow: 0 12px 32px color-mix(in srgb, var(--site-ink) 9%, transparent);
@@ -2457,6 +2463,7 @@
   gap: 2px;
   min-height: 7.5rem;
   background: var(--site-mist, #f3f0ea);
+  overflow: hidden;
 }
 .cx-studio-card--compact .cx-studio-moodboard {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2549,12 +2556,14 @@
   gap: 0.45rem;
   align-items: center;
   margin-top: 0.25rem;
+  position: relative;
 }
 .cx-studio-card__actions .site-btn {
   min-height: 44px;
 }
 .cx-studio-more {
   position: relative;
+  margin-inline-start: auto;
 }
 .cx-studio-more > summary {
   list-style: none;
@@ -2568,16 +2577,26 @@
 }
 .cx-studio-more__menu {
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   top: calc(100% + 0.25rem);
-  z-index: 5;
-  min-width: 10rem;
+  z-index: 30;
+  min-width: 11rem;
+  max-width: min(16rem, calc(100vw - 2rem));
+  width: max-content;
   display: grid;
   gap: 0.15rem;
   padding: 0.4rem;
   border: 1px solid var(--site-line);
   background: var(--site-paper, #fff);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--site-ink) 10%, transparent);
+}
+.cx-studio-more--up .cx-studio-more__menu {
+  top: auto;
+  bottom: calc(100% + 0.25rem);
+}
+.cx-studio-more--start .cx-studio-more__menu {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
 }
 .cx-studio-more__menu button,
 .cx-studio-more__menu a {
@@ -2591,10 +2610,46 @@
   padding: 0.55rem 0.65rem;
   min-height: 44px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .cx-studio-more__menu button:hover,
 .cx-studio-more__menu a:hover {
   background: color-mix(in srgb, var(--site-mist) 70%, transparent);
+}
+
+@media (max-width: 720px) {
+  .cx-studio-more {
+    flex: 1 1 auto;
+    margin-inline-start: 0;
+    min-width: 0;
+  }
+  .cx-studio-more > summary {
+    width: 100%;
+    justify-content: center;
+  }
+  .cx-studio-more__menu,
+  .cx-studio-more--up .cx-studio-more__menu,
+  .cx-studio-more--start .cx-studio-more__menu {
+    inset-inline: 0;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    top: calc(100% + 0.25rem);
+    bottom: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .cx-studio-card__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .cx-studio-card__actions > .site-btn--primary {
+    grid-column: 1 / -1;
+  }
+  .cx-studio-more {
+    grid-column: 1 / -1;
+  }
 }
 .cx-studio-recent__list {
   list-style: none;
@@ -2688,7 +2743,108 @@
   }
 }
 
-.cx-planner-rooms { padding-top: 0; }
+/* RC10.2 — Notifications center */
+.cx-notifications__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.cx-notifications__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+.cx-notifications__count {
+  display: inline-flex;
+  min-width: 1.4rem;
+  justify-content: center;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--site-line);
+  font-size: 0.85rem;
+}
+.cx-notifications__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.cx-notifications__group {
+  margin-bottom: 1.5rem;
+}
+.cx-notifications__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.cx-notifications__item {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--site-line);
+  background: var(--site-paper, #fff);
+}
+.cx-notifications__item.is-unread {
+  border-color: color-mix(in srgb, var(--site-brass, #b08d57) 55%, var(--site-line));
+  background: color-mix(in srgb, var(--site-brass, #b08d57) 8%, var(--site-paper, #fff));
+}
+.cx-notifications__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--site-ink-soft, #555);
+  margin-bottom: 0.35rem;
+}
+.cx-notifications__category {
+  font-weight: 650;
+}
+.cx-notifications__item h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+.cx-notifications__item p {
+  margin: 0 0 0.75rem;
+}
+.cx-notifications__item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.cx-planner-result__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.cx-planner-result__head h2 {
+  margin: 0;
+}
+.cx-planner-mode {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--site-ink-soft, #555);
+}
+.cx-planner-mode.is-customized {
+  color: color-mix(in srgb, var(--site-brass, #b08d57) 70%, var(--site-ink, #1a1a1a));
+}
+.cx-planner-mode__edits {
+  font-weight: 500;
+}
+.cx-planner-mode-hint {
+  margin: 0.35rem 0 0.75rem;
+}
+.cx-planner-result__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
 .cx-planner-room-tabs {
   display: flex;
   flex-wrap: wrap;

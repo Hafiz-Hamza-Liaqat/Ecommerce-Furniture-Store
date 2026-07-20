@@ -2,7 +2,7 @@
 
 - **Created:** 2026-07-20
 - **Last Updated:** 2026-07-21
-- **Status:** RC10.1 ready to commit · RC10.3 plan approved & frozen · RC10.2 next
+- **Status:** RC10.1 committed (`169abf7`) · RC10.3 planned & frozen · RC10.2 in progress
 
 ## Relationship to RC9
 
@@ -12,8 +12,8 @@ RC9 (through RC9.5) is the production foundation (UX, AI, persistence, security)
 
 | Release | Focus | Status |
 |---|---|---|
-| **RC10.1** | Enterprise Workspace / Interior Design Studio | **Ready to commit** |
-| **RC10.2** | Notifications & Communication | **Next implementation** |
+| **RC10.1** | Enterprise Workspace / Interior Design Studio | **Committed** (`169abf7`) |
+| **RC10.2** | Notifications & Communication | **In progress** |
 | **RC10.3** | Smart Product Configuration & Quote Optimization | **Planned & frozen** |
 | RC10.4 | Orders, CRM & Sales Workflow | Future |
 | RC10.5 | Cloud Sync & Multi-Device (first new CX APIs) | Future |
@@ -41,6 +41,15 @@ RC9 (through RC9.5) is the production foundation (UX, AI, persistence, security)
 | Doc | Path |
 |---|---|
 | Implementation Plan (frozen) | `docs/release/RC10.3-Implementation-Plan.md` |
+
+## Document map (RC10.2)
+
+| Doc | Path |
+|---|---|
+| Notifications MVP Plan | `docs/release/RC10.2-Notifications-Plan.md` |
+| Planner Stability (RC10.2.1) | `docs/release/RC10.2.1-Planner-Stability-Report.md` |
+| RC10.2.1 Regression | `docs/release/RC10.2.1-Regression-Test-Report.md` |
+| RC10.2.1 Test Summary | `docs/release/RC10.2.1-Test-Summary.md` |
 
 ## Development rules
 
