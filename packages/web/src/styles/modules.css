@@ -183,3 +183,85 @@
     display: none !important;
   }
 }
+
+/* RC10.4 — Sales workflow */
+.sales-workflow__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+.sales-workflow__filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--afh-ink-soft);
+}
+.sales-workflow__filters input,
+.sales-workflow__filters select,
+.sales-workflow__assign input,
+.sales-workflow select,
+.sales-workflow textarea {
+  font: inherit;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--afh-border);
+  border-radius: 8px;
+  background: var(--afh-paper);
+  color: var(--afh-ink);
+}
+.sales-workflow__kanban {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+.sales-workflow__column .ws-feed {
+  max-height: 28rem;
+  overflow: auto;
+}
+.sales-workflow__stage-move {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  margin-top: 0.35rem;
+}
+.sales-workflow__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.sales-workflow__table th,
+.sales-workflow__table td {
+  text-align: left;
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid var(--afh-border);
+  vertical-align: top;
+}
+.sales-workflow .linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--afh-copper);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.sales-workflow__internal {
+  border-color: color-mix(in srgb, var(--afh-copper) 35%, var(--afh-border));
+}
+.sales-workflow__assign {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+.erp-subnav button.erp-subnav__link {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}

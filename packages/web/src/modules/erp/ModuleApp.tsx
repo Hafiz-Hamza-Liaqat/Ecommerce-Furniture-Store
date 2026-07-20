@@ -57,8 +57,13 @@ import {
 } from "../../workspace/prefs";
 import { allowFixtureListFallback, resolveUiProfile } from "./ui-profile";
 import { buildDefaultListPayload, readListPage } from "./list-query";
+import { SalesWorkflowPage } from "../../marketing/cx/sales/ui/SalesWorkflowPage";
 
 const PAGE_SIZE = 25;
+
+function SalesWorkflowRoute() {
+  return <SalesWorkflowPage />;
+}
 
 export function ModuleApp({ module }: { readonly module: ModuleDefinition }) {
   return (
@@ -69,6 +74,9 @@ export function ModuleApp({ module }: { readonly module: ModuleDefinition }) {
         <Route path="pipeline" element={<KanbanPage module={module} />} />
         <Route path="gantt" element={<GanttPage module={module} />} />
         <Route path="calendar" element={<CalendarPage module={module} />} />
+        {module.id === "sales" ? (
+          <Route path="workflow" element={<SalesWorkflowRoute />} />
+        ) : null}
         <Route path=":entityKey" element={<EntityListPage module={module} />} />
         <Route path=":entityKey/new" element={<EntityFormPage module={module} mode="create" />} />
         <Route path=":entityKey/:recordId" element={<EntityDetailPage module={module} />} />

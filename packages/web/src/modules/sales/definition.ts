@@ -92,6 +92,7 @@ export const SALES_MODULE: ModuleDefinition = {
   ],
   nav: [
     { to: "", label: "Dashboard" },
+    { to: "workflow", label: "Sales workflow" },
     { to: "customers", label: "Customers", entityKey: "customers" },
     { to: "opportunities", label: "Opportunities", entityKey: "opportunities" },
     { to: "pipeline", label: "Kanban pipeline", entityKey: "opportunities" },

@@ -9,6 +9,7 @@ import { TEMPLATE_LABELS, createDefaultBrief } from "../intelligent/space-brief"
 import type { PlannerHandoffLine } from "../intelligent/handoff";
 import type { ConsultantMessage } from "../stores";
 import { pushNotification } from "../../nav/notifications";
+import { bridgeProjectQuoteToSales } from "../sales/bridge";
 import {
   deleteProject,
   getLocalOwnerId,
@@ -629,6 +630,11 @@ export function recordQuote(
       body: `“${next.title}” — ${entry.label} (${entry.totalPkr.toLocaleString("en-PK")} PKR).`,
       href: `/planner?projectId=${encodeURIComponent(next.id)}`,
     });
+    try {
+      bridgeProjectQuoteToSales(next, entry);
+    } catch {
+      /* bridge is best-effort */
+    }
   }
   return next;
 }

@@ -1,5 +1,7 @@
 /** RC8.1 client-side CX stores (localStorage). Account merge hooks for login recovery. */
 
+import { bridgeLeadToSales } from "./sales/bridge";
+
 const WISHLIST_KEY = "afh.cx.wishlist";
 const COMPARE_KEY = "afh.cx.compare";
 const RECENT_KEY = "afh.cx.recent";
@@ -204,6 +206,11 @@ export function enqueueLead(draft: Omit<LeadDraft, "id" | "at">): LeadDraft {
     at: new Date().toISOString(),
   };
   writeJson(LEAD_QUEUE_KEY, [full, ...all].slice(0, 50));
+  try {
+    bridgeLeadToSales(full);
+  } catch {
+    /* ignore bridge failures — lead queue remains authoritative */
+  }
   return full;
 }
 
