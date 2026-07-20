@@ -213,6 +213,9 @@ export async function createProductionHost(
     corsOrigin: config.corsOrigin,
     rateLimit: createInMemoryRateLimitHook(),
     exposeOpenApi: config.exposeOpenApi,
+    revealChallengeTokens: config.profile !== "production",
+    trustProxy: config.trustProxy === true,
+    enableHsts: config.profile === "production",
   });
 
   const health = api.composition.infrastructure.health;

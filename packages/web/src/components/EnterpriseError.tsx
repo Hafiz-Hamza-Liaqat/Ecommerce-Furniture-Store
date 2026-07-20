@@ -71,6 +71,7 @@ export function EnterpriseError({
   title,
   body,
   code,
+  correlationId,
   inline = false,
   onRetry,
   homeHref = "/",
@@ -81,6 +82,8 @@ export function EnterpriseError({
   readonly title?: string;
   readonly body?: string;
   readonly code?: string;
+  /** Support reference only — never a stack trace. */
+  readonly correlationId?: string | null;
   readonly inline?: boolean;
   readonly onRetry?: () => void;
   readonly homeHref?: string;
@@ -105,6 +108,11 @@ export function EnterpriseError({
       </div>
       <h2 className="afh-error__title">{displayTitle}</h2>
       <p className="afh-error__body">{displayBody}</p>
+      {correlationId ? (
+        <p className="afh-error__ref">
+          Support reference: <code>{correlationId}</code>
+        </p>
+      ) : null}
       <div className="afh-error__actions">
         {kind === "unauthorized" ? (
           <>

@@ -47,18 +47,21 @@ export class AppErrorBoundary extends Component<Props, State> {
         /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk|error loading dynamically imported module/i.test(
           message,
         );
+      const supportRef =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : null;
       return (
         <EnterpriseError
           kind={chunkFail ? "maintenance" : "server"}
           title={chunkFail ? "Maintenance" : "Unexpected application error"}
           {...(chunkFail ? { code: "503" } : {})}
-          {...(message
-            ? {
-                body: chunkFail
-                  ? "A page module could not be loaded (often after a refresh or update). Refresh shortly, or hard-refresh the browser."
-                  : `${message}. You can retry or return to a safe page.`,
-              }
-            : {})}
+          body={
+            chunkFail
+              ? "A page module could not be loaded (often after a refresh or update). Refresh shortly, or hard-refresh the browser."
+              : "Something went wrong while rendering this page. Retry, or return home. If the problem continues, share the support reference with our team."
+          }
+          {...(supportRef ? { correlationId: supportRef } : {})}
           homeHref={this.props.homeHref ?? "/"}
           onRetry={() => {
             if (chunkFail) {

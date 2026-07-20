@@ -8,18 +8,41 @@ const PLANNER_KEY = "afh.cx.planner";
 const CONSULTANT_KEY = "afh.cx.consultant";
 const LEAD_QUEUE_KEY = "afh.cx.leadQueue";
 
+const CX_STORAGE_PREFIX = "afh.cx.";
+
 function readJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
     return JSON.parse(raw) as T;
   } catch {
+    // Corrupt JSON must not wipe UX — return fallback (offline recovery).
     return fallback;
   }
 }
 
 function writeJson(key: string, value: unknown): void {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Quota / private mode — ignore; callers keep in-memory behavior.
+  }
+}
+
+/**
+ * Subscribe to cross-tab CX localStorage changes.
+ * Returns an unsubscribe function. No-op when window is unavailable.
+ */
+export function subscribeCxStorage(
+  onChange: (key: string) => void,
+): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  const handler = (event: StorageEvent) => {
+    if (!event.key || !event.key.startsWith(CX_STORAGE_PREFIX)) return;
+    onChange(event.key);
+  };
+  window.addEventListener("storage", handler);
+  return () => window.removeEventListener("storage", handler);
 }
 
 export function getWishlistIds(): string[] {
@@ -41,8 +64,11 @@ export function removeWishlist(id: string): string[] {
   return next;
 }
 
-/** Merge guest wishlist after login. */
-export function mergeWishlistOnLogin(accountIds: readonly string[]): string[] {
+/**
+ * Merge guest wishlist after login.
+ * Account-side wishlist sync is deferred (local-only); still dedupes local ids.
+ */
+export function mergeWishlistOnLogin(accountIds: readonly string[] = []): string[] {
   const merged = [...new Set([...getWishlistIds(), ...accountIds])];
   writeJson(WISHLIST_KEY, merged);
   return merged;
@@ -156,17 +182,39 @@ export type LeadDraft = {
   readonly meta?: Record<string, unknown>;
 };
 
+/**
+ * Enqueue an offline lead. Dedupes identical intent+email+message within 30s
+ * to resist double-submit races.
+ */
 export function enqueueLead(draft: Omit<LeadDraft, "id" | "at">): LeadDraft {
+  const all = readJson<LeadDraft[]>(LEAD_QUEUE_KEY, []);
+  const now = Date.now();
+  const duplicate = all.find((existing) => {
+    if (existing.intent !== draft.intent) return false;
+    if (existing.email !== draft.email) return false;
+    if (existing.message !== draft.message) return false;
+    if (existing.source !== draft.source) return false;
+    return now - Date.parse(existing.at) < 30_000;
+  });
+  if (duplicate) return duplicate;
+
   const full: LeadDraft = {
     ...draft,
     id: crypto.randomUUID(),
     at: new Date().toISOString(),
   };
-  const all = readJson<LeadDraft[]>(LEAD_QUEUE_KEY, []);
   writeJson(LEAD_QUEUE_KEY, [full, ...all].slice(0, 50));
   return full;
 }
 
 export function listLeadQueue(): LeadDraft[] {
   return readJson<LeadDraft[]>(LEAD_QUEUE_KEY, []);
+}
+
+/** Remove a lead from the offline queue after successful flush. */
+export function dequeueLead(id: string): void {
+  writeJson(
+    LEAD_QUEUE_KEY,
+    listLeadQueue().filter((lead) => lead.id !== id),
+  );
 }

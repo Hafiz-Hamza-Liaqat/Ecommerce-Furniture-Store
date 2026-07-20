@@ -66,6 +66,13 @@ export type RouteDeps = {
    * Defaults to true for development/test hosts.
    */
   readonly exposeOpenApi?: boolean;
+  /**
+   * When true, auth challenge routes may return opaque tokens (dev/test only).
+   * Production must leave this false / omit it.
+   */
+  readonly revealChallengeTokens?: boolean;
+  /** Prefer X-Forwarded-For for audit IP when behind a trusted proxy. */
+  readonly trustProxy?: boolean;
 };
 
 async function applyRateLimit(
@@ -533,7 +540,10 @@ import { createAuthRoutes } from "./auth-routes.js";
 export function createAllRoutes(deps: RouteDeps): RouteDefinition[] {
   const routes: RouteDefinition[] = [
     ...createHealthRoutes(deps),
-    ...createAuthRoutes(deps.identity, deps.rateLimit),
+    ...createAuthRoutes(deps.identity, deps.rateLimit, {
+      revealChallengeTokens: deps.revealChallengeTokens === true,
+      trustProxy: deps.trustProxy === true,
+    }),
     ...createDispatchRoutes(deps),
     ...createUploadRoutes(deps),
   ];

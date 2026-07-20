@@ -24,6 +24,7 @@ import {
 import { parseJsonBody } from "../dto/validation.js";
 import {
   jsonResponse,
+  headerValue,
   type RouteDefinition,
   type TransportRequest,
   type TransportResponse,
@@ -32,6 +33,16 @@ import type { RateLimitHook } from "../rate-limit/rate-limit.js";
 import { rateLimitExceededResponse as buildRateLimitResponse } from "../rate-limit/rate-limit.js";
 
 const CANONICAL_PERMISSION_SET = new Set(ALL_CANONICAL_PERMISSION_CODES);
+
+export type AuthRouteOptions = {
+  /**
+   * When true (non-production only), challenge issuance responses may include
+   * opaque tokens for local testing. Production must keep this false.
+   */
+  readonly revealChallengeTokens?: boolean;
+  /** When true, prefer first X-Forwarded-For hop for audit IP (behind trusted proxy). */
+  readonly trustProxy?: boolean;
+};
 
 /**
  * Resolve the authenticated user's effective canonical permission codes using
@@ -57,6 +68,42 @@ function readString(
 ): string | null {
   const value = body[key];
   return typeof value === "string" ? value : null;
+}
+
+/** Prefer transport socket address; optionally first X-Forwarded-For when trustProxy. */
+export function resolveClientIp(
+  request: TransportRequest,
+  trustProxy = false,
+): string | null {
+  if (trustProxy) {
+    const xff = headerValue(request.headers, "x-forwarded-for");
+    if (xff) {
+      const first = xff.split(",")[0]?.trim();
+      if (first) return first;
+    }
+  }
+  return request.clientAddress ?? null;
+}
+
+function resolveUserAgent(request: TransportRequest): string | null {
+  return headerValue(request.headers, "user-agent");
+}
+
+/**
+ * Strip secrets from challenge issuance payloads unless reveal is enabled.
+ * Always returns a stable public shape for production.
+ */
+export function sanitizeChallengePayload(
+  value: unknown,
+  revealTokens: boolean,
+): Record<string, unknown> {
+  if (!revealTokens) {
+    return { sent: true };
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return { sent: true, detail: value };
 }
 
 async function gateAuthRateLimit(
@@ -87,7 +134,11 @@ async function gateAuthRateLimit(
 export function createAuthRoutes(
   identity: IdentityFoundation,
   rateLimit: RateLimitHook,
+  options: AuthRouteOptions = {},
 ): RouteDefinition[] {
+  const revealChallengeTokens = options.revealChallengeTokens === true;
+  const trustProxy = options.trustProxy === true;
+
   return [
     {
       method: "POST",
@@ -131,13 +182,13 @@ export function createAuthRoutes(
           );
         }
 
-        const companyId = readString(body, "companyId");
+        // RC9.5: never accept client-supplied companyId on unauthenticated register.
         const phone = readString(body, "phone");
         const result = await identity.authentication.register({
           email,
           password,
           fullName,
-          companyId,
+          companyId: null,
           phone,
         });
         if (isFail(result)) {
@@ -210,8 +261,8 @@ export function createAuthRoutes(
           email,
           password,
           deviceLabel: readString(body, "deviceLabel"),
-          userAgent: readString(body, "userAgent"),
-          ipAddress: readString(body, "ipAddress"),
+          userAgent: resolveUserAgent(request),
+          ipAddress: resolveClientIp(request, trustProxy),
           mfaToken: readString(body, "mfaToken"),
         });
 
@@ -396,6 +447,7 @@ export function createAuthRoutes(
           request,
           "email",
           async (email) => identity.authentication.requestPasswordReset(email),
+          revealChallengeTokens,
         );
       },
     },
@@ -483,7 +535,7 @@ export function createAuthRoutes(
           200,
           {
             ok: true,
-            data: result.value,
+            data: sanitizeChallengePayload(result.value, revealChallengeTokens),
             correlationId: auth.value.correlationId,
           },
           { [CorrelationHeader]: auth.value.correlationId },
@@ -569,7 +621,7 @@ export function createAuthRoutes(
           200,
           {
             ok: true,
-            data: result.value,
+            data: sanitizeChallengePayload(result.value, revealChallengeTokens),
             correlationId: auth.value.correlationId,
           },
           { [CorrelationHeader]: auth.value.correlationId },
@@ -584,6 +636,7 @@ async function handleTokenChallenge(
   request: TransportRequest,
   field: string,
   action: (value: string) => Promise<Result<unknown, PlatformError>>,
+  revealChallengeTokens: boolean,
 ): Promise<TransportResponse> {
   const limited = await gateAuthRateLimit(rateLimit, request);
   if (limited) return limited;
@@ -616,7 +669,11 @@ async function handleTokenChallenge(
   }
   return jsonResponse(
     200,
-    { ok: true, data: result.value, correlationId },
+    {
+      ok: true,
+      data: sanitizeChallengePayload(result.value, revealChallengeTokens),
+      correlationId,
+    },
     { [CorrelationHeader]: correlationId },
   );
 }

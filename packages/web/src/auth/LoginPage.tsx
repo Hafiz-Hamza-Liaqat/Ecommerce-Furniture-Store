@@ -8,6 +8,7 @@ import { BrandLogo } from "../brand/BrandLogo";
 import { BRAND } from "../brand";
 import { Seo } from "../marketing/Seo";
 import { sanitizeReturnUrl } from "../marketing/nav/role-home";
+import { mergeWishlistOnLogin } from "../marketing/cx/stores";
 
 export function LoginPage() {
   const { api, setSession, setLastCorrelationId } = useSession();
@@ -33,6 +34,7 @@ export function LoginPage() {
       });
       setLastCorrelationId(result.correlationId);
       setSession(result.data.user, result.data.tokens);
+      mergeWishlistOnLogin();
       const destination = returnUrl ?? "/workspace";
       startTransition(() => {
         void navigate(destination, { replace: true });

@@ -7,12 +7,13 @@ import {
   enqueueLead,
   getCompareIds,
   getWishlistIds,
-  mergeWishlistOnLogin,
   moveWishlistToCompare,
   removeWishlist,
+  subscribeCxStorage,
 } from "../cx/stores";
 import { useSession } from "../../state/session";
 import { useReveal } from "../useReveal";
+import { useEffect } from "react";
 
 export function WishlistPage() {
   const { tokens } = useSession();
@@ -21,27 +22,26 @@ export function WishlistPage() {
   const [msg, setMsg] = useState("");
   useReveal([ids.length]);
 
+  useEffect(() => {
+    return subscribeCxStorage((key) => {
+      if (key === "afh.cx.wishlist") setIds(getWishlistIds());
+      if (key === "afh.cx.compare") setCompareIds(getCompareIds());
+    });
+  }, []);
+
   return (
     <>
       <Seo title="Wishlist" description="Saved furniture pieces." path="/wishlist" />
       <header className="site-page-hero">
         <Breadcrumbs items={[{ label: "Wishlist" }]} />
         <h1>Wishlist</h1>
-        <p>Persistently saved in this browser. Sign in to merge with your account list.</p>
+        <p>Saved in this browser. Sign-in keeps your local list; cloud sync is planned later.</p>
         <div className="site-hero__actions">
-          {tokens?.sessionId ? (
-            <button
-              type="button"
-              className="site-btn site-btn--ghost"
-              onClick={() => setIds(mergeWishlistOnLogin(ids))}
-            >
-              Refresh / merge login recovery
-            </button>
-          ) : (
+          {!tokens?.sessionId ? (
             <Link to="/login" className="site-btn site-btn--ghost">
-              Sign in to recover across devices
+              Sign in
             </Link>
-          )}
+          ) : null}
           <button
             type="button"
             className="site-btn site-btn--ghost"

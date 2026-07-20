@@ -1,6 +1,10 @@
 /**
  * Reusable API client — commands, queries, auth, uploads.
  * No business behavior; transport + DTO mapping only.
+ *
+ * RC9.5 Retry Matrix:
+ * - GET — limited retry with backoff on network / 5xx / 429
+ * - POST / PUT / PATCH / DELETE — no automatic retry
  */
 
 import {
@@ -11,16 +15,38 @@ import {
   type SessionTokens,
 } from "./types";
 
+type ApiErrorPayload = ApiErrorBody["error"];
+
 export type ApiClientOptions = {
   readonly baseUrl?: string;
   readonly getAccessToken: () => string | null;
   readonly getCompanyId?: () => string | null;
   readonly onUnauthorized?: () => void;
   readonly developerMode?: boolean;
+  /** Request timeout in ms (default 30_000). */
+  readonly timeoutMs?: number;
+  /** Max GET retries after the first attempt (default 2). */
+  readonly maxGetRetries?: number;
 };
+
+const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_GET_RETRIES = 2;
 
 function newCorrelationId(): string {
   return crypto.randomUUID();
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** RC9.5 — only idempotent GET is auto-retried. */
+export function shouldRetryMethod(method: string): boolean {
+  return method.toUpperCase() === "GET";
+}
+
+export function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
 }
 
 export class ApiClient {
@@ -29,6 +55,8 @@ export class ApiClient {
   readonly #getCompanyId: () => string | null;
   readonly #onUnauthorized: (() => void) | null;
   readonly #developerMode: boolean;
+  readonly #timeoutMs: number;
+  readonly #maxGetRetries: number;
   lastCorrelationId: string | null = null;
 
   constructor(options: ApiClientOptions) {
@@ -37,6 +65,8 @@ export class ApiClient {
     this.#getCompanyId = options.getCompanyId ?? (() => null);
     this.#onUnauthorized = options.onUnauthorized ?? null;
     this.#developerMode = options.developerMode ?? false;
+    this.#timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.#maxGetRetries = options.maxGetRetries ?? DEFAULT_GET_RETRIES;
   }
 
   async signIn(input: {
@@ -54,11 +84,15 @@ export class ApiClient {
     readonly email: string;
     readonly password: string;
     readonly fullName: string;
-    readonly companyId?: string | null;
     readonly phone?: string | null;
   }): Promise<ApiSuccess<{ user: AuthUser }>> {
     return this.#request("POST", "/api/v1/auth/register", {
-      body: input,
+      body: {
+        email: input.email,
+        password: input.password,
+        fullName: input.fullName,
+        phone: input.phone ?? null,
+      },
       auth: false,
     });
   }
@@ -165,23 +199,32 @@ export class ApiClient {
   }
 
   async healthReady(): Promise<unknown> {
-    const res = await fetch(`${this.#baseUrl}/health/ready`);
-    return res.json();
+    return this.#healthFetch("/health/ready");
   }
 
   async healthLive(): Promise<unknown> {
-    const res = await fetch(`${this.#baseUrl}/health/live`);
-    return res.json();
+    return this.#healthFetch("/health/live");
   }
 
   async healthStartup(): Promise<unknown> {
-    const res = await fetch(`${this.#baseUrl}/health/startup`);
-    return res.json();
+    return this.#healthFetch("/health/startup");
   }
 
   async healthVersion(): Promise<unknown> {
-    const res = await fetch(`${this.#baseUrl}/health/version`);
-    return res.json();
+    return this.#healthFetch("/health/version");
+  }
+
+  async #healthFetch(path: string): Promise<unknown> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.#timeoutMs);
+    try {
+      const res = await fetch(`${this.#baseUrl}${path}`, {
+        signal: controller.signal,
+      });
+      return res.json();
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async #request<T>(
@@ -193,6 +236,44 @@ export class ApiClient {
     } = {},
   ): Promise<ApiSuccess<T>> {
     const correlationId = newCorrelationId();
+    const maxAttempts = shouldRetryMethod(method)
+      ? 1 + this.#maxGetRetries
+      : 1;
+    let lastError: ApiClientError | null = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await sleep(Math.min(250 * 2 ** (attempt - 1), 1_000));
+      }
+      try {
+        return await this.#requestOnce<T>(method, path, options, correlationId);
+      } catch (err) {
+        if (!(err instanceof ApiClientError)) throw err;
+        lastError = err;
+        const retryable =
+          shouldRetryMethod(method) &&
+          (err.retryable === true ||
+            isRetryableStatus(err.status) ||
+            err.code === "timeout" ||
+            err.code === "network_error");
+        if (!retryable || attempt >= maxAttempts - 1) {
+          throw err;
+        }
+      }
+    }
+
+    throw lastError ?? new Error("Request failed");
+  }
+
+  async #requestOnce<T>(
+    method: string,
+    path: string,
+    options: {
+      readonly body?: unknown;
+      readonly auth?: boolean;
+    },
+    correlationId: string,
+  ): Promise<ApiSuccess<T>> {
     const headers: Record<string, string> = {
       accept: "application/json",
       "x-correlation-id": correlationId,
@@ -209,13 +290,41 @@ export class ApiClient {
       headers["x-company-id"] = companyId;
     }
 
-    const response = await fetch(`${this.#baseUrl}${path}`, {
-      method,
-      headers,
-      ...(options.body === undefined
-        ? {}
-        : { body: JSON.stringify(options.body) }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.#timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.#baseUrl}${path}`, {
+        method,
+        headers,
+        signal: controller.signal,
+        ...(options.body === undefined
+          ? {}
+          : { body: JSON.stringify(options.body) }),
+      });
+    } catch (cause) {
+      clearTimeout(timer);
+      const aborted =
+        cause instanceof DOMException && cause.name === "AbortError";
+      const err: ApiErrorPayload = {
+        code: aborted ? "timeout" : "network_error",
+        category: "infrastructure",
+        message: aborted
+          ? "Request timed out"
+          : "Network request failed",
+        details: {},
+        retryable: true,
+        correlationId,
+      };
+      this.lastCorrelationId = correlationId;
+      if (this.#developerMode) {
+        console.warn("[afh-api]", method, path, err);
+      }
+      throw new ApiClientError(0, err);
+    } finally {
+      clearTimeout(timer);
+    }
 
     const headerCorrelation =
       response.headers.get("x-correlation-id") ?? correlationId;
@@ -227,15 +336,23 @@ export class ApiClient {
       | null;
 
     if (!response.ok || !json || !("ok" in json) || json.ok !== true) {
-      const err =
+      const err: ApiErrorPayload =
         json && "error" in json
-          ? json.error
+          ? {
+              ...json.error,
+              // Never surface stacks / SQL from bodies — keep message + code only
+              details:
+                json.error.details && typeof json.error.details === "object"
+                  ? sanitizeErrorDetails(json.error.details)
+                  : {},
+              correlationId: json.error.correlationId ?? headerCorrelation,
+            }
           : {
               code: "transport_error",
               category: "infrastructure",
               message: `Request failed (${response.status})`,
               details: {},
-              retryable: response.status >= 500,
+              retryable: isRetryableStatus(response.status),
               correlationId: headerCorrelation,
             };
       if (
@@ -245,7 +362,10 @@ export class ApiClient {
         if (
           err.code === "unauthenticated" ||
           err.code === "session_invalid" ||
-          err.code === "session_expired"
+          err.code === "session_expired" ||
+          err.code === "session_idle_expired" ||
+          err.code === "session_absolute_expired" ||
+          err.code === "session_refresh_expired"
         ) {
           this.#onUnauthorized?.();
         }
@@ -261,4 +381,27 @@ export class ApiClient {
       correlationId: json.correlationId ?? headerCorrelation,
     };
   }
+}
+
+const DETAIL_DENY = new Set([
+  "stack",
+  "stackTrace",
+  "sql",
+  "query",
+  "password",
+  "token",
+  "secret",
+]);
+
+function sanitizeErrorDetails(
+  details: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(details)) {
+    if (DETAIL_DENY.has(key)) continue;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      out[key] = value;
+    }
+  }
+  return out;
 }

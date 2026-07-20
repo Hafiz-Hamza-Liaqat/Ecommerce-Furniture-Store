@@ -90,16 +90,26 @@ export async function authenticateRequest(
   }
 
   const now = identity.clock.now();
-  if (new Date(session.expiresAt) < now || new Date(session.absoluteExpiresAt) < now) {
+  const expiry = identity.sessions.evaluateSessionExpiry(session, now);
+  if (expiry) {
+    await identity.sessions.revokeSession(session.id, session.userId);
     return fail(
-      new AuthorizationError("Session expired", {
-        code: "session_expired",
+      new AuthorizationError(expiry.message, {
+        code: expiry.code ?? "session_expired",
         correlationId,
       }),
     );
   }
 
-  await identity.sessions.touchSession(session.id);
+  const touched = await identity.sessions.touchSession(session.id);
+  if (!touched.ok) {
+    return fail(
+      new AuthorizationError(touched.error.message, {
+        code: touched.error.code ?? "session_expired",
+        correlationId,
+      }),
+    );
+  }
 
   if (
     companyHeader &&

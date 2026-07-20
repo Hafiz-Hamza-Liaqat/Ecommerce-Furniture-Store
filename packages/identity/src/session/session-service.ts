@@ -96,13 +96,10 @@ export class SessionService {
     }
 
     const now = this.clock.now();
-    if (new Date(session.absoluteExpiresAt) < now) {
+    const expiry = this.#evaluateExpiry(session, now);
+    if (expiry) {
       await this.revokeSession(sessionId, session.userId);
-      return fail(
-        new AuthorizationError("Session absolute expiry reached", {
-          code: "session_absolute_expired",
-        }),
-      );
+      return fail(expiry);
     }
 
     if (session.refreshTokenHash !== hashOpaqueToken(refreshToken)) {
@@ -111,19 +108,6 @@ export class SessionService {
       return fail(
         new AuthorizationError("Refresh token reuse detected", {
           code: "refresh_reuse",
-        }),
-      );
-    }
-
-    const idleDeadline = new Date(
-      new Date(session.lastSeenAt).getTime() +
-        this.config.get().session.idleTtlSeconds * 1000,
-    );
-    if (idleDeadline < now) {
-      await this.revokeSession(sessionId, session.userId);
-      return fail(
-        new AuthorizationError("Session idle expiry reached", {
-          code: "session_idle_expired",
         }),
       );
     }
@@ -157,6 +141,17 @@ export class SessionService {
     });
   }
 
+  /**
+   * Validates absolute, refresh, and idle expiry without extending lastSeenAt.
+   * Used by API auth so idle TTL is enforced on every authenticated request.
+   */
+  evaluateSessionExpiry(
+    session: SessionRecord,
+    now: Date = this.clock.now(),
+  ): AuthorizationError | null {
+    return this.#evaluateExpiry(session, now);
+  }
+
   async touchSession(sessionId: string): Promise<Result<void, PlatformError>> {
     const session = await this.store.getSession(sessionId);
     if (!session || session.revokedAt) {
@@ -164,11 +159,43 @@ export class SessionService {
         new NotFoundError("Session not found", { code: "session_not_found" }),
       );
     }
+    const now = this.clock.now();
+    const expiry = this.#evaluateExpiry(session, now);
+    if (expiry) {
+      await this.revokeSession(sessionId, session.userId);
+      return fail(expiry);
+    }
     await this.store.saveSession({
       ...session,
-      lastSeenAt: this.clock.now().toISOString(),
+      lastSeenAt: now.toISOString(),
     });
     return ok(undefined);
+  }
+
+  #evaluateExpiry(
+    session: SessionRecord,
+    now: Date,
+  ): AuthorizationError | null {
+    if (new Date(session.absoluteExpiresAt) < now) {
+      return new AuthorizationError("Session absolute expiry reached", {
+        code: "session_absolute_expired",
+      });
+    }
+    if (new Date(session.expiresAt) < now) {
+      return new AuthorizationError("Session refresh expiry reached", {
+        code: "session_refresh_expired",
+      });
+    }
+    const idleDeadline = new Date(
+      new Date(session.lastSeenAt).getTime() +
+        this.config.get().session.idleTtlSeconds * 1000,
+    );
+    if (idleDeadline < now) {
+      return new AuthorizationError("Session idle expiry reached", {
+        code: "session_idle_expired",
+      });
+    }
+    return null;
   }
 
   async revokeSession(

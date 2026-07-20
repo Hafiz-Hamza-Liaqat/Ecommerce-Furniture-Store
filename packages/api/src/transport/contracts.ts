@@ -21,6 +21,8 @@ export type TransportRequest = {
   readonly headers: TransportHeaders;
   readonly bodyText: string | null;
   readonly rawBody: Uint8Array | null;
+  /** Direct socket remote address from the transport adapter (not client-spoofable). */
+  readonly clientAddress?: string | null;
 };
 
 export type TransportResponse = {

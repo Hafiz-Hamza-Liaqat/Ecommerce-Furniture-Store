@@ -2,58 +2,47 @@
 
 - **Created:** 2026-07-19
 - **Last Updated:** 2026-07-20
-- **Status:** RC9.1–RC9.3 committed · **RC9.4 + RC9.4.1 implemented — review**
+- **Status:** RC9.1–RC9.4.3 committed · **RC9.5 implemented — review**
 
 ## Relationship to RC8
 
-RC8 is **COMPLETE AND FROZEN**. RC9 is customer UI/content polish and customer-facing AI only.
+RC8 is **COMPLETE AND FROZEN**. RC9 is customer UI/content polish and customer-facing AI only (RC9.5 is engineering hardening).
 
 ## Roadmap
 
 | Release | Focus | Status |
 |---|---|---|
-| **RC9.1** | Premium UI Polish (+ catalog/blog CX) | **Committed** (`60c8334`) |
-| **RC9.2** | Intelligent Furniture Consultant (Grounded AI) | **Committed** (`0bbed18`) |
-| **RC9.3** | Intelligent Budget Planner & Space Planning | **Committed** (`5757a2b`) |
-| **RC9.4** | Persistence & Collaboration | **Implemented — review** |
-| **RC9.4.1** | Nav, dashboards, notifications, UI stabilization | **Implemented — review** |
-| RC9.5+ | Security hardening | Not started |
+| **RC9.1** | Premium UI Polish (+ catalog/blog CX) | **Committed** |
+| **RC9.2** | Intelligent Furniture Consultant (Grounded AI) | **Committed** |
+| **RC9.3** | Intelligent Budget Planner & Space Planning | **Committed** |
+| **RC9.4** | Persistence & Collaboration | **Committed** (`rc9.4.3`) |
+| **RC9.4.1** | Nav, dashboards, notifications | **Committed** |
+| **RC9.4.2** | Design token consolidation | **Committed** |
+| **RC9.4.3** | Brand identity & responsive polish | **Committed** |
+| **RC9.5** | Security hardening & production readiness | **Implemented — review** |
+| RC9.6+ | — | **Do not start** |
 
-## Document map (RC9.4.1)
-
-| Doc | Path |
-|---|---|
-| Navigation Report | `docs/release/RC9.4.1-Navigation-Report.md` |
-
-## Document map (RC9.4)
+## Document map (RC9.5)
 
 | Doc | Path |
 |---|---|
-| Persistence Report | `docs/release/RC9.4-Persistence-Report.md` |
-| Project History Architecture | `docs/release/Project-History-Architecture.md` |
-| Versioning Architecture | `docs/release/Versioning-Architecture.md` |
-| Collaboration Report | `docs/release/Collaboration-Report.md` |
-| Test Summary | `docs/release/RC9.4-Test-Summary.md` |
+| Security Hardening | `docs/release/RC9.5-Security-Hardening-Report.md` |
+| Authentication Audit | `docs/release/RC9.5-Authentication-Audit.md` |
+| Authorization Audit | `docs/release/RC9.5-Authorization-Audit.md` |
+| Persistence Verification | `docs/release/RC9.5-Persistence-Verification.md` |
+| API Resilience | `docs/release/RC9.5-API-Resilience-Report.md` |
+| Performance | `docs/release/RC9.5-Performance-Report.md` |
+| Monitoring | `docs/release/RC9.5-Monitoring-Report.md` |
+| SEO Audit | `docs/release/RC9.5-SEO-Audit.md` |
+| Accessibility | `docs/release/RC9.5-Accessibility-Report.md` |
+| Cross-Browser | `docs/release/RC9.5-Cross-Browser-Report.md` |
+| Production Readiness (+ Risk Register) | `docs/release/RC9.5-Production-Readiness-Checklist.md` |
+| Test Summary | `docs/release/RC9.5-Test-Summary.md` |
 
-## Document map (RC9.3)
+## Constraints (RC9.5)
 
-| Doc | Path |
-|---|---|
-| Intelligent Budget Planner Report | `docs/release/RC9.3-Intelligent-Budget-Planner-Report.md` |
-| Space Planning Engine Report | `docs/release/RC9.3-Space-Planning-Engine-Report.md` |
-| AI Recommendation Validation | `docs/release/RC9.3-AI-Recommendation-Validation-Report.md` |
-| Budget Optimization Report | `docs/release/RC9.3-Budget-Optimization-Report.md` |
-| Pakistan Jahez Planner Report | `docs/release/RC9.3-Pakistan-Jahez-Planner-Report.md` |
-| Responsive Verification | `docs/release/RC9.3-Responsive-Verification-Report.md` |
-| Runtime Verification | `docs/release/RC9.3-Runtime-Verification-Report.md` |
-| Test Summary | `docs/release/RC9.3-Test-Summary.md` |
-
-## Constraints
-
-- Frontend / content / customer AI only
-- Do **not** modify CQRS, Workflow, Policy, Authentication, Runtime Host, or enterprise modules
-- Reuse RC9.2 grounded engine; extend Budget Planner
-- RC9.4 adds client persistence only — no backend project API
-- RC9.4.1 is navigation/responsive polish only — preserve routes and business logic
-- Do **not** commit RC9.4 / RC9.4.1 until explicit approval
-- Do **not** begin RC9.5 until RC9.4 is approved and committed
+- Engineering quality only — security, resilience, persistence integrity, monitoring, docs
+- **No** UI redesign / branding / nav structure changes (except security messaging / a11y)
+- **No** new server CX sync APIs
+- **No** automatic commit, push, tag, or deploy — await manual approval
+- **Do not** begin RC9.6 until RC9.5 is approved

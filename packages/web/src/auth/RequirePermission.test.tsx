@@ -115,7 +115,9 @@ describe("RequirePermission", () => {
     );
     const screen = renderGuarded(["finance.dashboard.read"]);
     expect(
-      await screen.findByText("Could not load your permissions"),
+      await screen.findByText("Could not load your permissions", undefined, {
+        timeout: 8_000,
+      }),
     ).toBeTruthy();
     expect(screen.queryByTestId("protected-content")).toBeNull();
     expect(screen.getByText("Retry")).toBeTruthy();

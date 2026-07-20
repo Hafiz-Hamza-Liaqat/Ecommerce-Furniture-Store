@@ -37,6 +37,12 @@ export type CreateApiHostOptions = CreateEnterpriseCompositionOptions & {
   readonly streaming?: StreamingHook;
   /** When false, OpenAPI document route is not registered (RC5.4). */
   readonly exposeOpenApi?: boolean;
+  /** Dev/test only — challenge routes may return opaque tokens. */
+  readonly revealChallengeTokens?: boolean;
+  /** Prefer X-Forwarded-For for audit IP when behind a trusted proxy. */
+  readonly trustProxy?: boolean;
+  /** Emit Strict-Transport-Security when true (TLS-terminated production). */
+  readonly enableHsts?: boolean;
 };
 
 export type ApiHost = {
@@ -78,6 +84,8 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
     startedAt: composition.infrastructure.clock.now(),
     startupReady: () => started,
     exposeOpenApi: options.exposeOpenApi ?? true,
+    revealChallengeTokens: options.revealChallengeTokens === true,
+    trustProxy: options.trustProxy === true,
   };
 
   // Optional streaming hook reserved for future stream routes.
@@ -89,6 +97,7 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
     host?: string;
     port?: number;
     corsOrigin?: string;
+    enableHsts?: boolean;
   } = { routes };
   if (options.host !== undefined) {
     httpOptions.host = options.host;
@@ -98,6 +107,9 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
   }
   if (options.corsOrigin !== undefined) {
     httpOptions.corsOrigin = options.corsOrigin;
+  }
+  if (options.enableHsts === true) {
+    httpOptions.enableHsts = true;
   }
   const http = createNodeHttpServer(httpOptions);
 

@@ -8,8 +8,10 @@ import {
 import {
   createAuthRoutes,
   resolveSessionPermissionCodes,
+  sanitizeChallengePayload,
 } from "./auth-routes.js";
 import { allowAllRateLimitHook } from "../rate-limit/rate-limit.js";
+import { ApiPaths } from "../constants.js";
 
 function activeUser(id: string): UserRecord {
   const now = new Date().toISOString();
@@ -47,7 +49,6 @@ describe("authenticated session permission projection", () => {
     const identity = createIdentityFoundation();
     const seeded = await seedRbacCatalog({
       store: identity.store,
-      audit: identity.audit,
     });
     assert.ok(seeded.ok);
 
@@ -143,5 +144,101 @@ describe("authenticated session permission projection", () => {
     assert.ok(body.data.permissionCodes.includes("executive.dashboard.read"));
     assert.ok(body.data.permissionCodes.includes("analytics.dashboards.read"));
     assert.ok(!body.data.permissionCodes.includes("order.read"));
+  });
+});
+
+describe("RC9.5 auth route hardening", () => {
+  it("ignores client-supplied companyId on register", async () => {
+    const identity = createIdentityFoundation();
+    const route = createAuthRoutes(identity, allowAllRateLimitHook).find(
+      (r) => r.method === "POST" && r.path === ApiPaths.AuthRegister,
+    );
+    assert.ok(route);
+    const response = await route.handler({
+      method: "POST",
+      path: ApiPaths.AuthRegister,
+      query: {},
+      headers: { "content-type": "application/json" },
+      bodyText: JSON.stringify({
+        email: "newbie@example.test",
+        password: "SecurePass12",
+        fullName: "New User",
+        companyId: "attacker-tenant",
+      }),
+      rawBody: null,
+    });
+    assert.equal(response.status, 201);
+    const body = JSON.parse(response.body as string) as {
+      readonly data: { readonly user: { readonly companyId: string | null } };
+    };
+    assert.equal(body.data.user.companyId, null);
+  });
+
+  it("sanitizes challenge tokens by default", () => {
+    assert.deepEqual(
+      sanitizeChallengePayload(
+        { challengeId: "chal_1", token: "secret-token" },
+        false,
+      ),
+      { sent: true },
+    );
+    assert.deepEqual(
+      sanitizeChallengePayload(
+        { challengeId: "chal_1", token: "secret-token" },
+        true,
+      ),
+      { challengeId: "chal_1", token: "secret-token" },
+    );
+  });
+
+  it("password-reset request does not return token unless reveal enabled", async () => {
+    const identity = createIdentityFoundation();
+    const registered = await identity.authentication.register({
+      email: "reset@example.test",
+      password: "SecurePass12",
+      fullName: "Reset User",
+      companyId: null,
+    });
+    assert.ok(registered.ok);
+    await identity.authentication.activateAccount(registered.value.id);
+
+    const sealed = createAuthRoutes(identity, allowAllRateLimitHook).find(
+      (r) => r.method === "POST" && r.path === ApiPaths.AuthPasswordResetRequest,
+    );
+    assert.ok(sealed);
+    const sealedRes = await sealed.handler({
+      method: "POST",
+      path: ApiPaths.AuthPasswordResetRequest,
+      query: {},
+      headers: { "content-type": "application/json" },
+      bodyText: JSON.stringify({ email: "reset@example.test" }),
+      rawBody: null,
+    });
+    assert.equal(sealedRes.status, 200);
+    const sealedBody = JSON.parse(sealedRes.body as string) as {
+      readonly data: Record<string, unknown>;
+    };
+    assert.deepEqual(sealedBody.data, { sent: true });
+    assert.equal("token" in sealedBody.data, false);
+
+    const open = createAuthRoutes(identity, allowAllRateLimitHook, {
+      revealChallengeTokens: true,
+    }).find(
+      (r) => r.method === "POST" && r.path === ApiPaths.AuthPasswordResetRequest,
+    );
+    assert.ok(open);
+    const openRes = await open.handler({
+      method: "POST",
+      path: ApiPaths.AuthPasswordResetRequest,
+      query: {},
+      headers: { "content-type": "application/json" },
+      bodyText: JSON.stringify({ email: "reset@example.test" }),
+      rawBody: null,
+    });
+    const openBody = JSON.parse(openRes.body as string) as {
+      readonly data: { readonly token?: string };
+    };
+    assert.equal(typeof openBody.data.token, "string");
+    assert.ok((openBody.data.token as string).length > 0);
   });
 });

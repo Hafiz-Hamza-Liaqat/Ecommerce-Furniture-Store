@@ -43,6 +43,11 @@ export type ProductionRuntimeConfig = {
    * Development/testing default true; staging/production default false (RC5.4).
    */
   readonly exposeOpenApi: boolean;
+  /**
+   * When true, prefer first X-Forwarded-For hop for auth audit IP.
+   * Default false — only enable behind a trusted reverse proxy.
+   */
+  readonly trustProxy: boolean;
 };
 
 type ProfileDefaults = Omit<ProductionRuntimeConfig, "profile">;
@@ -62,6 +67,7 @@ const SHARED_HARDENING: Pick<
   | "messagingClaimLeaseMs"
   | "integrityCheckOnStartup"
   | "exposeOpenApi"
+  | "trustProxy"
 > = {
   busyTimeoutMs: 5_000,
   transactionTimeoutMs: 30_000,
@@ -76,6 +82,7 @@ const SHARED_HARDENING: Pick<
   messagingClaimLeaseMs: 60_000,
   integrityCheckOnStartup: true,
   exposeOpenApi: true,
+  trustProxy: false,
 };
 
 const PROFILE_DEFAULTS: Record<RuntimeProfile, ProfileDefaults> = {
@@ -283,6 +290,8 @@ export function loadProductionRuntimeConfig(
     exposeOpenApi:
       overrides.exposeOpenApi ??
       readBool("AFH_EXPOSE_OPENAPI", base.exposeOpenApi),
+    trustProxy:
+      overrides.trustProxy ?? readBool("AFH_TRUST_PROXY", base.trustProxy),
   };
 }
 

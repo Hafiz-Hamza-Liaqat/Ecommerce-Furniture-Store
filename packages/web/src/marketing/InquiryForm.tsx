@@ -30,6 +30,8 @@ export function InquiryForm({ intent, meta, defaultMessage }: Props) {
       className="site-form"
       onSubmit={(e) => {
         e.preventDefault();
+        if (pending || sent) return;
+        setPending(true);
         const form = e.currentTarget;
         const name = (form.elements.namedItem("name") as HTMLInputElement).value.trim();
         const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim();
@@ -47,10 +49,10 @@ export function InquiryForm({ intent, meta, defaultMessage }: Props) {
         const tryCrm = async () => {
           const companyId = user?.companyId;
           if (!tokens?.sessionId || !companyId) {
+            setPending(false);
             setSent(true);
             return;
           }
-          setPending(true);
           try {
             await api.dispatchCommand({
               commandType: "crm.CreateLead",

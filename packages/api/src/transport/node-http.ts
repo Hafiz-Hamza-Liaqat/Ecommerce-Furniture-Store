@@ -85,6 +85,7 @@ export async function toTransportRequest(
     headers: normalizeHeaders(req.headers),
     bodyText: body.text,
     rawBody: body.raw,
+    clientAddress: req.socket.remoteAddress ?? null,
   };
 }
 
@@ -114,6 +115,8 @@ export type NodeHttpServerOptions = {
   /** Comma-separated origins or "*" for SPA local development. */
   readonly corsOrigin?: string;
   readonly maxBodyBytes?: number;
+  /** When true, emit Strict-Transport-Security (use only behind HTTPS). */
+  readonly enableHsts?: boolean;
   readonly onUnhandled?: (
     request: TransportRequest,
   ) => Promise<TransportResponse> | TransportResponse;
@@ -145,8 +148,8 @@ function corsHeaders(origin: string | undefined, configured: string): Record<str
   };
 }
 
-function securityHeaders(): Record<string, string> {
-  return {
+function securityHeaders(enableHsts = false): Record<string, string> {
+  const headers: Record<string, string> = {
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY",
     "referrer-policy": "strict-origin-when-cross-origin",
@@ -154,6 +157,11 @@ function securityHeaders(): Record<string, string> {
     "cross-origin-opener-policy": "same-origin",
     "cross-origin-resource-policy": "same-site",
   };
+  if (enableHsts) {
+    headers["strict-transport-security"] =
+      "max-age=31536000; includeSubDomains";
+  }
+  return headers;
 }
 
 export function createNodeHttpServer(
@@ -163,6 +171,7 @@ export function createNodeHttpServer(
   const port = options.port ?? 0;
   const corsOrigin = options.corsOrigin ?? "*";
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
+  const enableHsts = options.enableHsts === true;
 
   const server = createServer(async (req, res) => {
     let correlationId = CorrelationHeader in (req.headers ?? {})
@@ -177,7 +186,7 @@ export function createNodeHttpServer(
       correlationId = resolveCorrelationId(transportReq);
       const origin = transportReq.headers.origin;
       const cors = corsHeaders(origin, corsOrigin);
-      const secure = securityHeaders();
+      const secure = securityHeaders(enableHsts);
 
       if (transportReq.method === "OPTIONS") {
         writeTransportResponse(res, {
