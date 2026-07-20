@@ -265,3 +265,60 @@
   cursor: pointer;
   font: inherit;
 }
+
+/* RC10.5 — Sync status chip */
+.cx-sync-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.cx-sync-chip__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--afh-border);
+  background: var(--afh-paper);
+  color: var(--afh-ink);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.cx-sync-chip__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #6b7280;
+}
+.cx-sync-chip__btn--synced .cx-sync-chip__dot { background: #16a34a; }
+.cx-sync-chip__btn--syncing .cx-sync-chip__dot,
+.cx-sync-chip__btn--retrying .cx-sync-chip__dot { background: #2563eb; }
+.cx-sync-chip__btn--pending .cx-sync-chip__dot { background: #ca8a04; }
+.cx-sync-chip__btn--offline .cx-sync-chip__dot { background: #6b7280; }
+.cx-sync-chip__btn--conflict .cx-sync-chip__dot,
+.cx-sync-chip__btn--error .cx-sync-chip__dot { background: #dc2626; }
+.cx-sync-chip__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 40;
+  width: min(22rem, 90vw);
+  padding: 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--afh-border);
+  background: var(--afh-paper);
+  box-shadow: 0 12px 40px rgba(0,0,0,.12);
+  display: grid;
+  gap: 0.5rem;
+}
+.cx-sync-chip__panel h3 {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+.cx-sync-chip__panel ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+}
+.cx-sync-chip__err { color: #dc2626; font-size: 0.8rem; }

@@ -26,6 +26,7 @@ import {
   type CxNotification,
   type WorkspaceRoleId,
 } from "./nav";
+import { SyncStatusChip } from "./cx/sync/ui/SyncStatusChip";
 
 type MegaKind = "furniture" | "company" | null;
 
@@ -421,6 +422,8 @@ export function MarketingShell() {
                 >
                   Request Quote
                 </Link>
+
+                {isLoggedIn ? <SyncStatusChip userId={user?.id} /> : null}
 
                 {/* Account — desktop dropdown (avatar only) */}
                 <div

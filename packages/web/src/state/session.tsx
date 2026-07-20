@@ -17,6 +17,7 @@ import {
 } from "react";
 import { ApiClient } from "../api/client";
 import type { AuthUser, SessionTokens } from "../api/types";
+import { bootstrapCxSync } from "../marketing/cx/sync/bootstrap";
 
 const STORAGE_KEY = "afh.web.session";
 
@@ -227,6 +228,15 @@ export function SessionProvider({ children }: { readonly children: ReactNode }) 
     }, Math.min(msUntil, 2_147_000_000));
     return () => window.clearTimeout(t);
   }, [tokens?.expiresAt, tokens?.sessionId, refreshSession]);
+
+  // RC10.5 — cloud sync for authenticated CX workspace (local-primary).
+  useEffect(() => {
+    if (!user?.id || !tokens?.sessionId) return;
+    return bootstrapCxSync({
+      api,
+      getUserId: () => user.id,
+    });
+  }, [api, user?.id, tokens?.sessionId]);
 
   const value: SessionContextValue = {
     user,

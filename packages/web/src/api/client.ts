@@ -198,6 +198,18 @@ export class ApiClient {
     });
   }
 
+  /** RC10.5 — download CX workspace cloud snapshot for the signed-in user. */
+  async getCxWorkspace<T = unknown>(): Promise<ApiSuccess<{ snapshot: T | null }>> {
+    return this.#request("GET", "/api/v1/cx/workspace");
+  }
+
+  /** RC10.5 — upload CX workspace cloud snapshot for the signed-in user. */
+  async putCxWorkspace(snapshot: unknown): Promise<ApiSuccess<{ revision: number }>> {
+    return this.#request("PUT", "/api/v1/cx/workspace", {
+      body: { snapshot },
+    });
+  }
+
   async healthReady(): Promise<unknown> {
     return this.#healthFetch("/health/ready");
   }

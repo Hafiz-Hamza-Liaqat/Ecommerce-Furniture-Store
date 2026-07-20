@@ -73,6 +73,8 @@ export type RouteDeps = {
   readonly revealChallengeTokens?: boolean;
   /** Prefer X-Forwarded-For for audit IP when behind a trusted proxy. */
   readonly trustProxy?: boolean;
+  /** RC10.5 — optional CX workspace snapshot store. */
+  readonly workspaceStore?: import("../cx-sync/workspace-store.js").CxWorkspaceStore;
 };
 
 async function applyRateLimit(
@@ -536,6 +538,8 @@ export function createOpenApiRoute(
 }
 
 import { createAuthRoutes } from "./auth-routes.js";
+import { createCxSyncRoutes } from "../cx-sync/routes.js";
+import { createMemoryCxWorkspaceStore } from "../cx-sync/workspace-store.js";
 
 export function createAllRoutes(deps: RouteDeps): RouteDefinition[] {
   const routes: RouteDefinition[] = [
@@ -546,6 +550,11 @@ export function createAllRoutes(deps: RouteDeps): RouteDefinition[] {
     }),
     ...createDispatchRoutes(deps),
     ...createUploadRoutes(deps),
+    ...createCxSyncRoutes({
+      identity: deps.identity,
+      rateLimit: deps.rateLimit,
+      workspaceStore: deps.workspaceStore ?? createMemoryCxWorkspaceStore(),
+    }),
   ];
   if (deps.exposeOpenApi !== false) {
     routes.push(createOpenApiRoute(deps, routes));

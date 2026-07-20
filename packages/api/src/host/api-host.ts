@@ -28,6 +28,11 @@ import {
 import type { StreamingHook } from "../streaming/streaming.js";
 import { API_SERVICE_NAME } from "../constants.js";
 
+import {
+  createFilesystemCxWorkspaceStore,
+  createMemoryCxWorkspaceStore,
+} from "../cx-sync/workspace-store.js";
+
 export type CreateApiHostOptions = CreateEnterpriseCompositionOptions & {
   readonly host?: string;
   readonly port?: number;
@@ -43,6 +48,8 @@ export type CreateApiHostOptions = CreateEnterpriseCompositionOptions & {
   readonly trustProxy?: boolean;
   /** Emit Strict-Transport-Security when true (TLS-terminated production). */
   readonly enableHsts?: boolean;
+  /** RC10.5 — directory for CX workspace snapshots (default: memory). */
+  readonly cxSyncDir?: string;
 };
 
 export type ApiHost = {
@@ -86,6 +93,9 @@ export function createApiHost(options: CreateApiHostOptions): ApiHost {
     exposeOpenApi: options.exposeOpenApi ?? true,
     revealChallengeTokens: options.revealChallengeTokens === true,
     trustProxy: options.trustProxy === true,
+    workspaceStore: options.cxSyncDir
+      ? createFilesystemCxWorkspaceStore(options.cxSyncDir)
+      : createMemoryCxWorkspaceStore(),
   };
 
   // Optional streaming hook reserved for future stream routes.

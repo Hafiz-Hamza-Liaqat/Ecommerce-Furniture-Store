@@ -3,6 +3,7 @@
  */
 
 import type { SalesWorkspaceState } from "./types";
+import { markSyncDirty } from "../sync";
 
 const STORAGE_KEY = "afh.cx.sales.workspace";
 
@@ -38,6 +39,7 @@ export function loadSalesWorkspace(): SalesWorkspaceState {
 
 export function saveSalesWorkspace(state: SalesWorkspaceState): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  markSyncDirty(STORAGE_KEY);
 }
 
 export function clearSalesWorkspace(): void {

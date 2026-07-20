@@ -4,6 +4,7 @@ import { useSession } from "../state/session";
 import { useWorkspaceUi } from "../workspace/context";
 import { Button } from "../components/ui";
 import { loadInbox } from "../workspace/prefs";
+import { SyncStatusChip } from "../marketing/cx/sync/ui/SyncStatusChip";
 
 const MODULE_LABELS: Record<string, string> = {
   sales: "Sales",
@@ -181,6 +182,7 @@ export function TopBar() {
         >
           AI
         </button>
+        <SyncStatusChip userId={user?.id} compact />
         <button
           type="button"
           className="ws-icon-btn ws-notif-btn"

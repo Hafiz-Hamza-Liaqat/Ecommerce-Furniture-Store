@@ -3,6 +3,7 @@
  */
 
 import type { FurnishingProject, ProjectListItem } from "./types";
+import { markSyncDirty } from "../sync";
 
 const INDEX_KEY = "afh.cx.projects.index";
 const PROJECT_PREFIX = "afh.cx.project.";
@@ -68,6 +69,8 @@ export function loadProject(id: string): FurnishingProject | null {
 export function saveProject(project: FurnishingProject): void {
   writeJson(projectKey(project.id), project);
   upsertProjectIndex(toListItem(project));
+  markSyncDirty(projectKey(project.id));
+  markSyncDirty(INDEX_KEY);
 }
 
 export function deleteProject(id: string): void {

@@ -179,6 +179,11 @@ export async function createProductionHost(
     },
   });
 
+  const cxSyncDir =
+    config.databasePath === ":memory:"
+      ? null
+      : `${config.databasePath.replace(/[^/\\]+$/, "")}cx-sync`;
+
   const api = createApiHost({
     repositories: toEnterpriseRepositories(sql, config),
     infrastructure: {
@@ -216,6 +221,7 @@ export async function createProductionHost(
     revealChallengeTokens: config.profile !== "production",
     trustProxy: config.trustProxy === true,
     enableHsts: config.profile === "production",
+    ...(cxSyncDir ? { cxSyncDir } : {}),
   });
 
   const health = api.composition.infrastructure.health;

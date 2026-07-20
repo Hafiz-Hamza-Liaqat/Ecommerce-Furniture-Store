@@ -16,6 +16,7 @@ export const ApiPaths = {
   Commands: "/api/v1/commands",
   Queries: "/api/v1/queries",
   Uploads: "/api/v1/uploads",
+  CxWorkspace: "/api/v1/cx/workspace",
   OpenApi: "/api/v1/openapi.json",
   AuthSignIn: "/api/v1/auth/sign-in",
   AuthSignOut: "/api/v1/auth/sign-out",
