@@ -6,6 +6,7 @@ dist/
 .env.*
 packages/web/playwright-report/
 packages/web/test-results/
+packages/web/audit-results/
 docs/release/lighthouse/*.json
 packages/web/public/product-media/**/_source/
 

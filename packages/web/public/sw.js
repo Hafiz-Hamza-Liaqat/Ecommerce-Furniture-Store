@@ -34,17 +34,25 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
+  // Never intercept cross-origin requests: they were never cached (see the
+  // same-origin guard below), and answering a failed cross-origin fetch with
+  // an undefined fallback makes Firefox reject the whole request with a
+  // ServiceWorker error instead of letting the browser handle it natively.
+  if (new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req)
         .then((res) => {
           const copy = res.clone();
-          if (res.ok && new URL(req.url).origin === self.location.origin) {
+          if (res.ok) {
             void caches.open(CACHE).then((cache) => cache.put(req, copy));
           }
           return res;
         })
-        .catch(() => cached);
+        .catch((err) => {
+          if (cached) return cached;
+          throw err;
+        });
       return cached || network;
     }),
   );
