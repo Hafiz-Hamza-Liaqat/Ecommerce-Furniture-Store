@@ -39,6 +39,20 @@ export default defineConfig({
       },
     },
   },
+  // Keep release-candidate preview behavior aligned with the dev proxy so
+  // authenticated Lighthouse/E2E checks exercise the production bundle.
+  preview: {
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8080",
+        changeOrigin: true,
+      },
+      "/health": {
+        target: "http://127.0.0.1:8080",
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: "dist",
     sourcemap: true,

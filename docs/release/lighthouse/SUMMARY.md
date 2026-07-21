@@ -1,14 +1,14 @@
 # Lighthouse audit results
 
-- Base URL: http://localhost:4173
-- Generated: 2026-07-19T14:08:09.233Z
+- Base URL: http://127.0.0.1:4173
+- Generated: 2026-07-21T00:31:43.375Z
 
 | Page | Performance | Accessibility | Best Practices | SEO |
 |---|---:|---:|---:|---:|
-| home | 90 | 100 | 96 | 100 |
-| category | 92 | 100 | 96 | 100 |
-| product | 91 | 100 | 96 | 100 |
-| login | 95 | 100 | 96 | 66 |
+| home | 93 | 97 | 96 | 100 |
+| category | 89 | 97 | 96 | 100 |
+| product | 89 | 97 | 96 | 100 |
+| login | 93 | 95 | 96 | 66 |
 
 ## Targets
 
@@ -19,19 +19,19 @@
 
 ## Gate
 
-- PASS home performance: 90
-- PASS home accessibility: 100
+- PASS home performance: 93
+- PASS home accessibility: 97
 - PASS home best-practices: 96
 - PASS home seo: 100
-- PASS category performance: 92
-- PASS category accessibility: 100
+- FAIL category performance: 89 (need ≥ 90)
+- PASS category accessibility: 97
 - PASS category best-practices: 96
 - PASS category seo: 100
-- PASS product performance: 91
-- PASS product accessibility: 100
+- FAIL product performance: 89 (need ≥ 90)
+- PASS product accessibility: 97
 - PASS product best-practices: 96
 - PASS product seo: 100
 - SKIP login seo: 66 (robots Disallow — intentional for auth)
-- PASS login performance: 95
-- PASS login accessibility: 100
+- PASS login performance: 93
+- PASS login accessibility: 95
 - PASS login best-practices: 96

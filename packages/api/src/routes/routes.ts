@@ -45,6 +45,7 @@ import type { RateLimitHook } from "../rate-limit/rate-limit.js";
 import type { UploadRouter } from "../upload/upload-router.js";
 import { buildOpenApiDocument } from "../openapi/openapi.js";
 import type { ApiVersionCatalog } from "../versioning/versioning.js";
+import type { CxWorkspaceStore } from "../cx-sync/workspace-store.js";
 import {
   recordTransportMetrics,
   withTransportSpan,
@@ -74,7 +75,7 @@ export type RouteDeps = {
   /** Prefer X-Forwarded-For for audit IP when behind a trusted proxy. */
   readonly trustProxy?: boolean;
   /** RC10.5 — optional CX workspace snapshot store. */
-  readonly workspaceStore?: import("../cx-sync/workspace-store.js").CxWorkspaceStore;
+  readonly workspaceStore?: CxWorkspaceStore;
 };
 
 async function applyRateLimit(

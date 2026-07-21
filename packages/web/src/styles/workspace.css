@@ -428,7 +428,7 @@
   border-radius: 999px;
 }
 
-.ws-trend--up { background: rgba(27, 122, 74, 0.14); color: var(--afh-ok); }
+.ws-trend--up { background: rgba(27, 122, 74, 0.14); color: #14623c; }
 .ws-trend--down { background: rgba(180, 35, 24, 0.12); color: var(--afh-danger); }
 .ws-trend--flat { background: var(--afh-mist); color: var(--afh-ink-soft); }
 
@@ -578,10 +578,11 @@
 
 .ws-map__pin {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
-  border: 2px solid #fff;
+  border: 6px solid transparent;
+  background-clip: content-box;
   transform: translate(-50%, -50%);
   padding: 0;
   cursor: pointer;

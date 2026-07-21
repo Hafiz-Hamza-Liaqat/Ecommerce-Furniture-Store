@@ -2,7 +2,7 @@
 
 - **Created:** 2026-07-20
 - **Last Updated:** 2026-07-21
-- **Status:** RC10.1–RC10.6 committed · RC10.7 implemented — review
+- **Status:** RC10.1–RC10.7 committed · RC10.8 implemented — review
 
 ## Relationship to RC9
 
@@ -18,10 +18,26 @@ RC9 (through RC9.5) is the production foundation (UX, AI, persistence, security)
 | **RC10.4** | Orders, CRM & Sales Workflow | **Committed** (`ecd6f59`) |
 | **RC10.5** | Cloud Sync & Multi-Device (first new CX APIs) | **Committed** (`7ec4d1d`) |
 | **RC10.6** | Analytics & Business Intelligence | **Committed** (`3978ebd`) |
-| **RC10.7** | Inventory, Procurement & Manufacturing Operations | **Implemented — review** |
-| RC10.8 | Release Candidate & Launch Preparation | Future |
+| **RC10.7** | Inventory, Procurement & Manufacturing Operations | **Committed** (`0a5b9f2`) |
+| **RC10.8** | Release Candidate & Launch Preparation | **Implemented — review** |
 
-**Sequence lock:** Do not start RC10.8 until RC10.7 is reviewed, tested, and committed.
+**Sequence lock:** RC10.8 is the final RC10 phase. Post-RC10 work is **frozen** until RC10.8 is reviewed, accepted, and committed.
+
+## Document map (RC10.8)
+
+| Doc | Path |
+|---|---|
+| Release Notes | `docs/release/RC10.8-Release-Notes.md` |
+| Launch Checklist | `docs/release/RC10.8-Launch-Checklist.md` |
+| Deployment Guide | `docs/release/RC10.8-Deployment-Guide.md` |
+| Performance Report | `docs/release/RC10.8-Performance-Report.md` |
+| Security Verification | `docs/release/RC10.8-Security-Verification.md` |
+| Regression Report | `docs/release/RC10.8-Regression-Report.md` |
+| Test Summary | `docs/release/RC10.8-Test-Summary.md` |
+| Production Readiness | `docs/release/RC10.8-Production-Readiness.md` |
+| Final RC10 Audit | `docs/release/RC10.8-Final-RC10-Audit.md` |
+
+**RC10.8 recommendation:** requires manual acceptance and performance follow-up (Lighthouse Performance ≥ 90 not consistently met).
 
 ## Document map (RC10.7)
 
@@ -55,4 +71,5 @@ RC9 (through RC9.5) is the production foundation (UX, AI, persistence, security)
 - One sub-phase at a time; no next phase until current is reviewed, tested, and committed
 - Preserve RC9.5 security guarantees
 - No automatic commit / push / tag / deploy without approval
-- RC10.7 is implemented and awaiting manual review — do not commit or open RC10.8 until review completes
+- RC10.8 is implemented and awaiting manual review — do not commit, tag, or start any post-RC10 work until review and acceptance complete
+- Post-RC10 is frozen: no new phases until RC10.8 is reviewed and committed

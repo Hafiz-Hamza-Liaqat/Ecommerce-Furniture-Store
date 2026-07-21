@@ -32,7 +32,12 @@ async function openSyncAndRun(page) {
   await panel.getByRole("button", { name: /^Sync Now$/i }).click();
   await page.waitForTimeout(2500);
   const close = panel.getByRole("button", { name: /^Close$/i });
-  if (await close.isVisible()) await close.click();
+  if (await close.isVisible()) {
+    // The tall details dialog can place its footer outside the viewport even
+    // though the button is rendered and enabled. Trigger the same DOM click
+    // so the audit is not coupled to viewport height.
+    await close.evaluate((button) => button.click());
+  }
 }
 
 async function readCxSnapshot(page) {

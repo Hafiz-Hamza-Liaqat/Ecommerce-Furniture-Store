@@ -8,10 +8,13 @@ Local DR readiness — not multi-region.
 2. Stop runtime gracefully
 3. Restore verified SQL backup ([Backup & restore](./backup-restore.md))
 4. Restore broker DB if messaging store was lost
-5. Start runtime with the same secrets/profile used at backup time
-6. Run health verification
-7. Inspect DLQ; validate replay safety before any operator replay
-8. Confirm Outbox pending sample and Inbox reachability
+5. Restore the matching `cx-sync/` workspace snapshots and `dam-objects/`
+   directory beside `AFH_DATABASE_PATH`
+6. Start runtime with the same secrets/profile used at backup time
+7. Run health verification
+8. Verify an authenticated CX workspace download and an asset read
+9. Inspect DLQ; validate replay safety before any operator replay
+10. Confirm Outbox pending sample and Inbox reachability
 
 ## Message replay validation
 

@@ -124,7 +124,7 @@ export function TopBar() {
           aria-label="Open navigation"
           onClick={() => setMobileNavOpen(true)}
         >
-          Menu
+          <span aria-hidden>Menu</span>
         </button>
         <button
           type="button"
@@ -189,11 +189,16 @@ export function TopBar() {
           aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
           onClick={() => setNotifOpen(true)}
         >
-          Bell
-          {unread > 0 ? <span className="ws-notif-dot">{unread}</span> : null}
+          <span aria-hidden>Bell</span>
+          {unread > 0 ? <span className="ws-notif-dot" aria-hidden>{unread}</span> : null}
         </button>
         <div className="ws-user-menu">
-          <button type="button" className="ws-user-menu__trigger" aria-haspopup="menu">
+          <button
+            type="button"
+            className="ws-user-menu__trigger"
+            aria-haspopup="menu"
+            aria-label={`User menu for ${user?.fullName ?? user?.email ?? "signed-in user"}`}
+          >
             <span className="ws-avatar" aria-hidden>
               {(user?.fullName ?? user?.email ?? "U").slice(0, 1).toUpperCase()}
             </span>

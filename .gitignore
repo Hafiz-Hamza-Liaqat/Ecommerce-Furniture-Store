@@ -8,3 +8,13 @@ packages/web/playwright-report/
 packages/web/test-results/
 docs/release/lighthouse/*.json
 packages/web/public/product-media/**/_source/
+
+# Runtime data and operational backups (never commit live tenant data)
+packages/runtime-host/data/
+data/
+backups/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+**/cx-sync/
+**/dam-objects/
