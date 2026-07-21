@@ -442,3 +442,25 @@
     display: none !important;
   }
 }
+
+/* RC10.7 ? Manufacturing ops workspace */
+.cx-ops-page {
+  gap: 1rem;
+}
+.cx-ops-page .erp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.cx-ops-page .erp-table th,
+.cx-ops-page .erp-table td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--afh-border);
+}
+@media (max-width: 768px) {
+  .cx-ops-page .erp-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

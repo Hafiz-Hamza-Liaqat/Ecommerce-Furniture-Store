@@ -27,6 +27,7 @@ export const STATIC_SYNC_KEYS = [
   "afh.cx.notifications",
   "afh.cx.catalogGaps",
   "afh.cx.sales.workspace",
+  "afh.cx.ops.workspace",
   "afh.web.user.prefs",
 ] as const;
 

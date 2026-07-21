@@ -59,6 +59,7 @@ import { allowFixtureListFallback, resolveUiProfile } from "./ui-profile";
 import { buildDefaultListPayload, readListPage } from "./list-query";
 import { SalesWorkflowPage } from "../../marketing/cx/sales/ui/SalesWorkflowPage";
 import { CxAnalyticsPage } from "../../marketing/cx/analytics/ui/CxAnalyticsPage";
+import { OpsWorkflowPage } from "../../marketing/cx/ops/ui/OpsWorkflowPage";
 
 const PAGE_SIZE = 25;
 
@@ -68,6 +69,10 @@ function SalesWorkflowRoute() {
 
 function CxAnalyticsRoute() {
   return <CxAnalyticsPage />;
+}
+
+function OpsWorkflowRoute() {
+  return <OpsWorkflowPage />;
 }
 
 export function ModuleApp({ module }: { readonly module: ModuleDefinition }) {
@@ -84,6 +89,9 @@ export function ModuleApp({ module }: { readonly module: ModuleDefinition }) {
             <Route path="workflow" element={<SalesWorkflowRoute />} />
             <Route path="analytics" element={<CxAnalyticsRoute />} />
           </>
+        ) : null}
+        {module.id === "manufacturing" ? (
+          <Route path="ops" element={<OpsWorkflowRoute />} />
         ) : null}
         <Route path=":entityKey" element={<EntityListPage module={module} />} />
         <Route path=":entityKey/new" element={<EntityFormPage module={module} mode="create" />} />

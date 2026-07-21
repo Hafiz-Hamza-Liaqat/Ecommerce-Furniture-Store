@@ -26,6 +26,7 @@ export const MANUFACTURING_MODULE: ModuleDefinition = {
   ],
   nav: [
     { to: "", label: "Dashboard" },
+    { to: "ops", label: "Ops workspace" },
     { to: "bom", label: "Bills of materials", entityKey: "bom" },
     { to: "production-orders", label: "Production orders", entityKey: "production-orders" },
     { to: "work-orders", label: "Work orders", entityKey: "work-orders" },
