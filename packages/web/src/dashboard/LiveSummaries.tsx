@@ -6,13 +6,14 @@ import { dedupeAsync } from "../api/dedupe";
 import { Alert } from "../components/ui";
 import { Skeleton, StatusBadge } from "../workspace/widgets";
 
+// projects.GetProjectSummary and service.GetServiceSummary are record-scoped
+// (require projectId / serviceRequestId) — company-wide calls always fail
+// validation, so they are excluded here.
 const LIVE_SUMMARIES = [
   { id: "procurement", label: "Procurement", queryType: "procurement.GetProcurementSummary", href: "/app/procurement" },
   { id: "inventory", label: "Inventory", queryType: "inventory.GetInventorySummary", href: "/app/inventory" },
   { id: "finance", label: "Finance", queryType: "finance.GetFinancialSummary", href: "/app/finance" },
   { id: "crm", label: "CRM", queryType: "crm.GetCrmSummary", href: "/app/crm" },
-  { id: "projects", label: "Projects", queryType: "projects.GetProjectSummary", href: "/app/projects" },
-  { id: "service", label: "Service", queryType: "service.GetServiceSummary", href: "/app/service" },
 ] as const;
 
 type LiveRow = {

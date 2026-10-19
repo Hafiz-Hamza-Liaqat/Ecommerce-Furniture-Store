@@ -4,8 +4,11 @@
 
 import type { BiReport } from "./types";
 
-function escapeCsv(value: string | number): string {
-  const s = String(value);
+/** Escape a CSV cell and neutralize spreadsheet formula injection. */
+export function escapeCsv(value: string | number): string {
+  let s = String(value);
+  // Neutralize spreadsheet formula injection when CSV is opened in Excel/Sheets.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

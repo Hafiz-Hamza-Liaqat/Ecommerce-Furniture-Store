@@ -4,6 +4,14 @@ dist/
 .DS_Store
 .env
 .env.*
+!.env.example
+!.env.*.example
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+.idea/
 packages/web/playwright-report/
 packages/web/test-results/
 packages/web/audit-results/

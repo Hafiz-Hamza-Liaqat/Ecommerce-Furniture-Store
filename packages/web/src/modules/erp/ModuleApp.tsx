@@ -1327,6 +1327,21 @@ function EntityFormPage({
   async function onSubmit() {
     setSubmitting(true);
     setError(null);
+    const missingRequired = visibleFields.filter(
+      (field) =>
+        field.required &&
+        canEditPresentedField(field, permissionCodes) &&
+        !String(values[field.name] ?? "").trim(),
+    );
+    if (missingRequired.length > 0) {
+      setError(
+        `Complete required fields: ${missingRequired
+          .map((field) => field.label)
+          .join(", ")}.`,
+      );
+      setSubmitting(false);
+      return;
+    }
     const permittedValues = Object.fromEntries(
       visibleFields
         .filter((field) => canEditPresentedField(field, permissionCodes))
@@ -1338,10 +1353,15 @@ function EntityFormPage({
           setError("Signed-in user is missing companyId — required for DAM upload.");
           return;
         }
+        if (!permittedValues.mimeType) {
+          setError("MIME type is required and must be an allowed upload type.");
+          setSubmitting(false);
+          return;
+        }
         const res = await api.upload({
           companyId: user.companyId,
           name: permittedValues.name || permittedValues.title || "asset",
-          mimeType: permittedValues.mimeType || "application/octet-stream",
+          mimeType: permittedValues.mimeType,
           assetType: permittedValues.assetType || "document",
         });
         setLastCorrelationId(res.correlationId);

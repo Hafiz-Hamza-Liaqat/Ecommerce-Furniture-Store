@@ -115,6 +115,14 @@ function buildQuoteQuery(lines: readonly EditableLine[], total: number, projectI
   return `/quote?${params.toString()}`;
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function downloadPlannerPdf(opts: {
   title: string;
   budget: number;
@@ -128,13 +136,16 @@ function downloadPlannerPdf(opts: {
   const rows = opts.lines
     .map(
       (l) =>
-        `<tr><td>${l.zone ?? ""}</td><td>${l.role}</td><td>${l.product.name}</td><td>${l.qty}</td><td>${formatPkr(lineUnitPrice(l) * l.qty)}</td></tr>`,
+        `<tr><td>${escapeHtml(l.zone ?? "")}</td><td>${escapeHtml(l.role)}</td><td>${escapeHtml(l.product.name)}</td><td>${l.qty}</td><td>${escapeHtml(formatPkr(lineUnitPrice(l) * l.qty))}</td></tr>`,
     )
     .join("");
   const conceptual = opts.conceptual
-    .map((c) => `<li><strong>${c.role}</strong> (qty ${c.qty}) — ${c.note}</li>`)
+    .map(
+      (c) =>
+        `<li><strong>${escapeHtml(c.role)}</strong> (qty ${c.qty}) — ${escapeHtml(c.note)}</li>`,
+    )
     .join("");
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${opts.title}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${escapeHtml(opts.title)}</title>
 <style>
 body{font-family:Georgia,serif;color:#14201a;padding:2rem;max-width:800px;margin:auto}
 h1{font-size:1.5rem} table{width:100%;border-collapse:collapse;margin-top:1rem}
@@ -142,11 +153,11 @@ th,td{border:1px solid #ccc;padding:.5rem;text-align:left;font-size:.9rem}
 .meta{color:#555;font-size:.9rem}
 @media print{button{display:none}}
 </style></head><body>
-<h1>${opts.title}</h1>
-<p class="meta">${opts.template} · ${opts.style} · ${opts.seats} seats · Budget ${formatPkr(opts.budget)}</p>
+<h1>${escapeHtml(opts.title)}</h1>
+<p class="meta">${escapeHtml(opts.template)} · ${escapeHtml(opts.style)} · ${opts.seats} seats · Budget ${escapeHtml(formatPkr(opts.budget))}</p>
 <table><thead><tr><th>Zone</th><th>Role</th><th>Product</th><th>Qty</th><th>Line total</th></tr></thead>
 <tbody>${rows}</tbody></table>
-<p><strong>Package total: ${formatPkr(opts.total)}</strong></p>
+<p><strong>Package total: ${escapeHtml(formatPkr(opts.total))}</strong></p>
 ${conceptual ? `<h2>Conceptual (not catalogue SKUs)</h2><ul>${conceptual}</ul>` : ""}
 <p class="meta">AFH presentation estimate — Sales quotation remains authoritative. All listed products are catalogue-grounded.</p>
 <button onclick="window.print()">Print / Save as PDF</button>
@@ -158,7 +169,7 @@ ${conceptual ? `<h2>Conceptual (not catalogue SKUs)</h2><ul>${conceptual}</ul>` 
   if (!w) {
     const a = document.createElement("a");
     a.href = url;
-    a.download = `afh-planner-${opts.template}.html`;
+    a.download = `afh-planner-${opts.template.replace(/[^a-zA-Z0-9_-]/g, "_")}.html`;
     a.click();
   }
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);

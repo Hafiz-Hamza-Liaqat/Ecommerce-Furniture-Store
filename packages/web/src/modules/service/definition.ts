@@ -19,8 +19,8 @@ export const SERVICE_MODULE: ModuleDefinition = {
   title: "Service",
   lead: "Tickets, work orders, and appointments via Service Application APIs.",
   basePath: "/app/service",
-  summaryQueryType: "service.GetServiceSummary",
-  buildSummaryPayload: (companyId) => ({ companyId }),
+  // service.GetServiceSummary is record-scoped (requires serviceRequestId);
+  // no company-wide summary query exists, so the dashboard uses fixtures.
   kpis: [
     { label: "Open tickets", value: "29", trend: -4.0, href: "tickets" },
     { label: "Work orders", value: "18", trend: 2.1, href: "work-orders" },

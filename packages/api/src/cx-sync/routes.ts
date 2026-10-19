@@ -4,7 +4,7 @@
  */
 
 import type { IdentityFoundation } from "@afh/identity";
-import { AuthorizationError } from "@afh/shared-kernel";
+import { AuthorizationError, InfrastructureError } from "@afh/shared-kernel";
 import {
   jsonResponse,
   type RouteDefinition,
@@ -34,12 +34,21 @@ async function gate(
 ): Promise<{ ok: true; auth: TransportAuthContext } | { ok: false; response: TransportResponse }> {
   const authResult = await authenticateRequest(deps.identity, request, { required: true });
   if (!authResult.ok) {
-    if (authResult.error.code === "unauthenticated") {
+    const authCode = authResult.error.code ?? "";
+    if (
+      authCode === "unauthenticated" ||
+      authCode === "session_invalid" ||
+      authCode === "session_expired" ||
+      authCode === "session_idle_expired" ||
+      authCode === "session_absolute_expired" ||
+      authCode === "session_refresh_expired"
+    ) {
       return {
         ok: false,
         response: unauthorizedResponse(
           authResult.error.correlationId ?? null,
           authResult.error.message,
+          authCode === "unauthenticated" ? "unauthenticated" : authCode,
         ),
       };
     }
@@ -159,11 +168,12 @@ export function createCxSyncRoutes(deps: CxSyncRouteDeps): RouteDefinition[] {
 
         try {
           deps.workspaceStore.put(userId, snapshot);
-        } catch (err) {
+        } catch {
           return platformErrorResponse(
-            new AuthorizationError(err instanceof Error ? err.message : "cx_sync_write_failed", {
+            new InfrastructureError("CX workspace write failed", {
               code: "cx_sync_write_failed",
               correlationId: gated.auth.correlationId,
+              retryable: true,
             }),
             gated.auth.correlationId,
           );

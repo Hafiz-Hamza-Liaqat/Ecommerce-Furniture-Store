@@ -587,8 +587,9 @@ export function LocationMap({
   }[];
   readonly label: string;
 }) {
+  // role="group" (not "img"): the map contains focusable pin buttons.
   return (
-    <div className="ws-map" role="img" aria-label={label}>
+    <div className="ws-map" role="group" aria-label={label}>
       <div className="ws-map__field">
         {points.map((p) => (
           <button

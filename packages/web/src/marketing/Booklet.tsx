@@ -87,9 +87,11 @@ export function LuxuryBooklet() {
       <div className="booklet__stage">
         <div className="booklet__glow" aria-hidden="true" />
         <div className="booklet__particles" aria-hidden="true" />
+        {/* role="group" (not "img"): the spread contains focusable hotspot
+            buttons, which role="img" would hide from assistive technology. */}
         <div
           className={`booklet__spread${dragging ? " is-dragging" : ""}`}
-          role="img"
+          role="group"
           aria-label={`Catalogue page ${page + 1} of ${PAGES.length}: ${current.title}`}
           onMouseDown={(e) => onPointerDown(e.clientX)}
           onMouseUp={(e) => onPointerUp(e.clientX)}

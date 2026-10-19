@@ -69,12 +69,13 @@ export function platformErrorResponse(
 export function unauthorizedResponse(
   correlationId: string | null,
   message = "Authentication required",
+  code = "unauthenticated",
 ): TransportResponse {
   return jsonResponse(
     401,
     {
       error: {
-        code: "unauthenticated",
+        code,
         category: ErrorCategory.Authorization,
         message,
         details: {},

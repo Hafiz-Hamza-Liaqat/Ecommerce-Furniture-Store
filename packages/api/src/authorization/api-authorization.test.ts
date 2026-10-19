@@ -279,6 +279,14 @@ describe("RC5.4 upload Policy enforcement (dam.assets.upload)", () => {
     });
 
     assert.equal(response.status, 202);
+    const accepted = JSON.parse(response.body as string) as {
+      ok: boolean;
+      data: { assetId: string };
+      correlationId: string;
+    };
+    assert.equal(accepted.ok, true);
+    assert.equal(accepted.data.assetId, "asset-1");
+    assert.ok(accepted.correlationId);
   });
 
   it("denies upload for sales_manager without dam.assets.upload", async () => {

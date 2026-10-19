@@ -90,12 +90,21 @@ async function applyRateLimit(
     required: authRequired,
   });
   if (!authResult.ok) {
-    if (authResult.error.code === "unauthenticated") {
+    const authCode = authResult.error.code ?? "";
+    if (
+      authCode === "unauthenticated" ||
+      authCode === "session_invalid" ||
+      authCode === "session_expired" ||
+      authCode === "session_idle_expired" ||
+      authCode === "session_absolute_expired" ||
+      authCode === "session_refresh_expired"
+    ) {
       return {
         ok: false,
         response: unauthorizedResponse(
           authResult.error.correlationId ?? null,
           authResult.error.message,
+          authCode === "unauthenticated" ? "unauthenticated" : authCode,
         ),
       };
     }
@@ -504,16 +513,26 @@ export function createUploadRoutes(deps: RouteDeps): RouteDefinition[] {
         const routed = await deps.uploadRouter.routeUpload({
           dto,
           uploadedByUserId: auth.caller.userId,
-          rawBody: request.rawBody,
+          // This HTTP contract accepts JSON metadata only. The JSON request
+          // bytes are not an asset body and must never become a DAM version.
+          rawBody: null,
         });
 
         if (!routed.ok) {
           return platformErrorResponse(routed.error, auth.correlationId);
         }
 
-        return jsonResponse(202, routed.value, {
-          "x-correlation-id": auth.correlationId,
-        });
+        return jsonResponse(
+          202,
+          {
+            ok: true,
+            data: routed.value,
+            correlationId: auth.correlationId,
+          },
+          {
+            "x-correlation-id": auth.correlationId,
+          },
+        );
       },
     },
   ];

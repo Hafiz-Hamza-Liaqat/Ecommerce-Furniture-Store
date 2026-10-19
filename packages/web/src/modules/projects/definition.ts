@@ -31,8 +31,8 @@ export const PROJECTS_MODULE: ModuleDefinition = {
   title: "Projects",
   lead: "Projects, tasks, and schedules via Projects Application — lifecycle stays Workflow-owned.",
   basePath: "/app/projects",
-  summaryQueryType: "projects.GetProjectSummary",
-  buildSummaryPayload: (companyId) => ({ companyId }),
+  // projects.GetProjectSummary is record-scoped (requires projectId);
+  // no company-wide summary query exists, so the dashboard uses fixtures.
   kpis: [
     { label: "Active projects", value: "37", trend: 2.0, href: "projects" },
     { label: "Open tasks", value: "214", trend: -3.1, href: "tasks" },

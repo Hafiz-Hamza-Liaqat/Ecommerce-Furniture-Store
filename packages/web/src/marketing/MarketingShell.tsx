@@ -1068,7 +1068,7 @@ function MoonIcon() {
 function PageSkeleton({ path }: { path: string }) {
   if (path.startsWith("/furniture")) {
     return (
-      <div className="site-skeleton cx-skeleton-category" aria-live="polite" aria-label="Loading category">
+      <div className="site-skeleton cx-skeleton-category" role="status" aria-live="polite" aria-label="Loading category">
         <div className="site-skeleton__hero" />
         <div className="cx-skeleton-category__body">
           <div className="cx-skeleton-filters">
@@ -1091,7 +1091,7 @@ function PageSkeleton({ path }: { path: string }) {
   }
   if (path.startsWith("/planner")) {
     return (
-      <div className="site-skeleton cx-skeleton-planner" aria-live="polite" aria-label="Loading planner">
+      <div className="site-skeleton cx-skeleton-planner" role="status" aria-live="polite" aria-label="Loading planner">
         <div className="site-skeleton__hero" />
         <div className="cx-skeleton-card__line" />
         <div className="cx-skeleton-card__line" />
@@ -1100,7 +1100,7 @@ function PageSkeleton({ path }: { path: string }) {
   }
   if (path.startsWith("/compare")) {
     return (
-      <div className="site-skeleton cx-skeleton-compare" aria-live="polite" aria-label="Loading compare">
+      <div className="site-skeleton cx-skeleton-compare" role="status" aria-live="polite" aria-label="Loading compare">
         <div className="site-skeleton__hero" />
         <div className="cx-skeleton-card__line" />
         <div className="cx-skeleton-card__line" />
@@ -1109,7 +1109,7 @@ function PageSkeleton({ path }: { path: string }) {
   }
   if (path.startsWith("/products/")) {
     return (
-      <div className="site-skeleton cx-skeleton-gallery" aria-live="polite" aria-label="Loading product">
+      <div className="site-skeleton cx-skeleton-gallery" role="status" aria-live="polite" aria-label="Loading product">
         <div className="cx-skeleton-gallery__stage" />
         <div className="cx-skeleton-card__line" />
         <div className="cx-skeleton-card__line cx-skeleton-card__line--short" />
@@ -1117,7 +1117,7 @@ function PageSkeleton({ path }: { path: string }) {
     );
   }
   return (
-    <div className="site-skeleton" aria-live="polite" aria-label="Loading page">
+    <div className="site-skeleton" role="status" aria-live="polite" aria-label="Loading page">
       <div className="site-skeleton__hero" />
       <div className="site-skeleton__row">
         <div className="site-skeleton__card" />

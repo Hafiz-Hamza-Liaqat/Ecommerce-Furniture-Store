@@ -176,6 +176,8 @@
 
 .auth-card__link {
   color: var(--afh-copper-deep);
+  /* .nav-link's opacity: 0.85 dilutes the color below WCAG AA (4.09:1). */
+  opacity: 1;
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

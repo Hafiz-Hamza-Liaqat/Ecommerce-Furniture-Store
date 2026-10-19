@@ -70,6 +70,48 @@ function readString(
   return typeof value === "string" ? value : null;
 }
 
+function parseAuthJsonObject(
+  bodyText: string | null,
+  correlationId: string,
+):
+  | { readonly ok: true; readonly body: Record<string, unknown> }
+  | { readonly ok: false; readonly response: TransportResponse } {
+  let parsed: unknown;
+  try {
+    parsed = parseJsonBody(bodyText);
+  } catch {
+    return {
+      ok: false,
+      response: validationIssuesResponse(
+        [
+          {
+            field: "body",
+            code: "invalid_json",
+            message: "Body must be valid JSON",
+          },
+        ],
+        correlationId,
+      ),
+    };
+  }
+  if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {
+      ok: false,
+      response: validationIssuesResponse(
+        [
+          {
+            field: "body",
+            code: "invalid",
+            message: "JSON object body is required",
+          },
+        ],
+        correlationId,
+      ),
+    };
+  }
+  return { ok: true, body: parsed as Record<string, unknown> };
+}
+
 /** Prefer transport socket address; optionally first X-Forwarded-For when trustProxy. */
 export function resolveClientIp(
   request: TransportRequest,
@@ -150,21 +192,9 @@ export function createAuthRoutes(
         const limited = await gateAuthRateLimit(rateLimit, request);
         if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
-        let body: Record<string, unknown>;
-        try {
-          body = parseJsonBody(request.bodyText) as Record<string, unknown>;
-        } catch {
-          return validationIssuesResponse(
-            [
-              {
-                field: "body",
-                code: "invalid_json",
-                message: "Body must be valid JSON",
-              },
-            ],
-            correlationId,
-          );
-        }
+        const parsed = parseAuthJsonObject(request.bodyText, correlationId);
+        if (!parsed.ok) return parsed.response;
+        const body = parsed.body;
 
         const email = readString(body, "email");
         const password = readString(body, "password");
@@ -226,21 +256,9 @@ export function createAuthRoutes(
         const limited = await gateAuthRateLimit(rateLimit, request);
         if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
-        let body: Record<string, unknown>;
-        try {
-          body = parseJsonBody(request.bodyText) as Record<string, unknown>;
-        } catch {
-          return validationIssuesResponse(
-            [
-              {
-                field: "body",
-                code: "invalid_json",
-                message: "Body must be valid JSON",
-              },
-            ],
-            correlationId,
-          );
-        }
+        const parsed = parseAuthJsonObject(request.bodyText, correlationId);
+        if (!parsed.ok) return parsed.response;
+        const body = parsed.body;
 
         const email = readString(body, "email");
         const password = readString(body, "password");
@@ -300,21 +318,9 @@ export function createAuthRoutes(
         const limited = await gateAuthRateLimit(rateLimit, request);
         if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
-        let body: Record<string, unknown>;
-        try {
-          body = parseJsonBody(request.bodyText) as Record<string, unknown>;
-        } catch {
-          return validationIssuesResponse(
-            [
-              {
-                field: "body",
-                code: "invalid_json",
-                message: "Body must be valid JSON",
-              },
-            ],
-            correlationId,
-          );
-        }
+        const parsed = parseAuthJsonObject(request.bodyText, correlationId);
+        if (!parsed.ok) return parsed.response;
+        const body = parsed.body;
         const sessionId = readString(body, "sessionId");
         const refreshToken = readString(body, "refreshToken");
         if (!sessionId || !refreshToken) {
@@ -461,21 +467,9 @@ export function createAuthRoutes(
         const limited = await gateAuthRateLimit(rateLimit, request);
         if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
-        let body: Record<string, unknown>;
-        try {
-          body = parseJsonBody(request.bodyText) as Record<string, unknown>;
-        } catch {
-          return validationIssuesResponse(
-            [
-              {
-                field: "body",
-                code: "invalid_json",
-                message: "Body must be valid JSON",
-              },
-            ],
-            correlationId,
-          );
-        }
+        const parsed = parseAuthJsonObject(request.bodyText, correlationId);
+        if (!parsed.ok) return parsed.response;
+        const body = parsed.body;
         const token = readString(body, "token");
         const newPassword = readString(body, "newPassword");
         if (!token || !newPassword) {
@@ -552,21 +546,9 @@ export function createAuthRoutes(
         const limited = await gateAuthRateLimit(rateLimit, request);
         if (limited) return limited;
         const correlationId = resolveCorrelationId(request);
-        let body: Record<string, unknown>;
-        try {
-          body = parseJsonBody(request.bodyText) as Record<string, unknown>;
-        } catch {
-          return validationIssuesResponse(
-            [
-              {
-                field: "body",
-                code: "invalid_json",
-                message: "Body must be valid JSON",
-              },
-            ],
-            correlationId,
-          );
-        }
+        const parsed = parseAuthJsonObject(request.bodyText, correlationId);
+        if (!parsed.ok) return parsed.response;
+        const body = parsed.body;
         const token = readString(body, "token");
         if (!token) {
           return validationIssuesResponse(
@@ -641,21 +623,9 @@ async function handleTokenChallenge(
   const limited = await gateAuthRateLimit(rateLimit, request);
   if (limited) return limited;
   const correlationId = resolveCorrelationId(request);
-  let body: Record<string, unknown>;
-  try {
-    body = parseJsonBody(request.bodyText) as Record<string, unknown>;
-  } catch {
-    return validationIssuesResponse(
-      [
-        {
-          field: "body",
-          code: "invalid_json",
-          message: "Body must be valid JSON",
-        },
-      ],
-      correlationId,
-    );
-  }
+  const parsed = parseAuthJsonObject(request.bodyText, correlationId);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
   const value = readString(body, field);
   if (!value) {
     return validationIssuesResponse(

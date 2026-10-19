@@ -31,15 +31,19 @@ async function readBody(
 ): Promise<{ text: string | null; raw: Uint8Array | null }> {
   const chunks: Buffer[] = [];
   let total = 0;
+  let tooLarge = false;
   for await (const chunk of req) {
     const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     total += buf.length;
     if (total > maxBytes) {
-      req.destroy();
-      throw new BodyTooLargeError();
+      // Keep draining the request without buffering it. Destroying the socket
+      // here prevents the catch block from returning the intended HTTP 413.
+      tooLarge = true;
+      continue;
     }
     chunks.push(buf);
   }
+  if (tooLarge) throw new BodyTooLargeError();
   if (chunks.length === 0) {
     return { text: null, raw: null };
   }
@@ -180,13 +184,14 @@ export function createNodeHttpServer(
     if (!correlationId) {
       correlationId = crypto.randomUUID();
     }
+    const rawOrigin =
+      typeof req.headers.origin === "string" ? req.headers.origin : undefined;
+    const cors = corsHeaders(rawOrigin, corsOrigin);
+    const secure = securityHeaders(enableHsts);
 
     try {
       const transportReq = await toTransportRequest(req, maxBodyBytes);
       correlationId = resolveCorrelationId(transportReq);
-      const origin = transportReq.headers.origin;
-      const cors = corsHeaders(origin, corsOrigin);
-      const secure = securityHeaders(enableHsts);
 
       if (transportReq.method === "OPTIONS") {
         writeTransportResponse(res, {
@@ -202,10 +207,54 @@ export function createNodeHttpServer(
         transportReq.method,
         transportReq.path,
       );
+      const allowedMethods = [
+        ...new Set(
+          options.routes
+            .filter((candidate) => candidate.path === transportReq.path)
+            .map((candidate) => candidate.method),
+        ),
+      ];
 
       let response: TransportResponse;
       if (route) {
-        response = await route.handler(transportReq);
+        const hasBody = (transportReq.rawBody?.byteLength ?? 0) > 0;
+        const contentType =
+          transportReq.headers["content-type"]?.split(";")[0]?.trim().toLowerCase() ??
+          "";
+        const requiresJson =
+          hasBody &&
+          (transportReq.method === "POST" ||
+            transportReq.method === "PUT" ||
+            transportReq.method === "PATCH");
+        if (requiresJson && contentType !== "application/json") {
+          response = jsonResponse(415, {
+            error: {
+              code: "unsupported_media_type",
+              category: "validation",
+              message: "Request body must use application/json",
+              details: { supported: ["application/json"] },
+              retryable: false,
+              correlationId,
+            },
+          });
+        } else {
+          response = await route.handler(transportReq);
+        }
+      } else if (allowedMethods.length > 0) {
+        response = jsonResponse(
+          405,
+          {
+            error: {
+              code: "method_not_allowed",
+              category: "validation",
+              message: `Method ${transportReq.method} is not allowed for ${transportReq.path}`,
+              details: { allowedMethods },
+              retryable: false,
+              correlationId,
+            },
+          },
+          { allow: allowedMethods.join(", ") },
+        );
       } else if (options.onUnhandled) {
         response = await options.onUnhandled(transportReq);
       } else {
@@ -241,7 +290,7 @@ export function createNodeHttpServer(
                 correlationId,
               },
             },
-            { [CorrelationHeader]: correlationId },
+            { ...secure, ...cors, [CorrelationHeader]: correlationId },
           ),
         );
         return;
@@ -261,7 +310,7 @@ export function createNodeHttpServer(
               correlationId,
             },
           },
-          { [CorrelationHeader]: correlationId },
+          { ...secure, ...cors, [CorrelationHeader]: correlationId },
         ),
       );
     }

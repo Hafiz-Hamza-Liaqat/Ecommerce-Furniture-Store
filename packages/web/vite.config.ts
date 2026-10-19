@@ -2,21 +2,25 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 /**
- * Meta CSP in index.html is production-oriented (`script-src 'self'`).
- * Vite + React Refresh inject an inline preamble that CSP blocks in
- * development, which can surface as intermittent
- * "Cannot read properties of null (reading 'useState')" during navigation.
- * Loosen script-src only while the Vite dev server is active.
+ * Meta CSP in index.html is production-oriented (`script-src 'self'`,
+ * `connect-src 'self'`). Vite + React Refresh need a wider script-src in
+ * development, and the Vite HMR websocket / optional direct API host need
+ * connect-src allowances that must not ship in the production bundle.
  */
 function cspForViteDev(): Plugin {
   return {
     name: "afh-csp-vite-dev",
     transformIndexHtml(html, ctx) {
       if (!ctx.server) return html;
-      return html.replace(
-        /script-src 'self'/g,
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      );
+      return html
+        .replace(
+          /script-src 'self'/g,
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+        )
+        .replace(
+          /connect-src 'self'/g,
+          "connect-src 'self' http://127.0.0.1:8080 http://localhost:8080 ws://localhost:5173 ws://127.0.0.1:5173",
+        );
     },
   };
 }

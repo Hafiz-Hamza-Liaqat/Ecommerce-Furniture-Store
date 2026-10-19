@@ -144,7 +144,7 @@ export const MODULE_KPI_PACKS: readonly ModuleKpiPack[] = [
     id: "projects",
     title: "Projects",
     modulePath: "/app/projects",
-    summaryQueryType: "projects.GetProjectSummary",
+    // projects.GetProjectSummary is record-scoped — no company-wide summary.
     series: [60, 62, 65, 64, 68, 70, 72, 71, 74, 76, 75, 78],
     seriesLabel: "Completion index",
     kpis: [
@@ -158,7 +158,7 @@ export const MODULE_KPI_PACKS: readonly ModuleKpiPack[] = [
     id: "service",
     title: "Service",
     modulePath: "/app/service",
-    summaryQueryType: "service.GetServiceSummary",
+    // service.GetServiceSummary is record-scoped — no company-wide summary.
     series: [90, 91, 89, 92, 93, 94, 92, 95, 96, 95, 97, 97],
     seriesLabel: "SLA compliance",
     kpis: [
